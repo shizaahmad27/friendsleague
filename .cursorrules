@@ -131,3 +131,13 @@ friendsleague/
 - Docker for containerisering
 - Database indekser på foreign keys
 - Prisma migrations via CI/CD
+
+## 🚫 IKKE GÅ VIDERE UTEN TILLATELSE
+- **ALDRIG** implementere nye funksjoner uten eksplisitt tillatelse
+- **ALDRIG** opprette nye filer uten at brukeren ber om det
+- **ALDRIG** gå videre til neste steg uten at brukeren sier "okay" eller "gå videre"
+- **ALDRIG** gjøre flere endringer samtidig uten å spørre først
+- **ALDRIG** anta at brukeren vil ha noe implementert
+- **ALLTID** spørre før du gjør noe nytt: "Vil du at jeg skal..."
+- **ALLTID** vente på bekreftelse før du fortsetter
+- **ALLTID** gi brukeren full oversikt over hva som er gjort
