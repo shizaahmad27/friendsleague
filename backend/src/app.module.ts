@@ -4,7 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { PrismaService } from './common/prisma.service';
 import { ThrottlerModule } from '@nestjs/throttler';
-
+import { InvitationModule } from './invitation/invitation.module';
 
 @Module({
   imports: [
@@ -17,6 +17,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     }),
     AuthModule,
     UsersModule,
+    InvitationModule,
   ],
   providers: [PrismaService],
 })
