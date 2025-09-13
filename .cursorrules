@@ -1,0 +1,133 @@
+# FriendsLeague - Cursor Rules
+
+## 🎯 Prosjektoversikt
+FriendLeague er en sosial applikasjon som kombinerer meldingsfunksjonalitet med konkurransefunksjoner. Brukere kan kommunisere én-til-én eller i grupper, opprette "ligaer" med regler, poengsystem og leaderboard, samt arrangere events.
+
+## 🛠️ Teknologistack (IKKE ENDRE)
+
+### Frontend
+- **React Native** - Cross-platform mobilapp
+- **TypeScript** - Type-sikkerhet
+- **Zustand** - State management
+- **React Navigation** - Navigasjon
+- **Socket.io Client** - Sanntidskommunikasjon
+
+### Backend
+- **NestJS** - Node.js framework (IKKE Express.js eller Fastify)
+- **TypeScript** - Type-sikkerhet
+- **Prisma** - ORM for database (IKKE TypeORM eller andre ORM-er)
+- **PostgreSQL** - Hoveddatabase (IKKE MongoDB eller andre databaser)
+- **Redis** - Caching og sanntidsdata
+- **Socket.io** - WebSocket for sanntidskommunikasjon
+- **JWT** - Autentisering
+
+### Infrastruktur
+- **Docker** - Containerisering
+- **AWS S3** - Filopplasting
+- **Firebase** - Push notifications
+
+## 📁 Prosjektstruktur
+```
+(kan endres)
+friendsleague/
+├── backend/          # NestJS API
+│   ├── src/
+│   │   ├── auth/     # Autentisering
+│   │   ├── chat/     # Chat-funksjonalitet
+│   │   ├── leagues/  # Liga-funksjonalitet
+│   │   ├── events/   # Event-funksjonalitet
+│   │   ├── users/    # Brukerhåndtering
+│   │   └── common/   # Delte moduler
+│   ├── prisma/       # Database schema
+│   └── docker-compose.yml
+├── mobile/           # React Native app
+│   ├── src/
+│   │   ├── screens/  # App-skjermer
+│   │   ├── components/ # Gjenbrukbare komponenter
+│   │   ├── store/    # Zustand state management
+│   │   ├── services/ # API-tjenester
+│   │   └── types/    # TypeScript typer
+├── shared/           # Delte typer og interfaces
+└── docs/             # Dokumentasjon
+```
+
+## 🎨 Kodekonvensjoner
+
+### TypeScript
+- Bruk **strict mode** alltid
+- Definer typer eksplisitt, ikke `any`
+- Bruk interfaces for objekter, types for unions
+- Eksporter typer med `export type` når mulig
+
+### NestJS
+- Følg NestJS modulstruktur (Controller, Service, Module)
+- Bruk **decorators** for validering og autentisering
+- Implementer **DTOs** for alle API-endepunkter
+- Bruk **Guards** for autentisering og autorisering
+- Implementer **Interceptors** for logging og feilhåndtering
+
+### Prisma
+- Definer **schema** i `schema.prisma`
+- Bruk **Prisma Client** for database-operasjoner
+- Implementer **migrations** for database-endringer
+- Bruk **transactions** for komplekse operasjoner
+
+### React Native
+- Bruk **functional components** med hooks
+- Implementer **custom hooks** for gjenbrukbar logikk
+- Bruk **Zustand** for global state management
+- Følg **React Navigation** best practices
+
+## 🔒 Sikkerhet
+- Valider all input med **class-validator**
+- Bruk **JWT access tokens** (kort levetid) + **refresh tokens** (lang levetid)
+- Implementer **refresh token rotation** for bedre sikkerhet på mobile enheter
+- Implementer **rate limiting** på API-endepunkter
+- Sanitizer brukerinput før lagring
+- Bruk **HTTPS** i produksjon
+- **Token blacklisting** ved utlogging
+
+## 📊 Database Design
+- **PostgreSQL** som hoveddatabase
+- **Redis** for caching og sanntidsdata
+- **Normalisering** - følg 3NF for dataintegritet
+- **Indeksering** - lag indekser på alle foreign keys og ofte brukte kolonner
+- **Soft delete** for viktige data (ikke hard delete)
+- **Prisma migrations** - alltid kjøre via CI/CD før produksjon for å unngå inkonsistens
+
+## 🚀 Performance
+- Implementer **caching** med Redis
+- Bruk **pagination** for store datamengder
+- Optimiser **database queries** med Prisma
+- Implementer **lazy loading** i React Native
+- Komprimer bilder før opplasting
+
+## 🧪 Testing
+- **Unit tests** for alle services
+- **Integration tests** for API-endepunkter
+- **E2E tests** for kritiske brukerflyter
+- Bruk **Jest** for testing
+- **Database migrations** - test i CI/CD før produksjon
+
+## 📝 Dokumentasjon
+- Dokumenter alle API-endepunkter
+- Skriv **README** for hver modul
+- Bruk **JSDoc** for funksjoner
+- Oppdater **CHANGELOG** for endringer
+
+## 🚫 IKKE BRUK
+- Express.js eller Fastify (bruk NestJS)
+- TypeORM eller andre ORM-er (bruk Prisma)
+- MongoDB eller andre databaser (bruk PostgreSQL)
+- Redux (bruk Zustand)
+- JavaScript (bruk TypeScript)
+
+## ✅ ALLTID BRUK
+- TypeScript for type-sikkerhet
+- Prisma for database-operasjoner
+- NestJS decorators og moduler
+- Zustand for state management
+- JWT access + refresh tokens for autentisering
+- Docker for containerisering
+- Database indekser på foreign keys
+- Prisma migrations via CI/CD
