@@ -58,7 +58,7 @@ export default function HomeScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>💬 Chat</Text>
           <Text style={styles.cardDescription}>
-            Message your friends and league members
+            Message your friends and 
           </Text>
           <TouchableOpacity style={styles.cardButton}>
             <Text style={styles.cardButtonText}>Coming Soon</Text>

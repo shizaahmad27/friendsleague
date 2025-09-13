@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -20,23 +19,9 @@ type HamburgerMenuNavigationProp = StackNavigationProp<RootStackParamList, 'Home
 export default function HamburgerMenu({ onLogout }: HamburgerMenuProps) {
   const navigation = useNavigation<HamburgerMenuNavigationProp>();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
-  const slideAnim = new Animated.Value(-300);
 
   const toggleMenu = () => {
-    if (isMenuVisible) {
-      Animated.timing(slideAnim, {
-        toValue: -300,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => setIsMenuVisible(false));
-    } else {
-      setIsMenuVisible(true);
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
+    setIsMenuVisible(!isMenuVisible);
   };
 
   const handleMenuPress = (screen: keyof RootStackParamList | 'Logout') => {
@@ -69,12 +54,7 @@ export default function HamburgerMenu({ onLogout }: HamburgerMenuProps) {
           activeOpacity={1} 
           onPress={toggleMenu}
         >
-          <Animated.View 
-            style={[
-              styles.menuContainer,
-              { transform: [{ translateX: slideAnim }] }
-            ]}
-          >
+          <View style={styles.menuContainer}>
             <View style={styles.menuHeader}>
               <Text style={styles.menuTitle}>Menu</Text>
               <TouchableOpacity onPress={toggleMenu} style={styles.closeButton}>
@@ -125,7 +105,7 @@ export default function HamburgerMenu({ onLogout }: HamburgerMenuProps) {
                 <Text style={[styles.menuItemText, styles.logoutText]}>Logout</Text>
               </TouchableOpacity>
             </View>
-          </Animated.View>
+          </View>
         </TouchableOpacity>
       </Modal>
     </>
