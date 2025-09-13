@@ -29,8 +29,24 @@ model User {
   eventParticipants EventParticipant[]
   friendships      Friendship[]       @relation("UserFriendships")
   friendOf         Friendship[]       @relation("FriendOf")
+  sentInvitations Invitation[]  @relation("Inviter")
+  receivedInvitations Invitation[]  @relation("Invitee")
 
   @@map("users")
+}
+
+model Invitation {
+  id  String @id @default(cuid())
+  code String @unique
+  inviterId String
+  inviter User @relation("Inviter", fields: [inviterId], references: [id])
+  inviteeId String?
+  status FriendshipStatus @default(PENDING)
+  expiredAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("invitations")
 }
 
 model Chat {
