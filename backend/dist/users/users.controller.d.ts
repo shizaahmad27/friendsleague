@@ -3,10 +3,10 @@ export declare class UsersController {
     private usersService;
     constructor(usersService: UsersService);
     searchUsers(username: string): Promise<{
+        id: string;
         username: string;
         email: string | null;
         phoneNumber: string | null;
-        id: string;
         avatar: string | null;
         isOnline: boolean;
         lastSeen: Date;

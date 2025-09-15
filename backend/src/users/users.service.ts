@@ -13,14 +13,18 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<UserWithoutPassword> {
     const { username, email, phoneNumber, password } = createUserDto;
+    
+    // Convert empty strings to null for optional fields
+    const normalizedEmail = email && email.trim() !== '' ? email.trim() : null;
+    const normalizedPhoneNumber = phoneNumber && phoneNumber.trim() !== '' ? phoneNumber.trim() : null;
 
     // Check if user already exists
     const existingUser = await this.prisma.user.findFirst({
       where: {
         OR: [
           { username },
-          ...(email ? [{ email }] : []),
-          ...(phoneNumber ? [{ phoneNumber }] : []),
+          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+          ...(normalizedPhoneNumber ? [{ phoneNumber: normalizedPhoneNumber }] : []),
         ],
       },
     });
@@ -29,10 +33,10 @@ export class UsersService {
       if (existingUser.username === username) {
         throw new ConflictException('Username already exists');
       }
-      if (existingUser.email === email) {
+      if (normalizedEmail && existingUser.email === normalizedEmail) {
         throw new ConflictException('Email already exists');
       }
-      if (existingUser.phoneNumber === phoneNumber) {
+      if (normalizedPhoneNumber && existingUser.phoneNumber === normalizedPhoneNumber) {
         throw new ConflictException('Phone number already exists');
       }
     }
@@ -44,8 +48,8 @@ export class UsersService {
     const user = await this.prisma.user.create({
       data: {
         username,
-        email,
-        phoneNumber,
+        email: normalizedEmail,
+        phoneNumber: normalizedPhoneNumber,
         password: hashedPassword,
       },
     });

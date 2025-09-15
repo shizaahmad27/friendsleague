@@ -52,12 +52,14 @@ let UsersService = class UsersService {
     }
     async create(createUserDto) {
         const { username, email, phoneNumber, password } = createUserDto;
+        const normalizedEmail = email && email.trim() !== '' ? email.trim() : null;
+        const normalizedPhoneNumber = phoneNumber && phoneNumber.trim() !== '' ? phoneNumber.trim() : null;
         const existingUser = await this.prisma.user.findFirst({
             where: {
                 OR: [
                     { username },
-                    ...(email ? [{ email }] : []),
-                    ...(phoneNumber ? [{ phoneNumber }] : []),
+                    ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+                    ...(normalizedPhoneNumber ? [{ phoneNumber: normalizedPhoneNumber }] : []),
                 ],
             },
         });
@@ -65,10 +67,10 @@ let UsersService = class UsersService {
             if (existingUser.username === username) {
                 throw new common_1.ConflictException('Username already exists');
             }
-            if (existingUser.email === email) {
+            if (normalizedEmail && existingUser.email === normalizedEmail) {
                 throw new common_1.ConflictException('Email already exists');
             }
-            if (existingUser.phoneNumber === phoneNumber) {
+            if (normalizedPhoneNumber && existingUser.phoneNumber === normalizedPhoneNumber) {
                 throw new common_1.ConflictException('Phone number already exists');
             }
         }
@@ -76,8 +78,8 @@ let UsersService = class UsersService {
         const user = await this.prisma.user.create({
             data: {
                 username,
-                email,
-                phoneNumber,
+                email: normalizedEmail,
+                phoneNumber: normalizedPhoneNumber,
                 password: hashedPassword,
             },
         });

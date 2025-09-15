@@ -15,7 +15,7 @@ import { RootStackParamList } from '../types';
 import HamburgerMenu from '../components/HamburgerMenu';
 import { useAuthStore } from '../store/authStore';
 import { invitationApi } from '../services/invitationApi';
-import Clipboard from '@react-native-clipboard/clipboard';
+import * as Clipboard from 'expo-clipboard';
 
 type InviteCodeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'InviteCode'>;
 
@@ -164,7 +164,7 @@ export default function InviteCodeScreen() {
                   if (isLoadingCode || !myInviteCode) return;
                   
                   try {
-                    Clipboard.setString(myInviteCode);
+                    await Clipboard.setStringAsync(myInviteCode);
                     Alert.alert('Copied!', 'Your invite code has been copied to clipboard');
                   } catch (error) {
                     Alert.alert('Error', 'Failed to copy invite code');

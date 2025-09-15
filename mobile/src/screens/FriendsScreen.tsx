@@ -9,7 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import Clipboard from '@react-native-clipboard/clipboard';
+import * as Clipboard from 'expo-clipboard';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
@@ -62,7 +62,7 @@ export default function FriendsScreen() {
   // Send invitation to user
   const handleSendInvitation = async (userId: string, username: string) => {
     try {
-      await invitationApi.createInvitation({ inviteeId: userId });
+      await invitationApi.createInvitation(userId);
       Alert.alert('Success', `Invitation sent to ${username}!`);
       setSearchQuery('');
       setSearchResults([]);
@@ -113,23 +113,23 @@ export default function FriendsScreen() {
       [
         { 
           text: 'Copy Username & Code', 
-          onPress: () => {
+          onPress: async () => {
             const shareText = `Join me on FriendsLeague! My username is ${username} and my invite code is ${userId.substring(0, 8).toUpperCase()}. Download the app and use this code to connect with me!`;
-            Clipboard.setString(shareText);
+            await Clipboard.setStringAsync(shareText);
             Alert.alert('Success', 'Username and invite code copied to clipboard!');
           }
         },
         { 
           text: 'Copy Deep Link (Dev)', 
-          onPress: () => {
-            Clipboard.setString(expoDeepLink);
+          onPress: async () => {
+            await Clipboard.setStringAsync(expoDeepLink);
             Alert.alert('Success', 'Development deep link copied! (Only works in Expo Go)');
           }
         },
         { 
           text: 'Copy Universal Link', 
-          onPress: () => {
-            Clipboard.setString(universalLink);
+          onPress: async () => {
+            await Clipboard.setStringAsync(universalLink);
             Alert.alert('Success', 'Universal link copied! (Works when app is published)');
           }
         },
