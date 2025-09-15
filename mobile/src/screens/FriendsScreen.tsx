@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import { useNavigation } from '@react-navigation/native';
 import HamburgerMenu from '../components/HamburgerMenu';
 import { invitationApi, Invitation } from '../services/invitationApi';
@@ -89,7 +90,13 @@ export default function FriendsScreen() {
       'Shareable Link',
       `Share this link to invite friends:\n\n${shareableLink}`,
       [
-        { text: 'Copy Link', onPress: () => console.log('Copy to clipboard') },
+        { 
+          text: 'Copy Link', 
+          onPress: () => {
+            Clipboard.setString(shareableLink);
+            Alert.alert('Success', 'Link copied to clipboard!');
+          }
+        },
         { text: 'OK' }
       ]
     );
