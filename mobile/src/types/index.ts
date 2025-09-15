@@ -47,4 +47,5 @@ export type RootStackParamList = {
   Leagues: undefined;
   Friends: undefined;
   Events: undefined;
+  InviteCode: undefined;
 };

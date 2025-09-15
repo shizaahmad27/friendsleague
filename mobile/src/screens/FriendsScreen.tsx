@@ -11,13 +11,17 @@ import {
 } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../types';
 import HamburgerMenu from '../components/HamburgerMenu';
 import { invitationApi, Invitation } from '../services/invitationApi';
 import { usersApi, User } from '../services/usersApi';
 import { useAuthStore } from '../store/authStore';
 
+type FriendsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Friends'>;
+
 export default function FriendsScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<FriendsScreenNavigationProp>();
   const { user } = useAuthStore();
   
   // State for search functionality
@@ -90,34 +94,43 @@ export default function FriendsScreen() {
       return;
     }
 
-    // Create a dynamic shareable link with user-specific information
-    const baseUrl = 'https://friendsleague.com/invite';
     const userId = user.id;
     const username = user.username;
     
-    // Create a more sophisticated invitation link
-    const shareableLink = `${baseUrl}?ref=${userId}&inviter=${encodeURIComponent(username)}&app=mobile`;
+    // For development/testing: Use Expo deep link format
+    const expoDeepLink = `exp://192.168.1.100:8081/--/invite?ref=${userId}&inviter=${encodeURIComponent(username)}`;
     
-    // Create a shorter, more user-friendly link (for display purposes)
-    const shortCode = userId.substring(0, 8); // Use first 8 characters of user ID
-    const shortLink = `https://fl.gg/invite/${shortCode}`;
+    // For production: Use proper app store links with deep linking
+    const appStoreLink = `https://apps.apple.com/app/friendsleague/id1234567890?invite=${userId}`;
+    const playStoreLink = `https://play.google.com/store/apps/details?id=com.friendsleague.app&invite=${userId}`;
+    
+    // Create a universal link that works for both platforms
+    const universalLink = `https://friendsleague.app/invite?ref=${userId}&inviter=${encodeURIComponent(username)}`;
     
     Alert.alert(
-      'Shareable Link',
-      `Share this link to invite friends to join FriendsLeague:\n\n${shareableLink}\n\nShort link: ${shortLink}\n\nThis link is personalized for you (${username}) and will help track who invited new users.`,
+      'Invite Friends to FriendsLeague',
+      `Share this information to invite friends:\n\nYour Username: ${username}\nYour Invite Code: ${userId.substring(0, 8).toUpperCase()}\n\nChoose how to share:`,
       [
         { 
-          text: 'Copy Full Link', 
+          text: 'Copy Username & Code', 
           onPress: () => {
-            Clipboard.setString(shareableLink);
-            Alert.alert('Success', 'Full invitation link copied to clipboard!');
+            const shareText = `Join me on FriendsLeague! My username is ${username} and my invite code is ${userId.substring(0, 8).toUpperCase()}. Download the app and use this code to connect with me!`;
+            Clipboard.setString(shareText);
+            Alert.alert('Success', 'Username and invite code copied to clipboard!');
           }
         },
         { 
-          text: 'Copy Short Link', 
+          text: 'Copy Deep Link (Dev)', 
           onPress: () => {
-            Clipboard.setString(shortLink);
-            Alert.alert('Success', 'Short invitation link copied to clipboard!');
+            Clipboard.setString(expoDeepLink);
+            Alert.alert('Success', 'Development deep link copied! (Only works in Expo Go)');
+          }
+        },
+        { 
+          text: 'Copy Universal Link', 
+          onPress: () => {
+            Clipboard.setString(universalLink);
+            Alert.alert('Success', 'Universal link copied! (Works when app is published)');
           }
         },
         { text: 'Cancel' }
@@ -217,6 +230,20 @@ export default function FriendsScreen() {
             onPress={handleGenerateLink}
           >
             <Text style={styles.cardButtonText}>Generate Link</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Use Invite Code Section */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>🔗 Use Invite Code</Text>
+          <Text style={styles.cardDescription}>
+            Have a friend's invite code? Enter it here to connect with them.
+          </Text>
+          <TouchableOpacity 
+            style={styles.cardButton}
+            onPress={() => navigation.navigate('InviteCode')}
+          >
+            <Text style={styles.cardButtonText}>Enter Invite Code</Text>
           </TouchableOpacity>
         </View>
 

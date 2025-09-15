@@ -12,6 +12,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import LeaguesScreen from '../screens/LeaguesScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 import EventsScreen from '../screens/EventsScreen';
+import InviteCodeScreen from '../screens/InviteCodeScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -32,6 +33,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Leagues" component={LeaguesScreen} />
             <Stack.Screen name="Friends" component={FriendsScreen} />
             <Stack.Screen name="Events" component={EventsScreen} />
+            <Stack.Screen name="InviteCode" component={InviteCodeScreen} />
           </>
         ) : (
           <>
