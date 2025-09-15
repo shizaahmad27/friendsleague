@@ -13,6 +13,7 @@ const auth_module_1 = require("./auth/auth.module");
 const users_module_1 = require("./users/users.module");
 const prisma_service_1 = require("./common/prisma.service");
 const throttler_1 = require("@nestjs/throttler");
+const invitation_module_1 = require("./invitation/invitation.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -28,6 +29,7 @@ exports.AppModule = AppModule = __decorate([
             }),
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
+            invitation_module_1.InvitationModule,
         ],
         providers: [prisma_service_1.PrismaService],
     })

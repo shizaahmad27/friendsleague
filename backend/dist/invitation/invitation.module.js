@@ -6,19 +6,19 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UsersModule = void 0;
+exports.InvitationModule = void 0;
 const common_1 = require("@nestjs/common");
-const users_service_1 = require("./users.service");
-const users_controller_1 = require("./users.controller");
+const invitation_service_1 = require("./invitation.service");
+const invitation_controller_1 = require("./invitation.controller");
 const prisma_service_1 = require("../common/prisma.service");
-let UsersModule = class UsersModule {
+let InvitationModule = class InvitationModule {
 };
-exports.UsersModule = UsersModule;
-exports.UsersModule = UsersModule = __decorate([
+exports.InvitationModule = InvitationModule;
+exports.InvitationModule = InvitationModule = __decorate([
     (0, common_1.Module)({
-        controllers: [users_controller_1.UsersController],
-        providers: [users_service_1.UsersService, prisma_service_1.PrismaService],
-        exports: [users_service_1.UsersService],
+        controllers: [invitation_controller_1.InvitationController],
+        providers: [invitation_service_1.InvitationService, prisma_service_1.PrismaService],
+        exports: [invitation_service_1.InvitationService],
     })
-], UsersModule);
-//# sourceMappingURL=users.module.js.map
+], InvitationModule);
+//# sourceMappingURL=invitation.module.js.map

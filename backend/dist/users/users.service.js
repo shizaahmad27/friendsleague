@@ -129,6 +129,32 @@ let UsersService = class UsersService {
     async validatePassword(password, hashedPassword) {
         return bcrypt.compare(password, hashedPassword);
     }
+    async searchUsers(username) {
+        const users = await this.prisma.user.findMany({
+            where: {
+                username: {
+                    contains: username,
+                    mode: 'insensitive',
+                },
+            },
+            select: {
+                id: true,
+                username: true,
+                email: true,
+                phoneNumber: true,
+                avatar: true,
+                isOnline: true,
+                lastSeen: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+            take: 10,
+            orderBy: {
+                username: 'asc',
+            },
+        });
+        return users;
+    }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([

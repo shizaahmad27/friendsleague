@@ -12,5 +12,6 @@ export declare class UsersService {
     update(id: string, updateUserDto: UpdateUserDto): Promise<UserWithoutPassword>;
     updateOnlineStatus(id: string, isOnline: boolean): Promise<void>;
     validatePassword(password: string, hashedPassword: string): Promise<boolean>;
+    searchUsers(username: string): Promise<UserWithoutPassword[]>;
 }
 export {};

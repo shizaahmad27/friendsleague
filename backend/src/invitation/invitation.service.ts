@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
-import { Invitation, InvitationStatus, User } from '@prisma/client';
+import { Invitation, FriendshipStatus, User } from '@prisma/client';
 
 export type InvitationWithUsers = Invitation & {
   inviter: User;
@@ -33,7 +33,7 @@ export class InvitationService {
       where: {
         inviterId,
         inviteeId,
-        status: InvitationStatus.PENDING,
+        status: FriendshipStatus.PENDING,
       },
     });
     if (existingInvitation) {
@@ -57,9 +57,11 @@ export class InvitationService {
     // Create invitation
     const invitation = await this.prisma.invitation.create({
       data: {
+        code: `invite_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         inviterId,
         inviteeId,
-        status: InvitationStatus.PENDING,
+        status: FriendshipStatus.PENDING,
+        expiredAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       },
       include: {
         inviter: true,
@@ -94,7 +96,7 @@ export class InvitationService {
     const invitations = await this.prisma.invitation.findMany({
       where: {
         inviteeId: userId,
-        status: InvitationStatus.PENDING,
+        status: FriendshipStatus.PENDING,
       },
       include: {
         inviter: true,
@@ -128,14 +130,14 @@ export class InvitationService {
     }
 
     // Check if invitation is pending
-    if (invitation.status !== InvitationStatus.PENDING) {
+    if (invitation.status !== FriendshipStatus.PENDING) {
       throw new BadRequestException('Invitation is not pending');
     }
 
     // Update invitation status
     const updatedInvitation = await this.prisma.invitation.update({
       where: { id: invitationId },
-      data: { status: InvitationStatus.ACCEPTED },
+      data: { status: FriendshipStatus.ACCEPTED },
       include: {
         inviter: true,
         invitee: true,
@@ -181,14 +183,14 @@ export class InvitationService {
     }
 
     // Check if invitation is pending
-    if (invitation.status !== InvitationStatus.PENDING) {
+    if (invitation.status !== FriendshipStatus.PENDING) {
       throw new BadRequestException('Invitation is not pending');
     }
 
     // Update invitation status
     const updatedInvitation = await this.prisma.invitation.update({
       where: { id: invitationId },
-      data: { status: InvitationStatus.REJECTED },
+      data: { status: FriendshipStatus.BLOCKED },
       include: {
         inviter: true,
         invitee: true,
@@ -218,14 +220,14 @@ export class InvitationService {
     }
 
     // Check if invitation is pending
-    if (invitation.status !== InvitationStatus.PENDING) {
+    if (invitation.status !== FriendshipStatus.PENDING) {
       throw new BadRequestException('Invitation is not pending');
     }
 
     // Update invitation status
     const updatedInvitation = await this.prisma.invitation.update({
       where: { id: invitationId },
-      data: { status: InvitationStatus.CANCELLED },
+      data: { status: FriendshipStatus.BLOCKED },
       include: {
         inviter: true,
         invitee: true,

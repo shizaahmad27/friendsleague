@@ -111,4 +111,33 @@ export class UsersService {
   async validatePassword(password: string, hashedPassword: string): Promise<boolean> {
     return bcrypt.compare(password, hashedPassword);
   }
+
+  async searchUsers(username: string): Promise<UserWithoutPassword[]> {
+    const users = await this.prisma.user.findMany({
+      where: {
+        username: {
+          contains: username,
+          mode: 'insensitive',
+        },
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        phoneNumber: true,
+        avatar: true,
+        isOnline: true,
+        lastSeen: true,
+        createdAt: true,
+        updatedAt: true,
+        // Exclude password field
+      },
+      take: 10, // Limit to 10 results
+      orderBy: {
+        username: 'asc',
+      },
+    });
+
+    return users;
+  }
 }
