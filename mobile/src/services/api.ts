@@ -33,28 +33,41 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
+    console.log('API Error:', error.response?.status, error.response?.data);
+    
     if (error.response?.status === 401 && !originalRequest._retry) {
+      console.log('Attempting token refresh...');
       originalRequest._retry = true;
       
       try {
         const { refreshToken, setAuth, logout } = useAuthStore.getState();
         
         if (refreshToken) {
+          console.log('Refreshing token with:', refreshToken.substring(0, 20) + '...');
           const response = await axios.post(`${api.defaults.baseURL}/auth/refresh`, {
             refreshToken,
           });
           
           const { accessToken } = response.data;
-          useAuthStore.getState().setAuth({
-            ...useAuthStore.getState(),
+          console.log('New access token received:', accessToken.substring(0, 20) + '...');
+          
+          // Update the auth store with new token
+          const currentState = useAuthStore.getState();
+          currentState.setAuth({
+            ...currentState,
             accessToken,
           });
           
-          // Retry original request
+          // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          console.log('Retrying original request...');
           return api(originalRequest);
+        } else {
+          console.log('No refresh token available');
+          logout();
         }
       } catch (refreshError) {
+        console.log('Token refresh failed:', refreshError);
         // Refresh failed, logout user
         logout();
         return Promise.reject(refreshError);

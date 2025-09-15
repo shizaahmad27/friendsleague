@@ -34,7 +34,11 @@ export default function InviteCodeScreen() {
   // Load user's invite code on component mount
   React.useEffect(() => {
     const loadMyInviteCode = async () => {
-      if (!user) return;
+      if (!user) {
+        console.log('No user found, skipping invite code load');
+        return;
+      }
+      
       
       setIsLoadingCode(true);
       try {
@@ -57,6 +61,7 @@ export default function InviteCodeScreen() {
       Alert.alert('Error', 'Please enter an invite code');
       return;
     }
+
 
     setIsProcessing(true);
     try {
