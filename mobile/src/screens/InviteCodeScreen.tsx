@@ -101,20 +101,12 @@ export default function InviteCodeScreen() {
             Ask your friend for their invite code and enter it below to connect with them.
           </Text>
           
-          {/* Debug display - remove this later */}
-          <Text style={{ fontSize: 12, color: '#999', marginBottom: 8 }}>
-            Debug: Current value = "{inviteCode}"
-          </Text>
-          
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.codeInput}
               placeholder="Enter invite code (e.g., A1B2C3D4)"
               value={inviteCode}
-              onChangeText={(text) => {
-                console.log('TextInput onChangeText:', text);
-                setInviteCode(text);
-              }}
+              onChangeText={setInviteCode}
               autoCapitalize="characters"
               autoCorrect={false}
               maxLength={8}
