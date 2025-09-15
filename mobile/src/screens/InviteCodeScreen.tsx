@@ -101,15 +101,25 @@ export default function InviteCodeScreen() {
             Ask your friend for their invite code and enter it below to connect with them.
           </Text>
           
+          {/* Debug display - remove this later */}
+          <Text style={{ fontSize: 12, color: '#999', marginBottom: 8 }}>
+            Debug: Current value = "{inviteCode}"
+          </Text>
+          
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.codeInput}
               placeholder="Enter invite code (e.g., A1B2C3D4)"
               value={inviteCode}
-              onChangeText={setInviteCode}
+              onChangeText={(text) => {
+                console.log('TextInput onChangeText:', text);
+                setInviteCode(text);
+              }}
               autoCapitalize="characters"
               autoCorrect={false}
               maxLength={8}
+              selectTextOnFocus={true}
+              clearButtonMode="while-editing"
             />
             <TouchableOpacity 
               style={[styles.useButton, isProcessing && styles.useButtonDisabled]} 
@@ -250,8 +260,8 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
-    gap: 12,
     alignItems: 'center',
+    marginBottom: 16,
   },
   codeInput: {
     flex: 1,
@@ -265,6 +275,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 2,
     fontWeight: '600',
+    marginRight: 12,
   },
   useButton: {
     backgroundColor: '#007AFF',
