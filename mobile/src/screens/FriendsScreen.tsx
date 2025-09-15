@@ -14,9 +14,11 @@ import { useNavigation } from '@react-navigation/native';
 import HamburgerMenu from '../components/HamburgerMenu';
 import { invitationApi, Invitation } from '../services/invitationApi';
 import { usersApi, User } from '../services/usersApi';
+import { useAuthStore } from '../store/authStore';
 
 export default function FriendsScreen() {
   const navigation = useNavigation();
+  const { user } = useAuthStore();
   
   // State for search functionality
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,21 +85,42 @@ export default function FriendsScreen() {
 
   // Generate shareable link
   const handleGenerateLink = () => {
-    // For now, we'll create a simple shareable link
-    // In the future, this could be a proper invitation link
-    const shareableLink = 'https://friendsleague.com/invite?ref=your-user-id';
+    if (!user) {
+      Alert.alert('Error', 'User not found. Please try logging in again.');
+      return;
+    }
+
+    // Create a dynamic shareable link with user-specific information
+    const baseUrl = 'https://friendsleague.com/invite';
+    const userId = user.id;
+    const username = user.username;
+    
+    // Create a more sophisticated invitation link
+    const shareableLink = `${baseUrl}?ref=${userId}&inviter=${encodeURIComponent(username)}&app=mobile`;
+    
+    // Create a shorter, more user-friendly link (for display purposes)
+    const shortCode = userId.substring(0, 8); // Use first 8 characters of user ID
+    const shortLink = `https://fl.gg/invite/${shortCode}`;
+    
     Alert.alert(
       'Shareable Link',
-      `Share this link to invite friends:\n\n${shareableLink}`,
+      `Share this link to invite friends to join FriendsLeague:\n\n${shareableLink}\n\nShort link: ${shortLink}\n\nThis link is personalized for you (${username}) and will help track who invited new users.`,
       [
         { 
-          text: 'Copy Link', 
+          text: 'Copy Full Link', 
           onPress: () => {
             Clipboard.setString(shareableLink);
-            Alert.alert('Success', 'Link copied to clipboard!');
+            Alert.alert('Success', 'Full invitation link copied to clipboard!');
           }
         },
-        { text: 'OK' }
+        { 
+          text: 'Copy Short Link', 
+          onPress: () => {
+            Clipboard.setString(shortLink);
+            Alert.alert('Success', 'Short invitation link copied to clipboard!');
+          }
+        },
+        { text: 'Cancel' }
       ]
     );
   };
