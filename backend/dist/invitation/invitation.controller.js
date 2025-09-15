@@ -39,6 +39,13 @@ let InvitationController = class InvitationController {
     async cancelInvitation(req, invitationId) {
         return this.invitationService.cancelInvitation(invitationId, req.user.id);
     }
+    async useInviteCode(req, body) {
+        const { code } = body;
+        return this.invitationService.useInviteCode(req.user.id, code);
+    }
+    async getMyInviteCode(req) {
+        return this.invitationService.getMyInviteCode(req.user.id);
+    }
 };
 exports.InvitationController = InvitationController;
 __decorate([
@@ -91,6 +98,22 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], InvitationController.prototype, "cancelInvitation", null);
+__decorate([
+    (0, common_1.Post)('use-code'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], InvitationController.prototype, "useInviteCode", null);
+__decorate([
+    (0, common_1.Get)('my-code'),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], InvitationController.prototype, "getMyInviteCode", null);
 exports.InvitationController = InvitationController = __decorate([
     (0, common_1.Controller)('invitations'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

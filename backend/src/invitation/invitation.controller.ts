@@ -53,4 +53,19 @@ export class InvitationController {
   ): Promise<InvitationWithUsers> {
     return this.invitationService.cancelInvitation(invitationId, req.user.id);
   }
+
+  @Post('use-code')
+  @HttpCode(HttpStatus.OK)
+  async useInviteCode(
+    @Request() req: any,
+    @Body() body: { code: string }
+  ): Promise<{ success: boolean; message: string; friendshipId?: string }> {
+    const { code } = body;
+    return this.invitationService.useInviteCode(req.user.id, code);
+  }
+
+  @Get('my-code')
+  async getMyInviteCode(@Request() req: any): Promise<{ code: string; username: string }> {
+    return this.invitationService.getMyInviteCode(req.user.id);
+  }
 }

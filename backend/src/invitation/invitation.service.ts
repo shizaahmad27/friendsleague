@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { Invitation, FriendshipStatus, User } from '@prisma/client';
+import * as crypto from 'crypto';
 
 export type InvitationWithUsers = Invitation & {
   inviter: User;
@@ -235,5 +236,118 @@ export class InvitationService {
     });
 
     return updatedInvitation;
+  }
+
+  async useInviteCode(userId: string, code: string): Promise<{ success: boolean; message: string; friendshipId?: string }> {
+    // Find invitation by code
+    const invitation = await this.prisma.invitation.findUnique({
+      where: { code },
+      include: {
+        inviter: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException('Invalid invite code');
+    }
+
+    // Check if invitation is expired
+    if (invitation.expiredAt < new Date()) {
+      throw new BadRequestException('Invite code has expired');
+    }
+
+    // Check if invitation is already used
+    if (invitation.status !== 'PENDING') {
+      throw new BadRequestException('Invite code has already been used');
+    }
+
+    // Check if user is trying to use their own code
+    if (invitation.inviterId === userId) {
+      throw new BadRequestException('Cannot use your own invite code');
+    }
+
+    // Check if friendship already exists
+    const existingFriendship = await this.prisma.friendship.findFirst({
+      where: {
+        OR: [
+          { userId, friendId: invitation.inviterId },
+          { userId: invitation.inviterId, friendId: userId },
+        ],
+      },
+    });
+
+    if (existingFriendship) {
+      throw new ConflictException('Friendship already exists');
+    }
+
+    // Use transaction to create friendship and update invitation
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Create friendship (both directions)
+      const friendship1 = await tx.friendship.create({
+        data: {
+          userId,
+          friendId: invitation.inviterId,
+          status: 'ACCEPTED',
+        },
+      });
+
+      const friendship2 = await tx.friendship.create({
+        data: {
+          userId: invitation.inviterId,
+          friendId: userId,
+          status: 'ACCEPTED',
+        },
+      });
+
+      // Update invitation status
+      await tx.invitation.update({
+        where: { id: invitation.id },
+        data: {
+          status: 'ACCEPTED',
+          inviteeId: userId,
+        },
+      });
+
+      return friendship1;
+    });
+
+    return {
+      success: true,
+      message: `Successfully connected with ${invitation.inviter.username}!`,
+      friendshipId: result.id,
+    };
+  }
+
+  async getMyInviteCode(userId: string): Promise<{ code: string; username: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Generate a consistent invite code based on user ID
+    const code = this.generateUserInviteCode(userId);
+
+    return {
+      code,
+      username: user.username,
+    };
+  }
+
+  private generateUserInviteCode(userId: string): string {
+    // Generate a consistent 8-character code from user ID
+    const hash = crypto.createHash('md5').update(userId).digest('hex');
+    return hash.substring(0, 8).toUpperCase();
   }
 }

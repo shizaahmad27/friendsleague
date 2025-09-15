@@ -42,64 +42,74 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InvitationService = void 0;
+exports.InvitationsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../common/prisma.service");
-const client_1 = require("@prisma/client");
 const crypto = __importStar(require("crypto"));
-let InvitationService = class InvitationService {
+let InvitationsService = class InvitationsService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async createInvitation(inviterId, inviteeId) {
-        const inviter = await this.prisma.user.findUnique({
-            where: { id: inviterId },
-        });
-        if (!inviter) {
-            throw new common_1.NotFoundException('Inviter not found');
+    async createInvitation(userId, createInvitationDto) {
+        const { inviteeId } = createInvitationDto;
+        if (userId === inviteeId) {
+            throw new common_1.BadRequestException('Cannot invite yourself');
         }
         const invitee = await this.prisma.user.findUnique({
             where: { id: inviteeId },
         });
         if (!invitee) {
-            throw new common_1.NotFoundException('Invitee not found');
+            throw new common_1.NotFoundException('User not found');
+        }
+        const existingFriendship = await this.prisma.friendship.findFirst({
+            where: {
+                OR: [
+                    { userId, friendId: inviteeId },
+                    { userId: inviteeId, friendId: userId },
+                ],
+            },
+        });
+        if (existingFriendship) {
+            throw new common_1.ConflictException('Friendship already exists');
         }
         const existingInvitation = await this.prisma.invitation.findFirst({
             where: {
-                inviterId,
-                inviteeId,
-                status: client_1.FriendshipStatus.PENDING,
+                OR: [
+                    { inviterId: userId, inviteeId },
+                    { inviterId: inviteeId, inviteeId: userId },
+                ],
+                status: 'PENDING',
             },
         });
         if (existingInvitation) {
             throw new common_1.ConflictException('Invitation already exists');
         }
-        const existingFriendship = await this.prisma.friendship.findFirst({
-            where: {
-                OR: [
-                    { userId: inviterId, friendId: inviteeId },
-                    { userId: inviteeId, friendId: inviterId },
-                ],
-                status: 'ACCEPTED',
-            },
-        });
-        if (existingFriendship) {
-            throw new common_1.ConflictException('Users are already friends');
-        }
+        const code = this.generateInviteCode();
         const invitation = await this.prisma.invitation.create({
             data: {
-                code: `invite_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                inviterId,
+                code,
+                inviterId: userId,
                 inviteeId,
-                status: client_1.FriendshipStatus.PENDING,
                 expiredAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             },
             include: {
-                inviter: true,
-                invitee: true,
+                inviter: {
+                    select: {
+                        id: true,
+                        username: true,
+                        avatar: true,
+                    },
+                },
+                invitee: {
+                    select: {
+                        id: true,
+                        username: true,
+                        avatar: true,
+                    },
+                },
             },
         });
-        return invitation;
+        return this.mapToResponseDto(invitation);
     }
     async getInvitations(userId) {
         const invitations = await this.prisma.invitation.findMany({
@@ -110,127 +120,29 @@ let InvitationService = class InvitationService {
                 ],
             },
             include: {
-                inviter: true,
-                invitee: true,
+                inviter: {
+                    select: {
+                        id: true,
+                        username: true,
+                        avatar: true,
+                    },
+                },
+                invitee: {
+                    select: {
+                        id: true,
+                        username: true,
+                        avatar: true,
+                    },
+                },
             },
             orderBy: {
                 createdAt: 'desc',
             },
         });
-        return invitations;
+        return invitations.map(invitation => this.mapToResponseDto(invitation));
     }
-    async getPendingInvitations(userId) {
-        const invitations = await this.prisma.invitation.findMany({
-            where: {
-                inviteeId: userId,
-                status: client_1.FriendshipStatus.PENDING,
-            },
-            include: {
-                inviter: true,
-                invitee: true,
-            },
-            orderBy: {
-                createdAt: 'desc',
-            },
-        });
-        return invitations;
-    }
-    async acceptInvitation(invitationId, userId) {
-        const invitation = await this.prisma.invitation.findUnique({
-            where: { id: invitationId },
-            include: {
-                inviter: true,
-                invitee: true,
-            },
-        });
-        if (!invitation) {
-            throw new common_1.NotFoundException('Invitation not found');
-        }
-        if (invitation.inviteeId !== userId) {
-            throw new common_1.BadRequestException('You can only accept invitations sent to you');
-        }
-        if (invitation.status !== client_1.FriendshipStatus.PENDING) {
-            throw new common_1.BadRequestException('Invitation is not pending');
-        }
-        const updatedInvitation = await this.prisma.invitation.update({
-            where: { id: invitationId },
-            data: { status: client_1.FriendshipStatus.ACCEPTED },
-            include: {
-                inviter: true,
-                invitee: true,
-            },
-        });
-        await this.prisma.friendship.createMany({
-            data: [
-                {
-                    userId: invitation.inviterId,
-                    friendId: invitation.inviteeId,
-                    status: 'ACCEPTED',
-                },
-                {
-                    userId: invitation.inviteeId,
-                    friendId: invitation.inviterId,
-                    status: 'ACCEPTED',
-                },
-            ],
-        });
-        return updatedInvitation;
-    }
-    async rejectInvitation(invitationId, userId) {
-        const invitation = await this.prisma.invitation.findUnique({
-            where: { id: invitationId },
-            include: {
-                inviter: true,
-                invitee: true,
-            },
-        });
-        if (!invitation) {
-            throw new common_1.NotFoundException('Invitation not found');
-        }
-        if (invitation.inviteeId !== userId) {
-            throw new common_1.BadRequestException('You can only reject invitations sent to you');
-        }
-        if (invitation.status !== client_1.FriendshipStatus.PENDING) {
-            throw new common_1.BadRequestException('Invitation is not pending');
-        }
-        const updatedInvitation = await this.prisma.invitation.update({
-            where: { id: invitationId },
-            data: { status: client_1.FriendshipStatus.BLOCKED },
-            include: {
-                inviter: true,
-                invitee: true,
-            },
-        });
-        return updatedInvitation;
-    }
-    async cancelInvitation(invitationId, userId) {
-        const invitation = await this.prisma.invitation.findUnique({
-            where: { id: invitationId },
-            include: {
-                inviter: true,
-                invitee: true,
-            },
-        });
-        if (!invitation) {
-            throw new common_1.NotFoundException('Invitation not found');
-        }
-        if (invitation.inviterId !== userId) {
-            throw new common_1.BadRequestException('You can only cancel invitations you sent');
-        }
-        if (invitation.status !== client_1.FriendshipStatus.PENDING) {
-            throw new common_1.BadRequestException('Invitation is not pending');
-        }
-        const updatedInvitation = await this.prisma.invitation.update({
-            where: { id: invitationId },
-            data: { status: client_1.FriendshipStatus.BLOCKED },
-            include: {
-                inviter: true,
-                invitee: true,
-            },
-        });
-        return updatedInvitation;
-    }
-    async useInviteCode(userId, code) {
+    async useInvitation(userId, useInvitationDto) {
+        const { code } = useInvitationDto;
         const invitation = await this.prisma.invitation.findUnique({
             where: { code },
             include: {
@@ -266,17 +178,10 @@ let InvitationService = class InvitationService {
             throw new common_1.ConflictException('Friendship already exists');
         }
         const result = await this.prisma.$transaction(async (tx) => {
-            const friendship1 = await tx.friendship.create({
+            const friendship = await tx.friendship.create({
                 data: {
                     userId,
                     friendId: invitation.inviterId,
-                    status: 'ACCEPTED',
-                },
-            });
-            const friendship2 = await tx.friendship.create({
-                data: {
-                    userId: invitation.inviterId,
-                    friendId: userId,
                     status: 'ACCEPTED',
                 },
             });
@@ -287,7 +192,7 @@ let InvitationService = class InvitationService {
                     inviteeId: userId,
                 },
             });
-            return friendship1;
+            return friendship;
         });
         return {
             success: true,
@@ -312,14 +217,31 @@ let InvitationService = class InvitationService {
             username: user.username,
         };
     }
+    generateInviteCode() {
+        return crypto.randomBytes(4).toString('hex').toUpperCase();
+    }
     generateUserInviteCode(userId) {
         const hash = crypto.createHash('md5').update(userId).digest('hex');
         return hash.substring(0, 8).toUpperCase();
     }
+    mapToResponseDto(invitation) {
+        return {
+            id: invitation.id,
+            code: invitation.code,
+            inviterId: invitation.inviterId,
+            inviteeId: invitation.inviteeId,
+            status: invitation.status,
+            expiredAt: invitation.expiredAt,
+            createdAt: invitation.createdAt,
+            updatedAt: invitation.updatedAt,
+            inviter: invitation.inviter,
+            invitee: invitation.invitee,
+        };
+    }
 };
-exports.InvitationService = InvitationService;
-exports.InvitationService = InvitationService = __decorate([
+exports.InvitationsService = InvitationsService;
+exports.InvitationsService = InvitationsService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService])
-], InvitationService);
-//# sourceMappingURL=invitation.service.js.map
+], InvitationsService);
+//# sourceMappingURL=invitations.service.js.map

@@ -13,4 +13,14 @@ export declare class InvitationService {
     acceptInvitation(invitationId: string, userId: string): Promise<InvitationWithUsers>;
     rejectInvitation(invitationId: string, userId: string): Promise<InvitationWithUsers>;
     cancelInvitation(invitationId: string, userId: string): Promise<InvitationWithUsers>;
+    useInviteCode(userId: string, code: string): Promise<{
+        success: boolean;
+        message: string;
+        friendshipId?: string;
+    }>;
+    getMyInviteCode(userId: string): Promise<{
+        code: string;
+        username: string;
+    }>;
+    private generateUserInviteCode;
 }
