@@ -1,13 +1,15 @@
-import api from './api';
+import { apiClient } from './api';
 
 export interface Invitation {
   id: string;
+  code: string;
   inviterId: string;
-  inviteeId: string | null;
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED';
+  inviteeId?: string;
+  status: 'PENDING' | 'ACCEPTED' | 'BLOCKED';
+  expiredAt: string;
   createdAt: string;
   updatedAt: string;
-  inviter: {
+  inviter?: {
     id: string;
     username: string;
     avatar?: string;
@@ -16,47 +18,66 @@ export interface Invitation {
     id: string;
     username: string;
     avatar?: string;
-  } | null;
+  };
 }
 
-export interface CreateInvitationData {
-  inviteeId: string;
+export interface UseInviteCodeResponse {
+  success: boolean;
+  message: string;
+  friendshipId?: string;
+}
+
+export interface MyInviteCodeResponse {
+  code: string;
+  username: string;
 }
 
 export const invitationApi = {
-  // Create invitation
-  createInvitation: async (data: CreateInvitationData): Promise<Invitation> => {
-    const response = await api.post('/invitations', data);
+  // Create invitation (send to specific user)
+  async createInvitation(inviteeId: string): Promise<Invitation> {
+    const response = await apiClient.post('/invitations', { inviteeId });
     return response.data;
   },
 
   // Get all invitations for current user
-  getInvitations: async (): Promise<Invitation[]> => {
-    const response = await api.get('/invitations');
+  async getInvitations(): Promise<Invitation[]> {
+    const response = await apiClient.get('/invitations');
     return response.data;
   },
 
-  // Get pending invitations
-  getPendingInvitations: async (): Promise<Invitation[]> => {
-    const response = await api.get('/invitations/pending');
+  // Get pending invitations for current user
+  async getPendingInvitations(): Promise<Invitation[]> {
+    const response = await apiClient.get('/invitations/pending');
     return response.data;
   },
 
   // Accept invitation
-  acceptInvitation: async (invitationId: string): Promise<Invitation> => {
-    const response = await api.put(`/invitations/${invitationId}/accept`);
+  async acceptInvitation(invitationId: string): Promise<Invitation> {
+    const response = await apiClient.put(`/invitations/${invitationId}/accept`);
     return response.data;
   },
 
   // Reject invitation
-  rejectInvitation: async (invitationId: string): Promise<Invitation> => {
-    const response = await api.put(`/invitations/${invitationId}/reject`);
+  async rejectInvitation(invitationId: string): Promise<Invitation> {
+    const response = await apiClient.put(`/invitations/${invitationId}/reject`);
     return response.data;
   },
 
   // Cancel invitation
-  cancelInvitation: async (invitationId: string): Promise<Invitation> => {
-    const response = await api.delete(`/invitations/${invitationId}`);
+  async cancelInvitation(invitationId: string): Promise<Invitation> {
+    const response = await apiClient.delete(`/invitations/${invitationId}`);
+    return response.data;
+  },
+
+  // Use invite code
+  async useInviteCode(code: string): Promise<UseInviteCodeResponse> {
+    const response = await apiClient.post('/invitations/use-code', { code });
+    return response.data;
+  },
+
+  // Get my invite code
+  async getMyInviteCode(): Promise<MyInviteCodeResponse> {
+    const response = await apiClient.get('/invitations/my-code');
     return response.data;
   },
 };

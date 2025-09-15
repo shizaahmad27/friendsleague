@@ -10,18 +10,47 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../types';
 import HamburgerMenu from '../components/HamburgerMenu';
 import { useAuthStore } from '../store/authStore';
+import { invitationApi } from '../services/invitationApi';
+import Clipboard from '@react-native-clipboard/clipboard';
+
+type InviteCodeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'InviteCode'>;
 
 export default function InviteCodeScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<InviteCodeScreenNavigationProp>();
   const { user } = useAuthStore();
   const [inviteCode, setInviteCode] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [myInviteCode, setMyInviteCode] = useState<string>('');
+  const [isLoadingCode, setIsLoadingCode] = useState(false);
 
   const handleLogout = () => {
     console.log('Logout from InviteCode screen');
   };
+
+  // Load user's invite code on component mount
+  React.useEffect(() => {
+    const loadMyInviteCode = async () => {
+      if (!user) return;
+      
+      setIsLoadingCode(true);
+      try {
+        const result = await invitationApi.getMyInviteCode();
+        setMyInviteCode(result.code);
+      } catch (error) {
+        console.error('Failed to load invite code:', error);
+        // Fallback to user ID based code
+        setMyInviteCode(user.id.substring(0, 8).toUpperCase());
+      } finally {
+        setIsLoadingCode(false);
+      }
+    };
+
+    loadMyInviteCode();
+  }, [user]);
 
   const handleUseInviteCode = async () => {
     if (!inviteCode.trim()) {
@@ -31,25 +60,21 @@ export default function InviteCodeScreen() {
 
     setIsProcessing(true);
     try {
-      // TODO: Implement API call to use invite code
-      // This would typically:
-      // 1. Validate the invite code
-      // 2. Find the user who sent the invitation
-      // 3. Create a friend connection
-      // 4. Send notification to the inviter
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await invitationApi.useInviteCode(inviteCode.trim().toUpperCase());
       
       Alert.alert(
         'Success!', 
-        `You've successfully used the invite code! You're now connected with the person who invited you.`,
+        result.message,
         [
-          { text: 'OK', onPress: () => navigation.navigate('Friends' as any) }
+          { text: 'OK', onPress: () => {
+            setInviteCode(''); // Clear the input
+            navigation.navigate('Friends');
+          }}
         ]
       );
-    } catch (error) {
-      Alert.alert('Error', 'Failed to use invite code. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to use invite code. Please try again.';
+      Alert.alert('Error', errorMessage);
       console.error('Invite code error:', error);
     } finally {
       setIsProcessing(false);
@@ -131,14 +156,22 @@ export default function InviteCodeScreen() {
             </Text>
             <View style={styles.yourCodeContainer}>
               <Text style={styles.yourCode}>
-                {user.id.substring(0, 8).toUpperCase()}
+                {isLoadingCode ? 'Loading...' : myInviteCode}
               </Text>
               <TouchableOpacity 
-                style={styles.copyButton}
-                onPress={() => {
-                  // TODO: Implement clipboard functionality
-                  Alert.alert('Copied!', 'Your invite code has been copied to clipboard');
+                style={[styles.copyButton, isLoadingCode && styles.copyButtonDisabled]}
+                onPress={async () => {
+                  if (isLoadingCode || !myInviteCode) return;
+                  
+                  try {
+                    Clipboard.setString(myInviteCode);
+                    Alert.alert('Copied!', 'Your invite code has been copied to clipboard');
+                  } catch (error) {
+                    Alert.alert('Error', 'Failed to copy invite code');
+                    console.error('Copy error:', error);
+                  }
                 }}
+                disabled={isLoadingCode}
               >
                 <Text style={styles.copyButtonText}>Copy</Text>
               </TouchableOpacity>
@@ -298,5 +331,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+  },
+  copyButtonDisabled: {
+    backgroundColor: '#ccc',
   },
 });
