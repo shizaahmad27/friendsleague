@@ -239,35 +239,38 @@ export class InvitationService {
   }
 
   async useInviteCode(userId: string, code: string): Promise<{ success: boolean; message: string; friendshipId?: string }> {
-    // Find invitation by code
-    const invitation = await this.prisma.invitation.findUnique({
-      where: { code },
-      include: {
-        inviter: {
-          select: {
-            id: true,
-            username: true,
-          },
-        },
-      },
+    // One-time backfill: ensure users missing inviteCode get one
+    // @ts-ignore - inviteCode exists after migration
+    const usersMissingCodes = await this.prisma.user.findMany({
+      // @ts-ignore - inviteCode in where clause
+      where: { inviteCode: null },
+      select: { id: true },
+      take: 1000,
+    });
+    if (usersMissingCodes.length > 0) {
+      for (const u of usersMissingCodes) {
+        const newCode = this.generateSecureInviteCode(u.id);
+        try {
+          // @ts-ignore - inviteCode exists after migration
+          await this.prisma.user.update({ where: { id: u.id }, data: { inviteCode: newCode } });
+        } catch (e) {
+          // ignore unique conflicts if concurrently set
+        }
+      }
+    }
+    // Find inviter by secure inviteCode on the user record
+    // @ts-ignore - inviteCode field exists after Prisma migration
+    const inviter = await this.prisma.user.findUnique({
+      // @ts-ignore - inviteCode is a unique field on users
+      where: { inviteCode: code },
+      select: { id: true, username: true },
     });
 
-    if (!invitation) {
+    if (!inviter) {
       throw new NotFoundException('Invalid invite code');
     }
 
-    // Check if invitation is expired
-    if (invitation.expiredAt < new Date()) {
-      throw new BadRequestException('Invite code has expired');
-    }
-
-    // Check if invitation is already used
-    if (invitation.status !== 'PENDING') {
-      throw new BadRequestException('Invite code has already been used');
-    }
-
-    // Check if user is trying to use their own code
-    if (invitation.inviterId === userId) {
+    if (inviter.id === userId) {
       throw new BadRequestException('Cannot use your own invite code');
     }
 
@@ -275,8 +278,8 @@ export class InvitationService {
     const existingFriendship = await this.prisma.friendship.findFirst({
       where: {
         OR: [
-          { userId, friendId: invitation.inviterId },
-          { userId: invitation.inviterId, friendId: userId },
+          { userId, friendId: inviter.id },
+          { userId: inviter.id, friendId: userId },
         ],
       },
     });
@@ -285,31 +288,21 @@ export class InvitationService {
       throw new ConflictException('Friendship already exists');
     }
 
-    // Use transaction to create friendship and update invitation
+    // Create friendships in a transaction
     const result = await this.prisma.$transaction(async (tx) => {
-      // Create friendship (both directions)
       const friendship1 = await tx.friendship.create({
         data: {
           userId,
-          friendId: invitation.inviterId,
+          friendId: inviter.id,
           status: 'ACCEPTED',
         },
       });
 
-      const friendship2 = await tx.friendship.create({
+      await tx.friendship.create({
         data: {
-          userId: invitation.inviterId,
+          userId: inviter.id,
           friendId: userId,
           status: 'ACCEPTED',
-        },
-      });
-
-      // Update invitation status
-      await tx.invitation.update({
-        where: { id: invitation.id },
-        data: {
-          status: 'ACCEPTED',
-          inviteeId: userId,
         },
       });
 
@@ -318,7 +311,7 @@ export class InvitationService {
 
     return {
       success: true,
-      message: `Successfully connected with ${invitation.inviter.username}!`,
+      message: `Successfully connected with ${inviter.username}!`,
       friendshipId: result.id,
     };
   }
@@ -336,8 +329,15 @@ export class InvitationService {
       throw new NotFoundException('User not found');
     }
 
-    // Generate a consistent invite code based on user ID
-    const code = this.generateUserInviteCode(userId);
+    let code: string | null = null;
+    // Compute code regardless; attempt to persist for future lookups
+    code = this.generateSecureInviteCode(userId);
+    try {
+      // @ts-ignore - inviteCode exists after migration
+      await this.prisma.user.update({ where: { id: userId }, data: { inviteCode: code } });
+    } catch (_) {
+      // ignore if column not yet migrated or unique conflict
+    }
 
     return {
       code,
@@ -345,9 +345,9 @@ export class InvitationService {
     };
   }
 
-  private generateUserInviteCode(userId: string): string {
-    // Generate a consistent 8-character code from user ID
-    const hash = crypto.createHash('md5').update(userId).digest('hex');
-    return hash.substring(0, 8).toUpperCase();
+  private generateSecureInviteCode(userId: string): string {
+    const secret = process.env.INVITE_CODE_SECRET || process.env.JWT_SECRET || 'fallback-secret-change-me';
+    const hmac = crypto.createHmac('sha256', secret).update(userId).digest('hex');
+    return hmac.substring(0, 8).toUpperCase();
   }
 }

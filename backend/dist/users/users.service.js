@@ -46,6 +46,7 @@ exports.UsersService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../common/prisma.service");
 const bcrypt = __importStar(require("bcryptjs"));
+const crypto = __importStar(require("crypto"));
 let UsersService = class UsersService {
     constructor(prisma) {
         this.prisma = prisma;
@@ -83,6 +84,15 @@ let UsersService = class UsersService {
                 password: hashedPassword,
             },
         });
+        const finalInviteCode = this.generateInviteCode(user.id);
+        try {
+            await this.prisma.user.update({
+                where: { id: user.id },
+                data: { inviteCode: finalInviteCode },
+            });
+        }
+        catch (_) {
+        }
         const { password: _, ...userWithoutPassword } = user;
         return userWithoutPassword;
     }
@@ -144,6 +154,7 @@ let UsersService = class UsersService {
                 username: true,
                 email: true,
                 phoneNumber: true,
+                inviteCode: true,
                 avatar: true,
                 isOnline: true,
                 lastSeen: true,
@@ -156,6 +167,11 @@ let UsersService = class UsersService {
             },
         });
         return users;
+    }
+    generateInviteCode(userId) {
+        const secret = process.env.INVITE_CODE_SECRET || process.env.JWT_SECRET || 'fallback-secret-change-me';
+        const hmac = crypto.createHmac('sha256', secret).update(userId).digest('hex');
+        return hmac.substring(0, 8).toUpperCase();
     }
 };
 exports.UsersService = UsersService;

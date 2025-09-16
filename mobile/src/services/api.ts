@@ -53,23 +53,27 @@ api.interceptors.response.use(
           
           // Update the auth store with new token
           const currentState = useAuthStore.getState();
-          currentState.setAuth({
-            ...currentState,
-            accessToken,
-          });
+          if (currentState.user && currentState.refreshToken) {
+            setAuth({
+              user: currentState.user,
+              accessToken,
+              refreshToken: currentState.refreshToken,
+            });
+          }
           
           // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-          console.log('Retrying original request...');
+          console.log('Retrying original request with new token:', accessToken.substring(0, 20) + '...');
+          console.log('Request headers:', originalRequest.headers);
           return api(originalRequest);
         } else {
           console.log('No refresh token available');
-          logout();
+          useAuthStore.getState().logout();
         }
       } catch (refreshError) {
         console.log('Token refresh failed:', refreshError);
         // Refresh failed, logout user
-        logout();
+        useAuthStore.getState().logout();
         return Promise.reject(refreshError);
       }
     }

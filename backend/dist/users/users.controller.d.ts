@@ -8,6 +8,7 @@ export declare class UsersController {
         phoneNumber: string | null;
         id: string;
         avatar: string | null;
+        inviteCode: string | null;
         isOnline: boolean;
         lastSeen: Date;
         createdAt: Date;

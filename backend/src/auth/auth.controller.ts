@@ -1,12 +1,16 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { JwtService } from '@nestjs/jwt';
 import { AuthService, AuthResponse } from './auth.service';
 import { SignUpDto, SignInDto, RefreshTokenDto } from './dto/auth.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private jwtService: JwtService,
+  ) {}
 
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
@@ -33,5 +37,16 @@ export class AuthController {
   async logout(@Request() req): Promise<{ message: string }> {
     await this.authService.logout(req.user.sub);
     return { message: 'Logged out successfully' };
+  }
+
+  @Post('test-token')
+  @HttpCode(HttpStatus.OK)
+  async testToken(@Body() body: { token: string }): Promise<{ valid: boolean; payload?: any; error?: string }> {
+    try {
+      const payload = this.jwtService.verify(body.token);
+      return { valid: true, payload };
+    } catch (error) {
+      return { valid: false, error: error.message };
+    }
   }
 }

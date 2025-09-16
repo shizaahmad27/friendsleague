@@ -21,17 +21,23 @@ let JwtAuthGuard = class JwtAuthGuard extends (0, passport_1.AuthGuard)('jwt') {
     canActivate(context) {
         const request = context.switchToHttp().getRequest();
         const token = this.extractTokenFromHeader(request);
+        console.log('JWT Guard - Token received:', token ? token.substring(0, 20) + '...' : 'No token');
+        console.log('JWT Guard - JWT_SECRET:', process.env.JWT_SECRET ? 'Set' : 'Not set');
         if (!token) {
             throw new common_1.UnauthorizedException('No token provided');
         }
         try {
-            const payload = this.jwtService.verify(token, {
-                secret: process.env.JWT_SECRET,
-            });
-            request.user = payload;
+            const payload = this.jwtService.verify(token);
+            console.log('JWT Guard - Token verified successfully:', payload);
+            request.user = {
+                id: payload.sub,
+                username: payload.username,
+                ...payload,
+            };
             return true;
         }
         catch (error) {
+            console.error('JWT Guard - Token verification failed:', error.message);
             throw new common_1.UnauthorizedException('Invalid token');
         }
     }

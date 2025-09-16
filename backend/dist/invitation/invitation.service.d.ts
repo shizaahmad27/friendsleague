@@ -22,5 +22,5 @@ export declare class InvitationService {
         code: string;
         username: string;
     }>;
-    private generateUserInviteCode;
+    private generateSecureInviteCode;
 }

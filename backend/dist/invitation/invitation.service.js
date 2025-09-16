@@ -231,34 +231,36 @@ let InvitationService = class InvitationService {
         return updatedInvitation;
     }
     async useInviteCode(userId, code) {
-        const invitation = await this.prisma.invitation.findUnique({
-            where: { code },
-            include: {
-                inviter: {
-                    select: {
-                        id: true,
-                        username: true,
-                    },
-                },
-            },
+        const usersMissingCodes = await this.prisma.user.findMany({
+            where: { inviteCode: null },
+            select: { id: true },
+            take: 1000,
         });
-        if (!invitation) {
+        if (usersMissingCodes.length > 0) {
+            for (const u of usersMissingCodes) {
+                const newCode = this.generateSecureInviteCode(u.id);
+                try {
+                    await this.prisma.user.update({ where: { id: u.id }, data: { inviteCode: newCode } });
+                }
+                catch (e) {
+                }
+            }
+        }
+        const inviter = await this.prisma.user.findUnique({
+            where: { inviteCode: code },
+            select: { id: true, username: true },
+        });
+        if (!inviter) {
             throw new common_1.NotFoundException('Invalid invite code');
         }
-        if (invitation.expiredAt < new Date()) {
-            throw new common_1.BadRequestException('Invite code has expired');
-        }
-        if (invitation.status !== 'PENDING') {
-            throw new common_1.BadRequestException('Invite code has already been used');
-        }
-        if (invitation.inviterId === userId) {
+        if (inviter.id === userId) {
             throw new common_1.BadRequestException('Cannot use your own invite code');
         }
         const existingFriendship = await this.prisma.friendship.findFirst({
             where: {
                 OR: [
-                    { userId, friendId: invitation.inviterId },
-                    { userId: invitation.inviterId, friendId: userId },
+                    { userId, friendId: inviter.id },
+                    { userId: inviter.id, friendId: userId },
                 ],
             },
         });
@@ -269,29 +271,22 @@ let InvitationService = class InvitationService {
             const friendship1 = await tx.friendship.create({
                 data: {
                     userId,
-                    friendId: invitation.inviterId,
+                    friendId: inviter.id,
                     status: 'ACCEPTED',
                 },
             });
-            const friendship2 = await tx.friendship.create({
+            await tx.friendship.create({
                 data: {
-                    userId: invitation.inviterId,
+                    userId: inviter.id,
                     friendId: userId,
                     status: 'ACCEPTED',
-                },
-            });
-            await tx.invitation.update({
-                where: { id: invitation.id },
-                data: {
-                    status: 'ACCEPTED',
-                    inviteeId: userId,
                 },
             });
             return friendship1;
         });
         return {
             success: true,
-            message: `Successfully connected with ${invitation.inviter.username}!`,
+            message: `Successfully connected with ${inviter.username}!`,
             friendshipId: result.id,
         };
     }
@@ -306,15 +301,22 @@ let InvitationService = class InvitationService {
         if (!user) {
             throw new common_1.NotFoundException('User not found');
         }
-        const code = this.generateUserInviteCode(userId);
+        let code = null;
+        code = this.generateSecureInviteCode(userId);
+        try {
+            await this.prisma.user.update({ where: { id: userId }, data: { inviteCode: code } });
+        }
+        catch (_) {
+        }
         return {
             code,
             username: user.username,
         };
     }
-    generateUserInviteCode(userId) {
-        const hash = crypto.createHash('md5').update(userId).digest('hex');
-        return hash.substring(0, 8).toUpperCase();
+    generateSecureInviteCode(userId) {
+        const secret = process.env.INVITE_CODE_SECRET || process.env.JWT_SECRET || 'fallback-secret-change-me';
+        const hmac = crypto.createHmac('sha256', secret).update(userId).digest('hex');
+        return hmac.substring(0, 8).toUpperCase();
     }
 };
 exports.InvitationService = InvitationService;

@@ -13,5 +13,6 @@ export declare class UsersService {
     updateOnlineStatus(id: string, isOnline: boolean): Promise<void>;
     validatePassword(password: string, hashedPassword: string): Promise<boolean>;
     searchUsers(username: string): Promise<UserWithoutPassword[]>;
+    private generateInviteCode;
 }
 export {};

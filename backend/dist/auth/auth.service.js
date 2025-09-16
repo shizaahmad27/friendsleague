@@ -62,20 +62,18 @@ let AuthService = class AuthService {
     }
     async refreshToken(refreshTokenDto) {
         try {
-            const payload = this.jwtService.verify(refreshTokenDto.refreshToken, {
-                secret: process.env.JWT_REFRESH_SECRET,
-            });
+            const payload = this.jwtService.verify(refreshTokenDto.refreshToken);
             const user = await this.usersService.findById(payload.sub);
             if (!user) {
                 throw new common_1.UnauthorizedException('Invalid refresh token');
             }
             const accessToken = this.jwtService.sign({ sub: user.id, username: user.username }, {
-                secret: process.env.JWT_SECRET,
                 expiresIn: process.env.JWT_EXPIRES_IN || '15m',
             });
             return { accessToken };
         }
         catch (error) {
+            console.error('Refresh token validation error:', error);
             throw new common_1.UnauthorizedException('Invalid refresh token');
         }
     }
@@ -84,16 +82,18 @@ let AuthService = class AuthService {
     }
     async generateTokens(userId, username) {
         const payload = { sub: userId, username };
+        console.log('Auth Service - Generating tokens');
+        console.log('  Payload:', payload);
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload, {
-                secret: process.env.JWT_SECRET,
                 expiresIn: process.env.JWT_EXPIRES_IN || '15m',
             }),
             this.jwtService.signAsync(payload, {
-                secret: process.env.JWT_REFRESH_SECRET,
                 expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
             }),
         ]);
+        console.log('Auth Service - Generated access token:', accessToken.substring(0, 20) + '...');
+        console.log('Auth Service - Generated refresh token:', refreshToken.substring(0, 20) + '...');
         return { accessToken, refreshToken };
     }
 };

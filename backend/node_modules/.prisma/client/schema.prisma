@@ -16,6 +16,7 @@ model User {
   phoneNumber String?  @unique
   password    String
   avatar      String?
+  inviteCode  String?  @unique
   isOnline    Boolean  @default(false)
   lastSeen    DateTime @default(now())
   createdAt   DateTime @default(now())

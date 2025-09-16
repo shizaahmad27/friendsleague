@@ -83,26 +83,25 @@ export class AuthService {
 
   async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<{ accessToken: string }> {
     try {
-      const payload = this.jwtService.verify(refreshTokenDto.refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
-      });
+      // Verify refresh token using JwtModule-configured secret
+      const payload = this.jwtService.verify(refreshTokenDto.refreshToken);
 
       const user = await this.usersService.findById(payload.sub);
       if (!user) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      // Generate new access token
+      // Generate new access token using JwtModule-configured secret
       const accessToken = this.jwtService.sign(
         { sub: user.id, username: user.username },
         { 
-          secret: process.env.JWT_SECRET,
           expiresIn: process.env.JWT_EXPIRES_IN || '15m',
         }
       );
 
       return { accessToken };
     } catch (error) {
+      console.error('Refresh token validation error:', error);
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
@@ -120,16 +119,21 @@ export class AuthService {
   private async generateTokens(userId: string, username: string): Promise<{ accessToken: string; refreshToken: string }> {
     const payload = { sub: userId, username };
 
+    console.log('Auth Service - Generating tokens');
+    console.log('  Payload:', payload);
+
+    // Use the same secret for both tokens to ensure compatibility
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        secret: process.env.JWT_SECRET,
         expiresIn: process.env.JWT_EXPIRES_IN || '15m',
       }),
       this.jwtService.signAsync(payload, {
-        secret: process.env.JWT_REFRESH_SECRET,
         expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
       }),
     ]);
+
+    console.log('Auth Service - Generated access token:', accessToken.substring(0, 20) + '...');
+    console.log('Auth Service - Generated refresh token:', refreshToken.substring(0, 20) + '...');
 
     return { accessToken, refreshToken };
   }
