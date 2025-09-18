@@ -9,7 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import HamburgerMenu from '../components/HamburgerMenu';
@@ -31,30 +31,33 @@ export default function InviteCodeScreen() {
     console.log('Logout from InviteCode screen');
   };
 
-  // Load user's invite code on component mount
-  React.useEffect(() => {
-    const loadMyInviteCode = async () => {
-      if (!user) {
-        console.log('No user found, skipping invite code load');
-        return;
-      }
-      
-      
-      setIsLoadingCode(true);
-      try {
-        const result = await invitationApi.getMyInviteCode();
-        setMyInviteCode(result.code);
-      } catch (error) {
-        console.error('Failed to load invite code:', error);
-        // Fallback to user ID based code
-        setMyInviteCode(user.id.substring(0, 8).toUpperCase());
-      } finally {
-        setIsLoadingCode(false);
-      }
-    };
+  // Load user's invite code on screen focus (no local fallback)
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+      const loadMyInviteCode = async () => {
+        if (!user) {
+          console.log('No user found, skipping invite code load');
+          return;
+        }
+        setIsLoadingCode(true);
+        try {
+          const result = await invitationApi.getMyInviteCode();
+          if (isActive) setMyInviteCode(result.code);
+        } catch (error) {
+          console.error('Failed to load invite code:', error);
+          if (isActive) setMyInviteCode('');
+        } finally {
+          if (isActive) setIsLoadingCode(false);
+        }
+      };
 
-    loadMyInviteCode();
-  }, [user]);
+      loadMyInviteCode();
+      return () => {
+        isActive = false;
+      };
+    }, [user])
+  );
 
   const handleUseInviteCode = async () => {
     if (!inviteCode.trim()) {

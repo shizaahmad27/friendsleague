@@ -322,6 +322,8 @@ export class InvitationService {
       select: {
         id: true,
         username: true,
+        // @ts-ignore - inviteCode exists after migration
+        inviteCode: true,
       },
     });
 
@@ -329,14 +331,15 @@ export class InvitationService {
       throw new NotFoundException('User not found');
     }
 
-    let code: string | null = null;
-    // Compute code regardless; attempt to persist for future lookups
-    code = this.generateSecureInviteCode(userId);
-    try {
-      // @ts-ignore - inviteCode exists after migration
-      await this.prisma.user.update({ where: { id: userId }, data: { inviteCode: code } });
-    } catch (_) {
-      // ignore if column not yet migrated or unique conflict
+    let code: string | null = (user as any).inviteCode ?? null;
+    if (!code) {
+      code = this.generateSecureInviteCode(userId);
+      try {
+        // @ts-ignore - inviteCode exists after migration
+        await this.prisma.user.update({ where: { id: userId }, data: { inviteCode: code } });
+      } catch (_) {
+        // ignore if column not yet migrated or unique conflict
+      }
     }
 
     return {

@@ -296,17 +296,20 @@ let InvitationService = class InvitationService {
             select: {
                 id: true,
                 username: true,
+                inviteCode: true,
             },
         });
         if (!user) {
             throw new common_1.NotFoundException('User not found');
         }
-        let code = null;
-        code = this.generateSecureInviteCode(userId);
-        try {
-            await this.prisma.user.update({ where: { id: userId }, data: { inviteCode: code } });
-        }
-        catch (_) {
+        let code = user.inviteCode ?? null;
+        if (!code) {
+            code = this.generateSecureInviteCode(userId);
+            try {
+                await this.prisma.user.update({ where: { id: userId }, data: { inviteCode: code } });
+            }
+            catch (_) {
+            }
         }
         return {
             code,
