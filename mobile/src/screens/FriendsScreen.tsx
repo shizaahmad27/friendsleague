@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,10 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import HamburgerMenu from '../components/HamburgerMenu';
@@ -33,6 +34,11 @@ export default function FriendsScreen() {
   // State for invitations
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
+  
+  // State for friends
+  const [friends, setFriends] = useState<User[]>([]);
+  const [isLoadingFriends, setIsLoadingFriends] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const handleLogout = () => {
     // This will be handled by the parent component
@@ -67,9 +73,38 @@ export default function FriendsScreen() {
       setSearchQuery('');
       setSearchResults([]);
       setShowSearch(false);
+      // Refresh invitations after sending
+      loadInvitations();
     } catch (error) {
       Alert.alert('Error', 'Failed to send invitation');
       console.error('Invitation error:', error);
+    }
+  };
+
+  // Accept invitation
+  const handleAcceptInvitation = async (invitationId: string, username: string) => {
+    try {
+      await invitationApi.acceptInvitation(invitationId);
+      Alert.alert('Success', `You are now friends with ${username}!`);
+      // Refresh both friends and invitations
+      loadFriends();
+      loadInvitations();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to accept invitation');
+      console.error('Accept invitation error:', error);
+    }
+  };
+
+  // Reject invitation
+  const handleRejectInvitation = async (invitationId: string, username: string) => {
+    try {
+      await invitationApi.rejectInvitation(invitationId);
+      Alert.alert('Success', `Invitation from ${username} rejected`);
+      // Refresh invitations
+      loadInvitations();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to reject invitation');
+      console.error('Reject invitation error:', error);
     }
   };
 
@@ -86,6 +121,40 @@ export default function FriendsScreen() {
       setIsLoadingInvitations(false);
     }
   };
+
+  // Load friends
+  const loadFriends = async () => {
+    setIsLoadingFriends(true);
+    try {
+      const data = await usersApi.getUserFriends();
+      setFriends(data);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to load friends');
+      console.error('Load friends error:', error);
+    } finally {
+      setIsLoadingFriends(false);
+    }
+  };
+
+  // Handle refresh
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([loadFriends(), loadInvitations()]);
+    } catch (error) {
+      console.error('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Load data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadFriends();
+      loadInvitations();
+    }, [])
+  );
 
   // Generate shareable link
   const handleGenerateLink = () => {
@@ -139,7 +208,12 @@ export default function FriendsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+      }
+    >
       <View style={styles.header}>
         <Text style={styles.title}>Friends</Text>
         <Text style={styles.subtitle}>Connect with your friends</Text>
@@ -205,18 +279,40 @@ export default function FriendsScreen() {
 
         {/* My Friends Section */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>👥 My Friends</Text>
+          <Text style={styles.cardTitle}>👥 My Friends ({friends.length})</Text>
           <Text style={styles.cardDescription}>
-            You haven't added any friends yet. Start building your network!
+            {friends.length === 0 
+              ? "You haven't added any friends yet. Start building your network!"
+              : "Your friends on FriendsLeague"
+            }
           </Text>
-          <TouchableOpacity 
-            style={styles.cardButton}
-            onPress={() => setShowSearch(!showSearch)}
-          >
-            <Text style={styles.cardButtonText}>
-              {showSearch ? 'Hide Search' : 'Add Friends'}
-            </Text>
-          </TouchableOpacity>
+          
+          {isLoadingFriends ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#007AFF" />
+              <Text style={styles.loadingText}>Loading friends...</Text>
+            </View>
+          ) : friends.length > 0 ? (
+            <View style={styles.friendsList}>
+              {friends.map((friend) => (
+                <View key={friend.id} style={styles.friendItem}>
+                  <View style={styles.friendInfo}>
+                    <Text style={styles.friendUsername}>{friend.username}</Text>
+                    <Text style={styles.friendStatus}>
+                      {friend.isOnline ? '🟢 Online' : '⚫ Offline'}
+                    </Text>
+                  </View>
+                  <View style={styles.friendActions}>
+                    <TouchableOpacity style={styles.messageButton}>
+                      <Text style={styles.messageButtonText}>Message</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+          
+      
         </View>
 
         {/* Invite Friends Section */}
@@ -249,10 +345,54 @@ export default function FriendsScreen() {
 
         {/* Invitations Section */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>📨 Invitations</Text>
+          <Text style={styles.cardTitle}>📨 Invitations ({invitations.length})</Text>
           <Text style={styles.cardDescription}>
             Manage your friend invitations
           </Text>
+          
+          {isLoadingInvitations ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#007AFF" />
+              <Text style={styles.loadingText}>Loading invitations...</Text>
+            </View>
+          ) : invitations.length > 0 ? (
+            <View style={styles.invitationsList}>
+              {invitations.map((invitation) => (
+                <View key={invitation.id} style={styles.invitationItem}>
+                  <View style={styles.invitationInfo}>
+                    <Text style={styles.invitationUsername}>
+                      {invitation.inviter?.username || 'Unknown User'}
+                    </Text>
+                    <Text style={styles.invitationStatus}>
+                      Status: {invitation.status}
+                    </Text>
+                    <Text style={styles.invitationDate}>
+                      {new Date(invitation.createdAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  {invitation.status === 'PENDING' && invitation.inviteeId === user?.id && (
+                    <View style={styles.invitationActions}>
+                      <TouchableOpacity
+                        style={styles.acceptButton}
+                        onPress={() => handleAcceptInvitation(invitation.id, invitation.inviter?.username || 'Unknown')}
+                      >
+                        <Text style={styles.acceptButtonText}>Accept</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.rejectButton}
+                        onPress={() => handleRejectInvitation(invitation.id, invitation.inviter?.username || 'Unknown')}
+                      >
+                        <Text style={styles.rejectButtonText}>Reject</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.noInvitations}>No invitations found</Text>
+          )}
+          
           <TouchableOpacity 
             style={styles.cardButton}
             onPress={loadInvitations}
@@ -261,7 +401,7 @@ export default function FriendsScreen() {
             {isLoadingInvitations ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text style={styles.cardButtonText}>Load Invitations</Text>
+              <Text style={styles.cardButtonText}>Refresh Invitations</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -425,6 +565,127 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   noResults: {
+    textAlign: 'center',
+    color: '#666',
+    fontStyle: 'italic',
+    paddingVertical: 20,
+  },
+  // Friends list styles
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  loadingText: {
+    marginLeft: 8,
+    color: '#666',
+    fontSize: 14,
+  },
+  friendsList: {
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 12,
+  },
+  friendItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  friendInfo: {
+    flex: 1,
+  },
+  friendUsername: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  friendStatus: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  friendActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  messageButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  messageButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  // Invitations styles
+  invitationsList: {
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 12,
+  },
+  invitationItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  invitationInfo: {
+    flex: 1,
+  },
+  invitationUsername: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  invitationStatus: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  invitationDate: {
+    fontSize: 10,
+    color: '#999',
+    marginTop: 2,
+  },
+  invitationActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  acceptButton: {
+    backgroundColor: '#34C759',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  acceptButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  rejectButton: {
+    backgroundColor: '#FF3B30',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  rejectButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  noInvitations: {
     textAlign: 'center',
     color: '#666',
     fontStyle: 'italic',

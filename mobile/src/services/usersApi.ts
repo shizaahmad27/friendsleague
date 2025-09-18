@@ -24,4 +24,10 @@ export const usersApi = {
     const response = await api.get(`/users/${userId}`);
     return response.data;
   },
+
+  // Get user's friends
+  getUserFriends: async (): Promise<User[]> => {
+    const response = await api.get('/users/friends');
+    return response.data;
+  },
 };
