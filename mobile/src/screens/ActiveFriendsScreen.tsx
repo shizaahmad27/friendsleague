@@ -18,6 +18,31 @@ import { useAuthStore } from '../store/authStore';
 
 type ActiveFriendsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ActiveFriends'>;
 
+const formatLastSeen = (lastSeen: string): string => {
+  const now = new Date();
+  const lastSeenDate = new Date(lastSeen);
+  const diffInMinutes = Math.floor((now.getTime() - lastSeenDate.getTime()) / (1000 * 60));
+  
+  if (diffInMinutes < 1) return 'Just now';
+  if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
+  if (diffInMinutes < 1440) { // Less than 24 hours
+    const hours = Math.floor(diffInMinutes / 60);
+    return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+  }
+  if (diffInMinutes < 10080) { // Less than 7 days
+    const days = Math.floor(diffInMinutes / 1440);
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
+  }
+  
+  // For older dates, show the actual date and time
+  return lastSeenDate.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
 export default function ActiveFriendsScreen() {
   const navigation = useNavigation<ActiveFriendsScreenNavigationProp>();
   const { user } = useAuthStore();
@@ -130,7 +155,7 @@ export default function ActiveFriendsScreen() {
                   <Text style={styles.friendLastSeen}>
                     {friend.isOnline 
                       ? 'Active now' 
-                      : `Last seen ${new Date(friend.lastSeen).toLocaleDateString()}`
+                      : `Last seen ${formatLastSeen(friend.lastSeen)}`
                     }
                   </Text>
                 </View>

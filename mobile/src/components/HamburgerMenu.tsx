@@ -14,6 +14,7 @@ type HamburgerMenuProps = {
   onLogout: () => void;
 };
 
+
 type HamburgerMenuNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
 export default function HamburgerMenu({ onLogout }: HamburgerMenuProps) {
