@@ -262,32 +262,37 @@ let InvitationService = class InvitationService {
                     { userId, friendId: inviter.id },
                     { userId: inviter.id, friendId: userId },
                 ],
+                status: 'ACCEPTED',
             },
         });
         if (existingFriendship) {
             throw new common_1.ConflictException('Friendship already exists');
         }
-        const result = await this.prisma.$transaction(async (tx) => {
-            const friendship1 = await tx.friendship.create({
-                data: {
-                    userId,
-                    friendId: inviter.id,
-                    status: 'ACCEPTED',
-                },
-            });
-            await tx.friendship.create({
-                data: {
-                    userId: inviter.id,
-                    friendId: userId,
-                    status: 'ACCEPTED',
-                },
-            });
-            return friendship1;
+        const existingInvitation = await this.prisma.invitation.findFirst({
+            where: {
+                OR: [
+                    { inviterId: inviter.id, inviteeId: userId },
+                    { inviterId: userId, inviteeId: inviter.id },
+                ],
+                status: client_1.FriendshipStatus.PENDING,
+            },
+        });
+        if (existingInvitation) {
+            throw new common_1.ConflictException('Friend request already exists');
+        }
+        const invitation = await this.prisma.invitation.create({
+            data: {
+                code: `invite_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                inviterId: userId,
+                inviteeId: inviter.id,
+                status: client_1.FriendshipStatus.PENDING,
+                expiredAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            },
         });
         return {
             success: true,
-            message: `Successfully connected with ${inviter.username}!`,
-            friendshipId: result.id,
+            message: `Friend request sent to ${inviter.username}!`,
+            invitationId: invitation.id,
         };
     }
     async getMyInviteCode(userId) {

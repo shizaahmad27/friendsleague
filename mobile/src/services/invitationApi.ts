@@ -24,7 +24,7 @@ export interface Invitation {
 export interface UseInviteCodeResponse {
   success: boolean;
   message: string;
-  friendshipId?: string;
+  invitationId?: string;
 }
 
 export interface MyInviteCodeResponse {

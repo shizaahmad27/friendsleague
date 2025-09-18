@@ -238,7 +238,7 @@ export class InvitationService {
     return updatedInvitation;
   }
 
-  async useInviteCode(userId: string, code: string): Promise<{ success: boolean; message: string; friendshipId?: string }> {
+  async useInviteCode(userId: string, code: string): Promise<{ success: boolean; message: string; invitationId?: string }> {
     // One-time backfill: ensure users missing inviteCode get one
     // @ts-ignore - inviteCode exists after migration
     const usersMissingCodes = await this.prisma.user.findMany({
@@ -281,6 +281,7 @@ export class InvitationService {
           { userId, friendId: inviter.id },
           { userId: inviter.id, friendId: userId },
         ],
+        status: 'ACCEPTED',
       },
     });
 
@@ -288,31 +289,36 @@ export class InvitationService {
       throw new ConflictException('Friendship already exists');
     }
 
-    // Create friendships in a transaction
-    const result = await this.prisma.$transaction(async (tx) => {
-      const friendship1 = await tx.friendship.create({
-        data: {
-          userId,
-          friendId: inviter.id,
-          status: 'ACCEPTED',
-        },
-      });
+    // Check if there's already a pending invitation
+    const existingInvitation = await this.prisma.invitation.findFirst({
+      where: {
+        OR: [
+          { inviterId: inviter.id, inviteeId: userId },
+          { inviterId: userId, inviteeId: inviter.id },
+        ],
+        status: FriendshipStatus.PENDING,
+      },
+    });
 
-      await tx.friendship.create({
-        data: {
-          userId: inviter.id,
-          friendId: userId,
-          status: 'ACCEPTED',
-        },
-      });
+    if (existingInvitation) {
+      throw new ConflictException('Friend request already exists');
+    }
 
-      return friendship1;
+    // Create invitation (friend request) instead of immediate friendship
+    const invitation = await this.prisma.invitation.create({
+      data: {
+        code: `invite_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        inviterId: userId, // The person using the code becomes the inviter
+        inviteeId: inviter.id, // The person who owns the code becomes the invitee
+        status: FriendshipStatus.PENDING,
+        expiredAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      },
     });
 
     return {
       success: true,
-      message: `Successfully connected with ${inviter.username}!`,
-      friendshipId: result.id,
+      message: `Friend request sent to ${inviter.username}!`,
+      invitationId: invitation.id,
     };
   }
 

@@ -59,7 +59,7 @@ export class InvitationController {
   async useInviteCode(
     @Request() req: any,
     @Body() body: { code: string }
-  ): Promise<{ success: boolean; message: string; friendshipId?: string }> {
+  ): Promise<{ success: boolean; message: string; invitationId?: string }> {
     const { code } = body;
     return this.invitationService.useInviteCode(req.user.id, code);
   }

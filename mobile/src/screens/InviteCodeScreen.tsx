@@ -65,10 +65,12 @@ export default function InviteCodeScreen() {
       return;
     }
 
-
+    console.log('Attempting to use invite code:', inviteCode.trim().toUpperCase());
     setIsProcessing(true);
+    
     try {
       const result = await invitationApi.useInviteCode(inviteCode.trim().toUpperCase());
+      console.log('Invite code result:', result);
       
       Alert.alert(
         'Success!', 
@@ -81,9 +83,26 @@ export default function InviteCodeScreen() {
         ]
       );
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to use invite code. Please try again.';
+      console.error('Invite code error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        code: error.code
+      });
+      
+      let errorMessage = 'Failed to use invite code. Please try again.';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+      } else if (error.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      }
+      
       Alert.alert('Error', errorMessage);
-      console.error('Invite code error:', error);
     } finally {
       setIsProcessing(false);
     }

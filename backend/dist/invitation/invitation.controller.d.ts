@@ -15,7 +15,7 @@ export declare class InvitationController {
     }): Promise<{
         success: boolean;
         message: string;
-        friendshipId?: string;
+        invitationId?: string;
     }>;
     getMyInviteCode(req: any): Promise<{
         code: string;

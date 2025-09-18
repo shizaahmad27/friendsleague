@@ -16,7 +16,7 @@ export declare class InvitationService {
     useInviteCode(userId: string, code: string): Promise<{
         success: boolean;
         message: string;
-        friendshipId?: string;
+        invitationId?: string;
     }>;
     getMyInviteCode(userId: string): Promise<{
         code: string;
