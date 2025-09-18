@@ -137,6 +137,10 @@ let UsersService = class UsersService {
                 lastSeen: new Date(),
             },
         });
+        return {
+            success: true,
+            message: `User status updated to ${isOnline ? 'online' : 'offline'}`,
+        };
     }
     async validatePassword(password, hashedPassword) {
         return bcrypt.compare(password, hashedPassword);

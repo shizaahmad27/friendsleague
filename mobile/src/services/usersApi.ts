@@ -30,4 +30,10 @@ export const usersApi = {
     const response = await api.get('/users/friends');
     return response.data;
   },
+
+  // Update online status
+  updateOnlineStatus: async (isOnline: boolean): Promise<{ success: boolean; message: string }> => {
+    const response = await api.put('/users/online-status', { isOnline });
+    return response.data;
+  },
 };

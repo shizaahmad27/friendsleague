@@ -309,9 +309,12 @@ export default function FriendsScreen() {
                     </View>
                     <View style={styles.userInfo}>
                       <Text style={styles.username}>{user.username}</Text>
-                      <Text style={styles.userStatus}>
-                        {user.isOnline ? '🟢 Online' : '⚫ Offline'}
-                      </Text>
+                      <View style={styles.statusContainer}>
+                        <View style={[styles.onlineIndicator, user.isOnline && styles.onlineIndicatorPulsing]} />
+                        <Text style={styles.userStatus}>
+                          {user.isOnline ? 'Online' : 'Offline'}
+                        </Text>
+                      </View>
                       <Text style={styles.userJoined}>
                         Joined {new Date(user.createdAt).toLocaleDateString()}
                       </Text>
@@ -821,4 +824,25 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: '#333',
   },
+statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  onlineIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#666',
+  },
+  onlineIndicatorPulsing: {
+    backgroundColor: '#34C759',
+  },
+  offlineIndicator: {
+    backgroundColor: '#FF3B30',
+  },
+  offlineIndicatorPulsing: {
+    backgroundColor: '#FF3B30',
+  }
+
 });

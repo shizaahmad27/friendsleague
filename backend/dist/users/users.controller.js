@@ -29,6 +29,9 @@ let UsersController = class UsersController {
     async getUserFriends(req) {
         return this.usersService.getUserFriends(req.user.id);
     }
+    async updateOnlineStatus(req, body) {
+        return this.usersService.updateOnlineStatus(req.user.id, body.isOnline);
+    }
 };
 exports.UsersController = UsersController;
 __decorate([
@@ -45,6 +48,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getUserFriends", null);
+__decorate([
+    (0, common_1.Put)('online-status'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "updateOnlineStatus", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('users'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

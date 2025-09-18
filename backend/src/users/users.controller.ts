@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Put, Query, UseGuards, Request, Body } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
@@ -19,5 +19,13 @@ export class UsersController {
   @Get('friends')
   async getUserFriends(@Request() req: any) {
     return this.usersService.getUserFriends(req.user.id);
+  }
+
+  @Put('online-status')
+  async updateOnlineStatus(
+    @Request() req: any,
+    @Body() body: { isOnline: boolean }
+  ) {
+    return this.usersService.updateOnlineStatus(req.user.id, body.isOnline);
   }
 }

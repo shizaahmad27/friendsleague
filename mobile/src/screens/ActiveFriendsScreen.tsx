@@ -121,9 +121,12 @@ export default function ActiveFriendsScreen() {
                 </View>
                 <View style={styles.friendInfo}>
                   <Text style={styles.friendUsername}>{friend.username}</Text>
-                  <Text style={styles.friendStatus}>
-                    {friend.isOnline ? '🟢 Online' : '⚫ Offline'}
-                  </Text>
+                    <View style={styles.statusContainer}>
+                      <View style={[styles.onlineIndicator, friend.isOnline && styles.onlineIndicatorPulsing]} />
+                      <Text style={styles.friendStatus}>
+                        {friend.isOnline ? 'Online' : 'Offline'}
+                      </Text>
+                    </View>
                   <Text style={styles.friendLastSeen}>
                     {friend.isOnline 
                       ? 'Active now' 
@@ -344,5 +347,29 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Online status indicator styles
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  onlineIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ccc',
+    marginRight: 6,
+  },
+  onlineIndicatorPulsing: {
+    backgroundColor: '#34C759',
+    shadowColor: '#34C759',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 4,
   },
 });

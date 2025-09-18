@@ -115,7 +115,7 @@ export class UsersService {
     return userWithoutPassword;
   }
 
-  async updateOnlineStatus(id: string, isOnline: boolean): Promise<void> {
+  async updateOnlineStatus(id: string, isOnline: boolean): Promise<{ success: boolean; message: string }> {
     await this.prisma.user.update({
       where: { id },
       data: {
@@ -123,6 +123,11 @@ export class UsersService {
         lastSeen: new Date(),
       },
     });
+    
+    return {
+      success: true,
+      message: `User status updated to ${isOnline ? 'online' : 'offline'}`,
+    };
   }
 
   async validatePassword(password: string, hashedPassword: string): Promise<boolean> {

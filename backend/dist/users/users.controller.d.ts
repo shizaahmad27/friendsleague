@@ -26,4 +26,10 @@ export declare class UsersController {
         createdAt: Date;
         updatedAt: Date;
     }[]>;
+    updateOnlineStatus(req: any, body: {
+        isOnline: boolean;
+    }): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }
