@@ -52,14 +52,26 @@ export default function FriendsScreen() {
       return;
     }
 
+    if (searchQuery.trim().length < 2) {
+      Alert.alert('Error', 'Please enter at least 2 characters to search');
+      return;
+    }
+
+    console.log('Searching for username:', searchQuery.trim());
     setIsSearching(true);
     try {
       const results = await usersApi.searchUsers(searchQuery.trim());
+      console.log('Search results:', results);
       setSearchResults(results);
       setShowSearch(true);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Search error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        code: error.code
+      });
       Alert.alert('Error', 'Failed to search users');
-      console.error('Search error:', error);
     } finally {
       setIsSearching(false);
     }
@@ -236,11 +248,13 @@ export default function FriendsScreen() {
               onChangeText={setSearchQuery}
               autoCapitalize="none"
               autoCorrect={false}
+              onSubmitEditing={handleSearch}
+              returnKeyType="search"
             />
             <TouchableOpacity 
-              style={styles.searchButton} 
+              style={[styles.searchButton, (isSearching || searchQuery.trim().length < 2) && styles.searchButtonDisabled]} 
               onPress={handleSearch}
-              disabled={isSearching}
+              disabled={isSearching || searchQuery.trim().length < 2}
             >
               {isSearching ? (
                 <ActivityIndicator size="small" color="white" />
@@ -253,13 +267,37 @@ export default function FriendsScreen() {
           {/* Search Results */}
           {showSearch && (
             <View style={styles.searchResults}>
+              <View style={styles.searchResultsHeader}>
+                <Text style={styles.searchResultsTitle}>
+                  Search Results ({searchResults.length})
+                </Text>
+                <TouchableOpacity 
+                  style={styles.clearSearchButton}
+                  onPress={() => {
+                    setSearchQuery('');
+                    setSearchResults([]);
+                    setShowSearch(false);
+                  }}
+                >
+                  <Text style={styles.clearSearchButtonText}>Clear</Text>
+                </TouchableOpacity>
+              </View>
+              
               {searchResults.length > 0 ? (
                 searchResults.map((user) => (
                   <View key={user.id} style={styles.userItem}>
+                    <View style={styles.userAvatar}>
+                      <Text style={styles.userAvatarText}>
+                        {user.username.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
                     <View style={styles.userInfo}>
                       <Text style={styles.username}>{user.username}</Text>
                       <Text style={styles.userStatus}>
                         {user.isOnline ? '🟢 Online' : '⚫ Offline'}
+                      </Text>
+                      <Text style={styles.userJoined}>
+                        Joined {new Date(user.createdAt).toLocaleDateString()}
                       </Text>
                     </View>
                     <TouchableOpacity
@@ -271,7 +309,13 @@ export default function FriendsScreen() {
                   </View>
                 ))
               ) : (
-                <Text style={styles.noResults}>No users found</Text>
+                <View style={styles.noResultsContainer}>
+                  <Text style={styles.noResultsIcon}>🔍</Text>
+                  <Text style={styles.noResults}>No users found</Text>
+                  <Text style={styles.noResultsSubtext}>
+                    Try searching with a different username
+                  </Text>
+                </View>
               )}
             </View>
           )}
@@ -482,6 +526,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 80,
   },
+  searchButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
   searchButtonText: {
     color: 'white',
     fontSize: 14,
@@ -493,14 +540,49 @@ const styles = StyleSheet.create({
     borderTopColor: '#eee',
     paddingTop: 12,
   },
-  userItem: {
+  searchResultsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  searchResultsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  clearSearchButton: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  clearSearchButtonText: {
+    color: '#666',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  userItem: {
+    flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+  },
+  userAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  userAvatarText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   userInfo: {
     flex: 1,
@@ -509,16 +591,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
+    marginBottom: 2,
   },
   userStatus: {
     fontSize: 12,
     color: '#666',
-    marginTop: 2,
+    marginBottom: 2,
+  },
+  userJoined: {
+    fontSize: 10,
+    color: '#999',
   },
   inviteButton: {
     backgroundColor: '#34C759',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 6,
   },
   inviteButtonText: {
@@ -526,11 +613,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  noResultsContainer: {
+    alignItems: 'center',
+    paddingVertical: 30,
+  },
+  noResultsIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
   noResults: {
-    textAlign: 'center',
+    fontSize: 16,
     color: '#666',
-    fontStyle: 'italic',
-    paddingVertical: 20,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  noResultsSubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
   },
   // Friends list styles
   loadingContainer: {
