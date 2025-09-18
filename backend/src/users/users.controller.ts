@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
@@ -14,5 +14,10 @@ export class UsersController {
     }
     
     return this.usersService.searchUsers(username.trim());
+  }
+
+  @Get('friends')
+  async getUserFriends(@Request() req: any) {
+    return this.usersService.getUserFriends(req.user.id);
   }
 }

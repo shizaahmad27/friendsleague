@@ -168,6 +168,34 @@ let UsersService = class UsersService {
         });
         return users;
     }
+    async getUserFriends(userId) {
+        const friendships = await this.prisma.friendship.findMany({
+            where: {
+                userId,
+                status: 'ACCEPTED',
+            },
+            include: {
+                friend: {
+                    select: {
+                        id: true,
+                        username: true,
+                        email: true,
+                        phoneNumber: true,
+                        inviteCode: true,
+                        avatar: true,
+                        isOnline: true,
+                        lastSeen: true,
+                        createdAt: true,
+                        updatedAt: true,
+                    },
+                },
+            },
+            orderBy: {
+                updatedAt: 'desc',
+            },
+        });
+        return friendships.map(friendship => friendship.friend);
+    }
     generateInviteCode(userId) {
         const secret = process.env.INVITE_CODE_SECRET || process.env.JWT_SECRET || 'fallback-secret-change-me';
         const hmac = crypto.createHmac('sha256', secret).update(userId).digest('hex');

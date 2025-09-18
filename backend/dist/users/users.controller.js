@@ -26,6 +26,9 @@ let UsersController = class UsersController {
         }
         return this.usersService.searchUsers(username.trim());
     }
+    async getUserFriends(req) {
+        return this.usersService.getUserFriends(req.user.id);
+    }
 };
 exports.UsersController = UsersController;
 __decorate([
@@ -35,6 +38,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "searchUsers", null);
+__decorate([
+    (0, common_1.Get)('friends'),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getUserFriends", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('users'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
