@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,15 +7,46 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../types';
 import { useAuthStore } from '../store/authStore';
+import { usersApi } from '../services/usersApi';
 
-interface ProfileScreenProps {
-  navigation: any;
-}
+type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
-export default function ProfileScreen({ navigation }: ProfileScreenProps) {
+export default function ProfileScreen() {
+  const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { user, logout } = useAuthStore();
+  
+  // State for friends count
+  const [friendsCount, setFriendsCount] = useState(0);
+  const [isLoadingFriends, setIsLoadingFriends] = useState(false);
+
+  // Load friends count
+  const loadFriendsCount = async () => {
+    if (!user) return;
+    
+    setIsLoadingFriends(true);
+    try {
+      const friends = await usersApi.getUserFriends();
+      setFriendsCount(friends.length);
+    } catch (error) {
+      console.error('Failed to load friends count:', error);
+      setFriendsCount(0);
+    } finally {
+      setIsLoadingFriends(false);
+    }
+  };
+
+  // Load friends count when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadFriendsCount();
+    }, [user])
+  );
 
   const handleLogout = () => {
     Alert.alert(
@@ -34,18 +65,15 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   };
 
   const handleViewLeagues = () => {
-    // TODO: Navigate to leagues screen
-    Alert.alert('Leagues', 'Leagues functionality coming soon!');
+    navigation.navigate('Leagues');
   };
 
   const handleViewFriends = () => {
-    // TODO: Navigate to friends screen
-    Alert.alert('Friends', 'Friends functionality coming soon!');
+    navigation.navigate('Friends');
   };
 
   const handleInviteFriends = () => {
-    // TODO: Navigate to invite friends screen
-    Alert.alert('Invite Friends', 'Invite friends functionality coming soon!');
+    navigation.navigate('InviteCode');
   };
 
   return (
@@ -80,7 +108,16 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             <Text style={styles.actionButtonText}>View All Friends</Text>
             <Text style={styles.actionButtonArrow}>›</Text>
           </TouchableOpacity>
-          <Text style={styles.sectionSubtext}>You have 0 friends</Text>
+          <Text style={styles.sectionSubtext}>
+            {isLoadingFriends ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#666" />
+                <Text style={styles.loadingText}>Loading...</Text>
+              </View>
+            ) : (
+              `You have ${friendsCount} friend${friendsCount !== 1 ? 's' : ''}`
+            )}
+          </Text>
         </View>
 
         <View style={styles.section}>
@@ -218,5 +255,15 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginLeft: 8,
+    color: '#666',
+    fontSize: 14,
   },
 });
