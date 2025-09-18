@@ -34,6 +34,7 @@ export default function FriendsScreen() {
   // State for invitations
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
+  const [invitationsCleared, setInvitationsCleared] = useState(false);
   
   // State for friends
   const [friends, setFriends] = useState<User[]>([]);
@@ -62,7 +63,15 @@ export default function FriendsScreen() {
     try {
       const results = await usersApi.searchUsers(searchQuery.trim());
       console.log('Search results:', results);
-      setSearchResults(results);
+      
+      // Filter out current friends and self from search results
+      const friendIds = friends.map(friend => friend.id);
+      const filteredResults = results.filter(searchUser => 
+        !friendIds.includes(searchUser.id) && searchUser.id !== user?.id
+      );
+      
+      console.log('Filtered results (excluding friends):', filteredResults);
+      setSearchResults(filteredResults);
       setShowSearch(true);
     } catch (error: any) {
       console.error('Search error details:', {
@@ -122,9 +131,15 @@ export default function FriendsScreen() {
 
   // Load invitations
   const loadInvitations = async () => {
+    // Don't reload if invitations were manually cleared
+    if (invitationsCleared) {
+      return;
+    }
+    
     setIsLoadingInvitations(true);
     try {
       const data = await invitationApi.getInvitations();
+      console.log('Loaded invitations:', data);
       setInvitations(data);
     } catch (error) {
       Alert.alert('Error', 'Failed to load invitations');
@@ -152,6 +167,7 @@ export default function FriendsScreen() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
+      setInvitationsCleared(false); // Reset cleared state on refresh
       await Promise.all([loadFriends(), loadInvitations()]);
     } catch (error) {
       console.error('Refresh error:', error);
@@ -351,10 +367,26 @@ export default function FriendsScreen() {
 
         {/* Invitations Section */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>📨 Invitations ({invitations.length})</Text>
-          <Text style={styles.cardDescription}>
-            Manage your friend invitations
-          </Text>
+          <View style={styles.invitationsHeader}>
+            <View>
+              <Text style={styles.cardTitle}>📨 Invitations ({invitations.length})</Text>
+              <Text style={styles.cardDescription}>
+                Manage your friend invitations
+              </Text>
+            </View>
+            {invitations.length > 0 && (
+              <TouchableOpacity 
+                style={styles.clearInvitationsButton}
+                onPress={() => {
+                  setInvitations([]);
+                  setShowSearch(false);
+                  setInvitationsCleared(true);
+                }}
+              >
+                <Text style={styles.clearInvitationsButtonText}>Clear</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           
           {isLoadingInvitations ? (
             <View style={styles.loadingContainer}>
@@ -370,10 +402,13 @@ export default function FriendsScreen() {
                       {invitation.inviter?.username || 'Unknown User'}
                     </Text>
                     <Text style={styles.invitationStatus}>
-                      Status: {invitation.status}
+                      {invitation.status === 'PENDING' 
+                        ? 'Waiting for your response' 
+                        : `Status: ${invitation.status}`
+                      }
                     </Text>
                     <Text style={styles.invitationDate}>
-                      {new Date(invitation.createdAt).toLocaleDateString()}
+                      Sent {new Date(invitation.createdAt).toLocaleDateString()}
                     </Text>
                   </View>
                   {invitation.status === 'PENDING' && invitation.inviteeId === user?.id && (
@@ -401,7 +436,10 @@ export default function FriendsScreen() {
           
           <TouchableOpacity 
             style={styles.cardButton}
-            onPress={loadInvitations}
+            onPress={() => {
+              setInvitationsCleared(false);
+              loadInvitations();
+            }}
             disabled={isLoadingInvitations}
           >
             {isLoadingInvitations ? (
@@ -752,6 +790,24 @@ const styles = StyleSheet.create({
     color: '#666',
     fontStyle: 'italic',
     paddingVertical: 20,
+  },
+  // Invitations header styles
+  invitationsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  clearInvitationsButton: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  clearInvitationsButtonText: {
+    color: '#666',
+    fontSize: 12,
+    fontWeight: '600',
   },
   // Friends actions styles
   friendsActions: {
