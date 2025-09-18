@@ -81,7 +81,7 @@ export default function HamburgerMenu({ onLogout }: HamburgerMenuProps) {
               
               <TouchableOpacity 
                 style={styles.menuItem} 
-                onPress={() => handleMenuPress('Friends')}
+                onPress={() => handleMenuPress('ActiveFriends')}
               >
                 <Text style={styles.menuItemIcon}>👥</Text>
                 <Text style={styles.menuItemText}>Friends</Text>
@@ -93,6 +93,14 @@ export default function HamburgerMenu({ onLogout }: HamburgerMenuProps) {
               >
                 <Text style={styles.menuItemIcon}>📅</Text>
                 <Text style={styles.menuItemText}>Events</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={() => handleMenuPress('Friends')}
+              >
+                <Text style={styles.menuItemIcon}>🔗</Text>
+                <Text style={styles.menuItemText}>Invite Friends</Text>
               </TouchableOpacity>
               
               <View style={styles.menuDivider} />

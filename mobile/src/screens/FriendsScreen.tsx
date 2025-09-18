@@ -215,8 +215,8 @@ export default function FriendsScreen() {
       }
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Friends</Text>
-        <Text style={styles.subtitle}>Connect with your friends</Text>
+        <Text style={styles.title}>Friends & Invitations</Text>
+        <Text style={styles.subtitle}>Discover and manage your connections</Text>
         <HamburgerMenu onLogout={handleLogout} />
       </View>
 
@@ -275,44 +275,6 @@ export default function FriendsScreen() {
               )}
             </View>
           )}
-        </View>
-
-        {/* My Friends Section */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>👥 My Friends ({friends.length})</Text>
-          <Text style={styles.cardDescription}>
-            {friends.length === 0 
-              ? "You haven't added any friends yet. Start building your network!"
-              : "Your friends on FriendsLeague"
-            }
-          </Text>
-          
-          {isLoadingFriends ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#007AFF" />
-              <Text style={styles.loadingText}>Loading friends...</Text>
-            </View>
-          ) : friends.length > 0 ? (
-            <View style={styles.friendsList}>
-              {friends.map((friend) => (
-                <View key={friend.id} style={styles.friendItem}>
-                  <View style={styles.friendInfo}>
-                    <Text style={styles.friendUsername}>{friend.username}</Text>
-                    <Text style={styles.friendStatus}>
-                      {friend.isOnline ? '🟢 Online' : '⚫ Offline'}
-                    </Text>
-                  </View>
-                  <View style={styles.friendActions}>
-                    <TouchableOpacity style={styles.messageButton}>
-                      <Text style={styles.messageButtonText}>Message</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : null}
-          
-      
         </View>
 
         {/* Invite Friends Section */}
@@ -690,5 +652,17 @@ const styles = StyleSheet.create({
     color: '#666',
     fontStyle: 'italic',
     paddingVertical: 20,
+  },
+  // Friends actions styles
+  friendsActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  secondaryButton: {
+    backgroundColor: '#f0f0f0',
+  },
+  secondaryButtonText: {
+    color: '#333',
   },
 });

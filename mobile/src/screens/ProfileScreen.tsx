@@ -69,7 +69,7 @@ export default function ProfileScreen() {
   };
 
   const handleViewFriends = () => {
-    navigation.navigate('Friends');
+    navigation.navigate('ActiveFriends');
   };
 
   const handleInviteFriends = () => {

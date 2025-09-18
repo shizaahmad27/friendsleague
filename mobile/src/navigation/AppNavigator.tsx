@@ -11,6 +11,7 @@ import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import LeaguesScreen from '../screens/LeaguesScreen';
 import FriendsScreen from '../screens/FriendsScreen';
+import ActiveFriendsScreen from '../screens/ActiveFriendsScreen';
 import EventsScreen from '../screens/EventsScreen';
 import InviteCodeScreen from '../screens/InviteCodeScreen';
 
@@ -32,6 +33,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Leagues" component={LeaguesScreen} />
             <Stack.Screen name="Friends" component={FriendsScreen} />
+            <Stack.Screen name="ActiveFriends" component={ActiveFriendsScreen} />
             <Stack.Screen name="Events" component={EventsScreen} />
             <Stack.Screen name="InviteCode" component={InviteCodeScreen} />
           </>
