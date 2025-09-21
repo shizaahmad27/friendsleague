@@ -30,7 +30,7 @@ export default function HamburgerMenu({ onLogout }: HamburgerMenuProps) {
     if (screen === 'Logout') {
       onLogout();
     } else {
-      navigation.navigate(screen);
+      (navigation as any).navigate(screen);
     }
   };
 
@@ -86,6 +86,14 @@ export default function HamburgerMenu({ onLogout }: HamburgerMenuProps) {
               >
                 <Text style={styles.menuItemIcon}>👥</Text>
                 <Text style={styles.menuItemText}>Friends</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={() => handleMenuPress('Messages')}
+              >
+                <Text style={styles.menuItemIcon}>💬</Text>
+                <Text style={styles.menuItemText}>Messages</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 

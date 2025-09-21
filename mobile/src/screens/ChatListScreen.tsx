@@ -51,20 +51,31 @@ export default function ChatListScreen() {
   };
 
   const renderChat = ({ item }: { item: Chat }) => {
+    const isGroupChat = item.type === 'GROUP';
     const otherParticipant = item.participants.find(p => p.user.id !== 'current-user-id');
+    const displayName = isGroupChat ? item.name : otherParticipant?.user.username;
+    const avatarText = isGroupChat ? item.name?.charAt(0).toUpperCase() : otherParticipant?.user.username.charAt(0).toUpperCase();
+    const onlineCount = isGroupChat ? item.participants.filter(p => p.user.isOnline).length : (otherParticipant?.user.isOnline ? 1 : 0);
     
     return (
       <TouchableOpacity
         style={styles.chatItem}
         onPress={() => (navigation as any).navigate('Chat', { chatId: item.id })}    
         >
-        <View style={styles.avatar}>
+        <View style={[styles.avatar, isGroupChat && styles.groupAvatar]}>
           <Text style={styles.avatarText}>
-            {otherParticipant?.user.username.charAt(0).toUpperCase()}
+            {avatarText}
           </Text>
         </View>
         <View style={styles.chatInfo}>
-          <Text style={styles.username}>{otherParticipant?.user.username}</Text>
+          <View style={styles.chatHeader}>
+            <Text style={styles.username}>{displayName}</Text>
+            {isGroupChat && (
+              <Text style={styles.memberCount}>
+                {item.participants.length} members
+              </Text>
+            )}
+          </View>
           <Text style={styles.lastMessage} numberOfLines={1}>
             {item.lastMessage?.content || 'No messages yet'}
           </Text>
@@ -73,8 +84,10 @@ export default function ChatListScreen() {
           <Text style={styles.timestamp}>
             {item.lastMessage ? new Date(item.lastMessage.createdAt).toLocaleTimeString() : ''}
           </Text>
-          {otherParticipant?.user.isOnline && (
-            <View style={styles.onlineIndicator} />
+          {onlineCount > 0 && (
+            <View style={styles.onlineIndicator}>
+              <Text style={styles.onlineCount}>{onlineCount}</Text>
+            </View>
           )}
         </View>
       </TouchableOpacity>
@@ -83,6 +96,16 @@ export default function ChatListScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Chats</Text>
+        <TouchableOpacity
+          style={styles.createGroupButton}
+          onPress={() => (navigation as any).navigate('CreateGroupChat')}
+        >
+          <Text style={styles.createGroupButtonText}>+ Group</Text>
+        </TouchableOpacity>
+      </View>
+      
       <FlatList
         data={chats}
         renderItem={renderChat}
@@ -105,6 +128,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  createGroupButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  createGroupButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
   chatItem: {
     flexDirection: 'row',
@@ -151,10 +200,30 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   onlineIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#34C759',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  onlineCount: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  groupAvatar: {
+    backgroundColor: '#FF9500',
+  },
+  chatHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  memberCount: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 8,
   },
   emptyContainer: {
     flex: 1,

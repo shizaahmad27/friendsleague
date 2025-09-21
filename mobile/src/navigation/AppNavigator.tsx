@@ -14,6 +14,10 @@ import FriendsScreen from '../screens/FriendsScreen';
 import ActiveFriendsScreen from '../screens/ActiveFriendsScreen';
 import EventsScreen from '../screens/EventsScreen';
 import InviteCodeScreen from '../screens/InviteCodeScreen';
+import ChatListScreen from '../screens/ChatListScreen';
+import ChatScreen from '../screens/ChatScreen';
+import CreateGroupChatScreen from '../screens/CreateGroupChatScreen';
+import GroupChatSettingsScreen from '../screens/GroupChatSettingsScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -36,6 +40,10 @@ export default function AppNavigator() {
             <Stack.Screen name="ActiveFriends" component={ActiveFriendsScreen} />
             <Stack.Screen name="Events" component={EventsScreen} />
             <Stack.Screen name="InviteCode" component={InviteCodeScreen} />
+            <Stack.Screen name="Messages" component={ChatListScreen} />
+            <Stack.Screen name="Chat" component={ChatScreen} />
+            <Stack.Screen name="CreateGroupChat" component={CreateGroupChatScreen} />
+            <Stack.Screen name="GroupChatSettings" component={GroupChatSettingsScreen} />
           </>
         ) : (
           <>

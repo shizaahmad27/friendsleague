@@ -14,6 +14,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import HamburgerMenu from '../components/HamburgerMenu';
 import { usersApi, User } from '../services/usersApi';
+import { chatApi } from '../services/chatApi';
 import { useAuthStore } from '../store/authStore';
 
 type ActiveFriendsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ActiveFriends'>;
@@ -89,15 +90,16 @@ export default function ActiveFriendsScreen() {
     }, [])
   );
 
-  const handleMessageFriend = (friend: User) => {
-    // TODO: Navigate to chat with friend
-    Alert.alert('Message', `Start a conversation with ${friend.username}`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Message', onPress: () => {
-        // Navigate to chat screen when implemented
-        console.log('Navigate to chat with:', friend.username);
-      }}
-    ]);
+  const handleMessageFriend = async (friend: User) => {
+    try {
+      // Create or get existing direct chat with friend
+      const chat = await chatApi.createDirectChat(friend.id);
+      // Navigate to chat screen
+      (navigation as any).navigate('Chat', { chatId: chat.id });
+    } catch (error) {
+      console.error('Failed to create chat:', error);
+      Alert.alert('Error', 'Failed to start conversation');
+    }
   };
 
   const handleViewProfile = (friend: User) => {

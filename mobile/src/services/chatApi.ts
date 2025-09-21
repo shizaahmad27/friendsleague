@@ -3,6 +3,7 @@ import api from './api';
 
 export interface Chat {
   id: string;
+  name?: string;
   type: 'DIRECT' | 'GROUP';
   participants: Array<{
     user: {
