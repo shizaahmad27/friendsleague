@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { MessageType } from '@prisma/client';
@@ -43,4 +43,47 @@ export class ChatController {
             (body.type as MessageType) || MessageType.TEXT,
           );
         }
+
+    // Group Chat Endpoints
+    @Post('group')
+    async createGroupChat(
+        @Request() req: any,
+        @Body() body: { name: string; description: string; participantIds: string[] },
+    ) {
+        return this.chatService.createGroupChat(
+            req.user.id,
+            body.name,
+            body.description,
+            body.participantIds,
+        );
+    }
+
+    @Get(':chatId/participants')
+    async getGroupChatParticipants(@Param('chatId') chatId: string) {
+        return this.chatService.getGroupChatParticipants(chatId);
+    }
+
+    @Post(':chatId/participants')
+    async addParticipantsToGroup(
+        @Param('chatId') chatId: string,
+        @Body() body: { participantIds: string[] },
+    ) {
+        return this.chatService.addParticipantsToGroup(chatId, body.participantIds);
+    }
+
+    @Delete(':chatId/participants/:userId')
+    async removeParticipantFromGroup(
+        @Param('chatId') chatId: string,
+        @Param('userId') userId: string,
+    ) {
+        return this.chatService.removeParticipantFromGroup(chatId, userId);
+    }
+
+    @Put(':chatId')
+    async updateGroupChat(
+        @Param('chatId') chatId: string,
+        @Body() body: { name?: string; description?: string },
+    ) {
+        return this.chatService.updateGroupChat(chatId, body.name, body.description);
+    }
       }
