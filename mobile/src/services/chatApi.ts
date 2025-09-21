@@ -35,25 +35,25 @@ export interface Message {
 export const chatApi = {
   // Create direct chat with a friend
   createDirectChat: async (friendId: string): Promise<Chat> => {
-    const response = await api.post('/chat/direct', { friendId });
+    const response = await api.post('/chats/direct', { friendId });
     return response.data;
   },
 
   // Get user's chats
   getUserChats: async (): Promise<Chat[]> => {
-    const response = await api.get('/chat/chats');
+    const response = await api.get('/chats/chats');
     return response.data;
   },
 
   // Get chat messages
   getChatMessages: async (chatId: string, page = 1, limit = 50): Promise<Message[]> => {
-    const response = await api.get(`/chat/${chatId}/messages?page=${page}&limit=${limit}`);
+    const response = await api.get(`/chats/${chatId}/messages?page=${page}&limit=${limit}`);
     return response.data;
   },
 
   // Send message
   sendMessage: async (chatId: string, content: string, type = 'TEXT'): Promise<Message> => {
-    const response = await api.post(`/chat/${chatId}/messages`, { content, type });
+    const response = await api.post(`/chats/${chatId}/messages`, { content, type });
     return response.data;
   },
 

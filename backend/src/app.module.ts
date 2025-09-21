@@ -5,6 +5,7 @@ import { UsersModule } from './users/users.module';
 import { PrismaService } from './common/prisma.service';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { InvitationModule } from './invitation/invitation.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { InvitationModule } from './invitation/invitation.module';
     AuthModule,
     UsersModule,
     InvitationModule,
+    ChatModule,
   ],
   providers: [PrismaService],
 })

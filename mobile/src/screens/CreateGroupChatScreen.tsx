@@ -211,6 +211,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   header: {
+    paddingTop: 60,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

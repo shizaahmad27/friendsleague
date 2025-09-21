@@ -56,16 +56,6 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>💬 Chat</Text>
-          <Text style={styles.cardDescription}>
-            Message your friends and 
-          </Text>
-          <TouchableOpacity style={styles.cardButton}>
-            <Text style={styles.cardButtonText}>Coming Soon</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.card}>
           <Text style={styles.cardTitle}>📅 Events</Text>
           <Text style={styles.cardDescription}>
             Organize and join events with your league
