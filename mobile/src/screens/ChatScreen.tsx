@@ -155,9 +155,6 @@ export default function ChatScreen() {
         keyExtractor={(item) => item.id}
         style={styles.messagesList}
         inverted
-        onContentSizeChange={() =>
-          flatListRef.current?.scrollToEnd({ animated: true })
-        }
       />
 
       {typingUsers.length > 0 && (
