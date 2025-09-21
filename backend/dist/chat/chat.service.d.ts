@@ -10,7 +10,8 @@ export declare class ChatService {
         updatedAt: Date;
         type: import(".prisma/client").$Enums.ChatType;
     }>;
-    getUserChats(userId: string): Promise<({
+    getUserChats(userId: string): Promise<{
+        unreadCount: number;
         participants: ({
             user: {
                 username: string;
@@ -40,13 +41,12 @@ export declare class ChatService {
             senderId: string;
             mediaUrl: string | null;
         })[];
-    } & {
         name: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         type: import(".prisma/client").$Enums.ChatType;
-    })[]>;
+    }[]>;
     getChatMessages(chatId: string, page?: number, limit?: number): Promise<({
         sender: {
             username: string;

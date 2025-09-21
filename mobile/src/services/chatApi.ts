@@ -14,6 +14,7 @@ export interface Chat {
     };
   }>;
   lastMessage?: Message;
+  unreadCount?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -11,9 +11,11 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { chatApi, Chat } from '../services/chatApi';
 import socketService from '../services/socketService';
+import { useAuthStore } from '../store/authStore';
 
 export default function ChatListScreen() {
   const navigation = useNavigation();
+  const { user } = useAuthStore();
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -52,10 +54,11 @@ export default function ChatListScreen() {
 
   const renderChat = ({ item }: { item: Chat }) => {
     const isGroupChat = item.type === 'GROUP';
-    const otherParticipant = item.participants.find(p => p.user.id !== 'current-user-id');
+    const otherParticipant = item.participants.find(p => p.user.id !== user?.id);
     const displayName = isGroupChat ? item.name : otherParticipant?.user.username;
-    const avatarText = isGroupChat ? item.name?.charAt(0).toUpperCase() : otherParticipant?.user.username.charAt(0).toUpperCase();
+    const avatarText = isGroupChat ? item.name?.charAt(0).toUpperCase() : otherParticipant?.user.username?.charAt(0).toUpperCase();
     const onlineCount = isGroupChat ? item.participants.filter(p => p.user.isOnline).length : (otherParticipant?.user.isOnline ? 1 : 0);
+    const unreadCount = item.unreadCount || 0;
     
     return (
       <TouchableOpacity
@@ -84,11 +87,15 @@ export default function ChatListScreen() {
           <Text style={styles.timestamp}>
             {item.lastMessage ? new Date(item.lastMessage.createdAt).toLocaleTimeString() : ''}
           </Text>
-          {onlineCount > 0 && (
+          {unreadCount > 0 ? (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadCount}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+            </View>
+          ) : onlineCount > 0 ? (
             <View style={styles.onlineIndicator}>
               <Text style={styles.onlineCount}>{onlineCount}</Text>
             </View>
-          )}
+          ) : null}
         </View>
       </TouchableOpacity>
     );
@@ -211,6 +218,20 @@ const styles = StyleSheet.create({
   onlineCount: {
     color: 'white',
     fontSize: 10,
+    fontWeight: 'bold',
+  },
+  unreadBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  unreadCount: {
+    color: 'white',
+    fontSize: 12,
     fontWeight: 'bold',
   },
   groupAvatar: {

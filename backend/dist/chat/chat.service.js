@@ -61,7 +61,7 @@ let ChatService = class ChatService {
         return chat;
     }
     async getUserChats(userId) {
-        return this.prisma.chat.findMany({
+        const chats = await this.prisma.chat.findMany({
             where: {
                 participants: {
                     some: {
@@ -102,6 +102,22 @@ let ChatService = class ChatService {
                 updatedAt: 'desc',
             },
         });
+        const chatsWithUnreadCount = await Promise.all(chats.map(async (chat) => {
+            const unreadCount = await this.prisma.message.count({
+                where: {
+                    chatId: chat.id,
+                    senderId: { not: userId },
+                    createdAt: {
+                        gt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+                    },
+                },
+            });
+            return {
+                ...chat,
+                unreadCount,
+            };
+        }));
+        return chatsWithUnreadCount;
     }
     async getChatMessages(chatId, page = 1, limit = 50) {
         const skip = (page - 1) * limit;

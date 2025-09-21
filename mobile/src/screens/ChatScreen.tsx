@@ -9,118 +9,142 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { chatApi, Message } from '../services/chatApi';
 import socketService from '../services/socketService';
+import { useAuthStore } from '../store/authStore';
 
 type ChatScreenRouteProp = RouteProp<{ Chat: { chatId: string } }, 'Chat'>;
 
 export default function ChatScreen() {
   const route = useRoute<ChatScreenRouteProp>();
   const { chatId } = route.params;
-  
+  const { user } = useAuthStore();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
-  
+
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
     loadMessages();
-    socketService.joinChat(chatId, 'current-user-id'); // You'll need to get actual user ID
+    if (!user?.id) return;
 
-    // Listen for new messages
-    socketService.onNewMessage((message) => {
+    socketService.joinChat(chatId, user.id);
+
+    const handleNewMessage = (message: Message) => {
       if (message.chatId === chatId) {
-        setMessages(prev => [message, ...prev]);
+        setMessages(prev => {
+          const exists = prev.some(m => m.id === message.id);
+          return exists ? prev : [message, ...prev];
+        });
       }
-    });
+    };
 
-    // Listen for typing indicators
-    socketService.onUserTyping((data) => {
+    const handleUserTyping = (data: { userId: string; isTyping: boolean }) => {
       if (data.isTyping) {
         setTypingUsers(prev => [...prev.filter(id => id !== data.userId), data.userId]);
       } else {
         setTypingUsers(prev => prev.filter(id => id !== data.userId));
       }
-    });
+    };
+
+    socketService.onNewMessage(handleNewMessage);
+    socketService.onUserTyping(handleUserTyping);
 
     return () => {
-      // Leave chat when component unmounts
-      socketService.emitTyping(chatId, 'current-user-id', false);
+      socketService.emitTyping(chatId, user.id, false);
+      socketService.offNewMessage(handleNewMessage);
+      socketService.offUserTyping(handleUserTyping);
     };
-  }, [chatId]);
+  }, [chatId, user?.id]);
 
   const loadMessages = async () => {
     try {
       const data = await chatApi.getChatMessages(chatId);
-      setMessages(data.reverse()); // Reverse to show oldest first
+      setMessages(data);
     } catch (error) {
       console.error('Failed to load messages:', error);
     }
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !user?.id) return;
 
     const messageContent = newMessage.trim();
     setNewMessage('');
 
     try {
-      // Send via API
       const message = await chatApi.sendMessage(chatId, messageContent);
-      
-      // Send via socket for real-time delivery
-      socketService.sendMessage(chatId, message);
-      
-      // Stop typing indicator
-      socketService.emitTyping(chatId, 'current-user-id', false);
+
+      const messageWithSender = { ...message, senderId: user.id };
+
+      setMessages(prev => [messageWithSender, ...prev]);
+
+      socketService.sendMessage(chatId, messageWithSender);
+
+      socketService.emitTyping(chatId, user.id, false);
       setIsTyping(false);
     } catch (error) {
       console.error('Failed to send message:', error);
+      Alert.alert('Error', 'Failed to send message. Please try again.');
+      setNewMessage(messageContent);
     }
   };
 
   const handleTyping = (text: string) => {
     setNewMessage(text);
-    
+
+    if (!user?.id) return;
+
     if (text.length > 0 && !isTyping) {
       setIsTyping(true);
-      socketService.emitTyping(chatId, 'current-user-id', true);
+      socketService.emitTyping(chatId, user.id, true);
     } else if (text.length === 0 && isTyping) {
       setIsTyping(false);
-      socketService.emitTyping(chatId, 'current-user-id', false);
+      socketService.emitTyping(chatId, user.id, false);
     }
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
-    const isOwnMessage = item.senderId === 'current-user-id'; // You'll need actual user ID
-    
+    const isOwnMessage = item.senderId === user?.id;
+
     return (
-      <View style={[
-        styles.messageContainer,
-        isOwnMessage ? styles.ownMessage : styles.otherMessage
-      ]}>
-        <Text style={[
-          styles.messageText,
-          isOwnMessage ? styles.ownMessageText : styles.otherMessageText
-        ]}>
+      <View
+        style={[
+          styles.messageContainer,
+          isOwnMessage ? styles.ownMessage : styles.otherMessage,
+        ]}
+      >
+        <Text
+          style={[
+            styles.messageText,
+            isOwnMessage ? styles.ownMessageText : styles.otherMessageText,
+          ]}
+        >
           {item.content}
         </Text>
-        <Text style={[
-          styles.messageTime,
-          isOwnMessage ? styles.ownMessageTime : styles.otherMessageTime
-        ]}>
-          {new Date(item.createdAt).toLocaleTimeString()}
+        <Text
+          style={[
+            styles.messageTime,
+            isOwnMessage ? styles.ownMessageTime : styles.otherMessageTime,
+          ]}
+        >
+          {new Date(item.createdAt).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
         </Text>
       </View>
     );
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
@@ -131,17 +155,20 @@ export default function ChatScreen() {
         keyExtractor={(item) => item.id}
         style={styles.messagesList}
         inverted
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
+        onContentSizeChange={() =>
+          flatListRef.current?.scrollToEnd({ animated: true })
+        }
       />
-      
+
       {typingUsers.length > 0 && (
         <View style={styles.typingIndicator}>
           <Text style={styles.typingText}>
-            {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+            {typingUsers.join(', ')}{' '}
+            {typingUsers.length === 1 ? 'is' : 'are'} typing...
           </Text>
         </View>
       )}
-      
+
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.textInput}
@@ -152,7 +179,10 @@ export default function ChatScreen() {
           maxLength={1000}
         />
         <TouchableOpacity
-          style={[styles.sendButton, !newMessage.trim() && styles.sendButtonDisabled]}
+          style={[
+            styles.sendButton,
+            !newMessage.trim() && styles.sendButtonDisabled,
+          ]}
           onPress={sendMessage}
           disabled={!newMessage.trim()}
         >

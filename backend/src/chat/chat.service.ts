@@ -57,7 +57,7 @@ const chat = await this.prisma.chat.create({
 }
 
     async getUserChats(userId: string) {
-        return this.prisma.chat.findMany({
+        const chats = await this.prisma.chat.findMany({
             where: {
             participants: {
                 some: {
@@ -98,6 +98,28 @@ const chat = await this.prisma.chat.create({
             updatedAt: 'desc',
             },
         });
+
+        // Add unread count for each chat
+        const chatsWithUnreadCount = await Promise.all(
+            chats.map(async (chat) => {
+                const unreadCount = await this.prisma.message.count({
+                    where: {
+                        chatId: chat.id,
+                        senderId: { not: userId },
+                        createdAt: {
+                            gt: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+                        },
+                    },
+                });
+
+                return {
+                    ...chat,
+                    unreadCount,
+                };
+            })
+        );
+
+        return chatsWithUnreadCount;
         }
 
     async getChatMessages(chatId: string, page = 1, limit = 50) {
