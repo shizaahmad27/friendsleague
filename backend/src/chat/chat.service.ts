@@ -124,7 +124,7 @@ const chat = await this.prisma.chat.create({
         });
         }
     
-        async sendMessage(chatId: string, senderId: string, content: string, type = MessageType.TEXT) {
+        async sendMessage(chatId: string, senderId: string, content: string, type: MessageType = MessageType.TEXT) {
             const message = await this.prisma.message.create({
               data: {
                 content,
