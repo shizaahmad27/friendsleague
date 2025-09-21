@@ -151,4 +151,144 @@ const chat = await this.prisma.chat.create({
         
             return message;
           }
+
+    async createGroupChat(adminId: string, name: string, description: string, participantIds: string[]) {
+        // Ensure admin is included in participants
+        const allParticipantIds = [...new Set([adminId, ...participantIds])];
+
+        const chat = await this.prisma.chat.create({
+            data: {
+                name,
+                type: ChatType.GROUP,
+                participants: {
+                    create: allParticipantIds.map(userId => ({
+                        userId,
+                    })),
+                },
+            },
+            include: {
+                participants: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true,
+                                avatar: true,
+                                isOnline: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        return chat;
+    }
+
+    async addParticipantsToGroup(chatId: string, participantIds: string[]) {
+        // Check if chat is a group chat
+        const chat = await this.prisma.chat.findUnique({
+            where: { id: chatId },
+            select: { type: true },
+        });
+
+        if (!chat || chat.type !== ChatType.GROUP) {
+            throw new Error('Can only add participants to group chats');
+        }
+
+        // Add participants (ignore duplicates)
+        const participants = await Promise.all(
+            participantIds.map(userId =>
+                this.prisma.chatParticipant.upsert({
+                    where: {
+                        chatId_userId: {
+                            chatId,
+                            userId,
+                        },
+                    },
+                    update: {},
+                    create: {
+                        chatId,
+                        userId,
+                    },
+                })
+            )
+        );
+
+        return participants;
+    }
+
+    async removeParticipantFromGroup(chatId: string, userId: string) {
+        // Check if chat is a group chat
+        const chat = await this.prisma.chat.findUnique({
+            where: { id: chatId },
+            select: { type: true },
+        });
+
+        if (!chat || chat.type !== ChatType.GROUP) {
+            throw new Error('Can only remove participants from group chats');
+        }
+
+        await this.prisma.chatParticipant.delete({
+            where: {
+                chatId_userId: {
+                    chatId,
+                    userId,
+                },
+            },
+        });
+
+        return { success: true };
+    }
+
+    async updateGroupChat(chatId: string, name?: string, description?: string) {
+        // Check if chat is a group chat
+        const chat = await this.prisma.chat.findUnique({
+            where: { id: chatId },
+            select: { type: true },
+        });
+
+        if (!chat || chat.type !== ChatType.GROUP) {
+            throw new Error('Can only update group chats');
+        }
+
+        const updateData: any = {};
+        if (name !== undefined) updateData.name = name;
+        if (description !== undefined) updateData.description = description;
+
+        return this.prisma.chat.update({
+            where: { id: chatId },
+            data: updateData,
+            include: {
+                participants: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true,
+                                avatar: true,
+                                isOnline: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
+    async getGroupChatParticipants(chatId: string) {
+        return this.prisma.chatParticipant.findMany({
+            where: { chatId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        avatar: true,
+                        isOnline: true,
+                    },
+                },
+            },
+        });
+    }
     }
