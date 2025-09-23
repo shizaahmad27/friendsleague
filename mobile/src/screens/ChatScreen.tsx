@@ -145,17 +145,6 @@ export default function ChatScreen() {
         >
           {item.content}
         </Text>
-        <Text
-          style={[
-            styles.messageTime,
-            isOwnMessage ? styles.ownMessageTime : styles.otherMessageTime,
-          ]}
-        >
-          {new Date(item.createdAt).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </Text>
       </View>
     );
   };
@@ -223,7 +212,25 @@ export default function ChatScreen() {
       <FlatList
         ref={flatListRef}
         data={messages}
-        renderItem={renderMessage}
+        renderItem={({ item, index }) => {
+          const currentTs = new Date(item.createdAt).getTime();
+          const prev = messages[index + 1]; // list is inverted
+          const prevTs = prev ? new Date(prev.createdAt).getTime() : null;
+          const showTimestamp = !prevTs || currentTs - prevTs >= 15 * 60 * 1000;
+
+          return (
+            <>
+              {renderMessage({ item })}
+              {showTimestamp && (
+                <View style={styles.timeSeparatorContainer}>
+                  <Text style={styles.timeSeparatorText}>
+                    {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+              )}
+            </>
+          );
+        }}
         keyExtractor={(item) => item.id}
         style={styles.messagesList}
         inverted
@@ -362,6 +369,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     fontStyle: 'italic',
+  },
+  timeSeparatorContainer: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    marginVertical: 8,
+  },
+  timeSeparatorText: {
+    fontSize: 12,
+    color: '#555',
   },
   inputContainer: {
     flexDirection: 'row',
