@@ -27,8 +27,12 @@ export default function ChatScreen() {
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [usernamesById, setUsernamesById] = useState<Record<string, string>>({});
 
   const flatListRef = useRef<FlatList>(null);
+  const typingNames = typingUsers.map(id => usernamesById[id] ?? id);
+  const usernamesRef = useRef(usernamesById);
+
 
   useEffect(() => {
     loadMessages();
@@ -49,8 +53,10 @@ export default function ChatScreen() {
     };
 
     const handleUserTyping = (data: { userId: string; isTyping: boolean }) => {
+      
       if (data.isTyping) {
         setTypingUsers(prev => [...prev.filter(id => id !== data.userId), data.userId]);
+
       } else {
         setTypingUsers(prev => prev.filter(id => id !== data.userId));
       }
@@ -152,6 +158,33 @@ export default function ChatScreen() {
     );
   };
 
+  useEffect(() => { usernamesRef.current = usernamesById; }, [usernamesById]);
+
+  // Preload usernames from chat participants
+  useEffect(() => {
+    chatApi.getGroupChatParticipants(chatId)
+      .then(parts => {
+        const map = Object.fromEntries(parts.map(p => [p.user.id, p.user.username]));
+        setUsernamesById(prev => ({ ...map, ...prev }));
+      })
+      .catch(() => {});
+  }, [chatId]);
+
+  // Hydrate usernames map from messages that include sender
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const entries: Array<[string, string]> = [];
+    for (const m of messages) {
+      if (m.sender && m.sender.id && m.sender.username) {
+        entries.push([m.sender.id, m.sender.username]);
+      }
+    }
+    if (entries.length > 0) {
+      const map = Object.fromEntries(entries);
+      setUsernamesById(prev => ({ ...map, ...prev }));
+    }
+  }, [messages]);
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -169,9 +202,8 @@ export default function ChatScreen() {
       {typingUsers.length > 0 && (
         <View style={styles.typingIndicator}>
           <Text style={styles.typingText}>
-            {typingUsers.join(', ')}{' '}
-            {typingUsers.length === 1 ? 'is' : 'are'} typing...
-          </Text>
+            {typingNames.join(', ')}{' '}
+            {typingNames.length === 1 ? 'is' : 'are'} typing...          </Text> 
         </View>
       )}
 
@@ -197,6 +229,8 @@ export default function ChatScreen() {
       </View>
     </KeyboardAvoidingView>
   );
+
+  
 }
 
 const styles = StyleSheet.create({
