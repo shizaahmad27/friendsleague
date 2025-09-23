@@ -12,7 +12,7 @@ class SocketService {
     const { user, accessToken } = useAuthStore.getState();
     if (!user || !accessToken) return;
 
-    this.socket = io('http://localhost:3000', {
+    this.socket = io('http://10.24.64.17:3000', {
       auth: {
         token: accessToken,
       },
@@ -63,13 +63,13 @@ class SocketService {
 
   onUserTyping(callback: (data: { userId: string; isTyping: boolean }) => void) {
     if (this.socket) {
-      this.socket.on('userTyping', callback);
+      this.socket.on('user:typing', callback);
     }
   }
 
   offUserTyping(callback: (data: { userId: string; isTyping: boolean }) => void) {
     if (this.socket) {
-      this.socket.off('userTyping', callback);
+      this.socket.off('user:typing', callback);
     }
   }
 

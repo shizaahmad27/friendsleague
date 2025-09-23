@@ -34,6 +34,9 @@ export default function ChatScreen() {
     loadMessages();
     if (!user?.id) return;
 
+    // Ensure socket connected before joining/listening
+    socketService.connect();
+
     socketService.joinChat(chatId, user.id);
 
     const handleNewMessage = (message: Message) => {
@@ -56,10 +59,16 @@ export default function ChatScreen() {
     socketService.onNewMessage(handleNewMessage);
     socketService.onUserTyping(handleUserTyping);
 
+    // Re-join on reconnect to keep room subscription
+    const sock = socketService.getSocket();
+    const onReconnect = () => socketService.joinChat(chatId, user.id);
+    sock?.on('connect', onReconnect);
+
     return () => {
       socketService.emitTyping(chatId, user.id, false);
       socketService.offNewMessage(handleNewMessage);
       socketService.offUserTyping(handleUserTyping);
+      sock?.off('connect', onReconnect);
     };
   }, [chatId, user?.id]);
 

@@ -8,8 +8,6 @@ import {
     OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
 @WebSocketGateway({
     cors: {
@@ -53,7 +51,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: Socket, 
     ) {
         //broadcast message to alle users in the chat
-        this.server.to(data.chatId).emit('message:received', data.message);
+        this.server.to(data.chatId).emit('newMessage', data.message);
     }
 
     @SubscribeMessage('typing')

@@ -36,7 +36,7 @@ let ChatGateway = class ChatGateway {
         console.log(`User ${data.userId} joined chat ${data.chatId}`);
     }
     handleSendMessage(data, client) {
-        this.server.to(data.chatId).emit('message:received', data.message);
+        this.server.to(data.chatId).emit('newMessage', data.message);
     }
     handleTyping(data, client) {
         client.to(data.chatId).emit('user:typing', {
