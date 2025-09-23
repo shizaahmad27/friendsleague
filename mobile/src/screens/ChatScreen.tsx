@@ -11,7 +11,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { chatApi, Message } from '../services/chatApi';
 import socketService from '../services/socketService';
 import { useAuthStore } from '../store/authStore';
@@ -21,6 +21,7 @@ type ChatScreenRouteProp = RouteProp<{ Chat: { chatId: string } }, 'Chat'>;
 export default function ChatScreen() {
   const route = useRoute<ChatScreenRouteProp>();
   const { chatId } = route.params;
+  const navigation = useNavigation();
   const { user } = useAuthStore();
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -28,6 +29,7 @@ export default function ChatScreen() {
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [usernamesById, setUsernamesById] = useState<Record<string, string>>({});
+  const [peerUser, setPeerUser] = useState<{ id: string; username: string; avatar?: string } | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
   const typingNames = typingUsers.map(id => usernamesById[id] ?? id);
@@ -166,6 +168,14 @@ export default function ChatScreen() {
       .then(parts => {
         const map = Object.fromEntries(parts.map(p => [p.user.id, p.user.username]));
         setUsernamesById(prev => ({ ...map, ...prev }));
+        // determine peer (the other user in a direct chat; in group, pick none)
+        if (user?.id) {
+          const others = parts.map(p => p.user).filter(u => u.id !== user.id);
+          if (others.length > 0) {
+            const first = others[0];
+            setPeerUser({ id: first.id, username: first.username, avatar: first.avatar });
+          }
+        }
       })
       .catch(() => {});
   }, [chatId]);
@@ -185,11 +195,31 @@ export default function ChatScreen() {
     }
   }, [messages]);
 
+  const renderHeader = () => (
+    <View style={styles.headerContainer}>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <Text style={styles.backIcon}>‹</Text>
+      </TouchableOpacity>
+      <View style={styles.headerTitleContainer}>
+        <View style={styles.headerAvatar}>
+          <Text style={styles.headerAvatarText}>
+            {(peerUser?.username?.charAt(0) || '?').toUpperCase()}
+          </Text>
+        </View>
+        <Text style={styles.headerUsername} numberOfLines={1}>
+          {peerUser?.username || 'Chat'}
+        </Text>
+      </View>
+      <View style={styles.headerRightSpacer} />
+    </View>
+  );
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      {renderHeader()}
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -237,6 +267,54 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  headerContainer: {
+    paddingTop: 60,
+    paddingBottom: 12,
+    paddingHorizontal: 12,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    width: 40,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backIcon: {
+    fontSize: 32,
+    color: '#007AFF',
+    lineHeight: 28,
+  },
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 10,
+  },
+  headerAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 36,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerAvatarText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  headerUsername: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111',
+  },
+  headerRightSpacer: {
+    width: 40,
   },
   messagesList: {
     flex: 1,
@@ -287,18 +365,20 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
-    padding: 16,
-    backgroundColor: 'white',
+    padding: 26,
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: 'transparent',
+    backgroundColor: 'transparent',
+    marginBottom: 16,
   },
   textInput: {
     flex: 1,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#e0e0e0',
     borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     marginRight: 8,
     maxHeight: 100,
   },
