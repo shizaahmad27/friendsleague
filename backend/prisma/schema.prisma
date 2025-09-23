@@ -70,6 +70,7 @@ model ChatParticipant {
   chatId  String
   userId  String
   joinedAt DateTime @default(now())
+  lastReadAt DateTime @default(now())
 
   // Relations
   chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)

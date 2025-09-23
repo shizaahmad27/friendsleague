@@ -86,4 +86,12 @@ export class ChatController {
     ) {
         return this.chatService.updateGroupChat(chatId, body.name, body.description);
     }
+
+  @Put(':chatId/read')
+  async markChatRead(
+    @Param('chatId') chatId: string,
+    @Request() req: any,
+  ) {
+    return this.chatService.markChatRead(chatId, req.user.id);
+  }
       }

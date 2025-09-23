@@ -11,43 +11,7 @@ export declare class ChatController {
         updatedAt: Date;
         type: import(".prisma/client").$Enums.ChatType;
     }>;
-    getUserChats(req: any): Promise<{
-        unreadCount: number;
-        participants: ({
-            user: {
-                username: string;
-                id: string;
-                avatar: string;
-                isOnline: boolean;
-            };
-        } & {
-            id: string;
-            userId: string;
-            joinedAt: Date;
-            chatId: string;
-        })[];
-        messages: ({
-            sender: {
-                username: string;
-                id: string;
-                avatar: string;
-            };
-        } & {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            type: import(".prisma/client").$Enums.MessageType;
-            chatId: string;
-            content: string;
-            senderId: string;
-            mediaUrl: string | null;
-        })[];
-        name: string | null;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        type: import(".prisma/client").$Enums.ChatType;
-    }[]>;
+    getUserChats(req: any): Promise<any[]>;
     getChatMessages(chatId: string, page?: string, limit?: string): Promise<({
         sender: {
             username: string;
@@ -99,6 +63,7 @@ export declare class ChatController {
             id: string;
             userId: string;
             joinedAt: Date;
+            lastReadAt: Date;
             chatId: string;
         })[];
     } & {
@@ -119,6 +84,7 @@ export declare class ChatController {
         id: string;
         userId: string;
         joinedAt: Date;
+        lastReadAt: Date;
         chatId: string;
     })[]>;
     addParticipantsToGroup(chatId: string, body: {
@@ -127,6 +93,7 @@ export declare class ChatController {
         id: string;
         userId: string;
         joinedAt: Date;
+        lastReadAt: Date;
         chatId: string;
     }[]>;
     removeParticipantFromGroup(chatId: string, userId: string): Promise<{
@@ -147,6 +114,7 @@ export declare class ChatController {
             id: string;
             userId: string;
             joinedAt: Date;
+            lastReadAt: Date;
             chatId: string;
         })[];
     } & {
@@ -155,5 +123,8 @@ export declare class ChatController {
         createdAt: Date;
         updatedAt: Date;
         type: import(".prisma/client").$Enums.ChatType;
+    }>;
+    markChatRead(chatId: string, req: any): Promise<{
+        success: boolean;
     }>;
 }

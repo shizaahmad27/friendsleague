@@ -81,6 +81,9 @@ let ChatService = class ChatService {
                             },
                         },
                     },
+                    where: {
+                        userId: { not: userId },
+                    },
                 },
                 messages: {
                     orderBy: {
@@ -103,19 +106,18 @@ let ChatService = class ChatService {
             },
         });
         const chatsWithUnreadCount = await Promise.all(chats.map(async (chat) => {
+            const participant = await this.prisma.chatParticipant.findUnique({
+                where: { chatId_userId: { chatId: chat.id, userId } },
+            });
+            const lastReadAt = participant?.lastReadAt ?? new Date(0);
             const unreadCount = await this.prisma.message.count({
                 where: {
                     chatId: chat.id,
                     senderId: { not: userId },
-                    createdAt: {
-                        gt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-                    },
+                    createdAt: { gt: lastReadAt },
                 },
             });
-            return {
-                ...chat,
-                unreadCount,
-            };
+            return { ...chat, unreadCount };
         }));
         return chatsWithUnreadCount;
     }
@@ -164,6 +166,13 @@ let ChatService = class ChatService {
             data: { updatedAt: new Date() },
         });
         return message;
+    }
+    async markChatRead(chatId, userId) {
+        await this.prisma.chatParticipant.update({
+            where: { chatId_userId: { chatId, userId } },
+            data: { lastReadAt: new Date() },
+        });
+        return { success: true };
     }
     async createGroupChat(adminId, name, description, participantIds) {
         const allParticipantIds = [...new Set([adminId, ...participantIds])];

@@ -90,4 +90,8 @@ export const chatApi = {
     const response = await api.put(`/chats/${chatId}`, { name, description });
     return response.data;
   },
+  markChatRead: async (chatId: string): Promise<{ success: boolean }> => {
+    const response = await api.put(`/chats/${chatId}/read`);
+    return response.data;
+  },
 };

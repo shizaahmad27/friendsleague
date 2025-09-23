@@ -10,43 +10,7 @@ export declare class ChatService {
         updatedAt: Date;
         type: import(".prisma/client").$Enums.ChatType;
     }>;
-    getUserChats(userId: string): Promise<{
-        unreadCount: number;
-        participants: ({
-            user: {
-                username: string;
-                id: string;
-                avatar: string;
-                isOnline: boolean;
-            };
-        } & {
-            id: string;
-            userId: string;
-            joinedAt: Date;
-            chatId: string;
-        })[];
-        messages: ({
-            sender: {
-                username: string;
-                id: string;
-                avatar: string;
-            };
-        } & {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            type: import(".prisma/client").$Enums.MessageType;
-            chatId: string;
-            content: string;
-            senderId: string;
-            mediaUrl: string | null;
-        })[];
-        name: string | null;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        type: import(".prisma/client").$Enums.ChatType;
-    }[]>;
+    getUserChats(userId: string): Promise<any[]>;
     getChatMessages(chatId: string, page?: number, limit?: number): Promise<({
         sender: {
             username: string;
@@ -79,6 +43,9 @@ export declare class ChatService {
         senderId: string;
         mediaUrl: string | null;
     }>;
+    markChatRead(chatId: string, userId: string): Promise<{
+        success: boolean;
+    }>;
     createGroupChat(adminId: string, name: string, description: string, participantIds: string[]): Promise<{
         participants: ({
             user: {
@@ -91,6 +58,7 @@ export declare class ChatService {
             id: string;
             userId: string;
             joinedAt: Date;
+            lastReadAt: Date;
             chatId: string;
         })[];
     } & {
@@ -104,6 +72,7 @@ export declare class ChatService {
         id: string;
         userId: string;
         joinedAt: Date;
+        lastReadAt: Date;
         chatId: string;
     }[]>;
     removeParticipantFromGroup(chatId: string, userId: string): Promise<{
@@ -121,6 +90,7 @@ export declare class ChatService {
             id: string;
             userId: string;
             joinedAt: Date;
+            lastReadAt: Date;
             chatId: string;
         })[];
     } & {
@@ -141,6 +111,7 @@ export declare class ChatService {
         id: string;
         userId: string;
         joinedAt: Date;
+        lastReadAt: Date;
         chatId: string;
     })[]>;
 }

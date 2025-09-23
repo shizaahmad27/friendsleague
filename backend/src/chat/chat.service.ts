@@ -77,6 +77,9 @@ const chat = await this.prisma.chat.create({
                     },
                 },
                 },
+                where: {
+                  userId: { not: userId },
+                },
             },
             messages: {
                 orderBy: {
@@ -99,24 +102,22 @@ const chat = await this.prisma.chat.create({
             },
         });
 
-        // Add unread count for each chat
+        // Compute unread using lastReadAt
         const chatsWithUnreadCount = await Promise.all(
-            chats.map(async (chat) => {
-                const unreadCount = await this.prisma.message.count({
-                    where: {
-                        chatId: chat.id,
-                        senderId: { not: userId },
-                        createdAt: {
-                            gt: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
-                        },
-                    },
-                });
-
-                return {
-                    ...chat,
-                    unreadCount,
-                };
-            })
+          chats.map(async (chat) => {
+            const participant = await this.prisma.chatParticipant.findUnique({
+              where: { chatId_userId: { chatId: chat.id, userId } },
+            });
+            const lastReadAt = (participant as any)?.lastReadAt ?? new Date(0);
+            const unreadCount = await this.prisma.message.count({
+              where: {
+                chatId: chat.id,
+                senderId: { not: userId },
+                createdAt: { gt: lastReadAt },
+              },
+            });
+            return { ...chat, unreadCount } as any;
+          })
         );
 
         return chatsWithUnreadCount;
@@ -170,9 +171,18 @@ const chat = await this.prisma.chat.create({
               where: { id: chatId },
               data: { updatedAt: new Date() },
             });
+            // Do not update readers here; they will mark read on open
         
             return message;
           }
+
+    async markChatRead(chatId: string, userId: string) {
+        await this.prisma.chatParticipant.update({
+            where: { chatId_userId: { chatId, userId } },
+            data: { lastReadAt: new Date() } as any,
+        });
+        return { success: true };
+    }
 
     async createGroupChat(adminId: string, name: string, description: string, participantIds: string[]) {
         // Ensure admin is included in participants

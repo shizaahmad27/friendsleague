@@ -48,6 +48,9 @@ let ChatController = class ChatController {
     async updateGroupChat(chatId, body) {
         return this.chatService.updateGroupChat(chatId, body.name, body.description);
     }
+    async markChatRead(chatId, req) {
+        return this.chatService.markChatRead(chatId, req.user.id);
+    }
 };
 exports.ChatController = ChatController;
 __decorate([
@@ -122,6 +125,14 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "updateGroupChat", null);
+__decorate([
+    (0, common_1.Put)(':chatId/read'),
+    __param(0, (0, common_1.Param)('chatId')),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "markChatRead", null);
 exports.ChatController = ChatController = __decorate([
     (0, common_1.Controller)('chats'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

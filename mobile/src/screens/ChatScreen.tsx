@@ -82,6 +82,15 @@ export default function ChatScreen() {
     };
   }, [chatId, user?.id]);
 
+  // Mark chat as read when opening
+  useEffect(() => {
+    (async () => {
+      try {
+        await chatApi.markChatRead(chatId);
+      } catch {}
+    })();
+  }, [chatId]);
+
   const loadMessages = async () => {
     try {
       const data = await chatApi.getChatMessages(chatId);

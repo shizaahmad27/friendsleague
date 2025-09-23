@@ -57,8 +57,8 @@ export default function ChatListScreen() {
     const otherParticipant = item.participants.find(p => p.user.id !== user?.id);
     const displayName = isGroupChat ? item.name : otherParticipant?.user.username;
     const avatarText = isGroupChat ? item.name?.charAt(0).toUpperCase() : otherParticipant?.user.username?.charAt(0).toUpperCase();
-    const onlineCount = isGroupChat ? item.participants.filter(p => p.user.isOnline).length : (otherParticipant?.user.isOnline ? 1 : 0);
     const unreadCount = item.unreadCount || 0;
+    const lastMessage: any = (item as any).lastMessage ?? (item as any).messages?.[0] ?? null;
     
     return (
       <TouchableOpacity
@@ -80,20 +80,16 @@ export default function ChatListScreen() {
             )}
           </View>
           <Text style={styles.lastMessage} numberOfLines={1}>
-            {item.lastMessage?.content || 'No messages yet'}
+            {lastMessage?.content || 'No messages yet'}
           </Text>
         </View>
         <View style={styles.chatMeta}>
           <Text style={styles.timestamp}>
-            {item.lastMessage ? new Date(item.lastMessage.createdAt).toLocaleTimeString() : ''}
+            {lastMessage ? new Date(lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
           </Text>
           {unreadCount > 0 ? (
             <View style={styles.unreadBadge}>
               <Text style={styles.unreadCount}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
-            </View>
-          ) : onlineCount > 0 ? (
-            <View style={styles.onlineIndicator}>
-              <Text style={styles.onlineCount}>{onlineCount}</Text>
             </View>
           ) : null}
         </View>
