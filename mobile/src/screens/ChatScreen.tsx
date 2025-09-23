@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
-import { chatApi, Message } from '../services/chatApi';
+import { chatApi, Message, Chat } from '../services/chatApi';
 import socketService from '../services/socketService';
 import { useAuthStore } from '../store/authStore';
 
@@ -30,6 +30,8 @@ export default function ChatScreen() {
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [usernamesById, setUsernamesById] = useState<Record<string, string>>({});
   const [peerUser, setPeerUser] = useState<{ id: string; username: string; avatar?: string } | null>(null);
+  const [chatMeta, setChatMeta] = useState<{ type: Chat['type']; name?: string } | null>(null);
+  const [participants, setParticipants] = useState<Array<{ id: string; username: string; avatar?: string }>>([]);
 
   const flatListRef = useRef<FlatList>(null);
   const typingNames = typingUsers.map(id => usernamesById[id] ?? id);
@@ -163,7 +165,26 @@ export default function ChatScreen() {
           if (others.length > 0) {
             const first = others[0];
             setPeerUser({ id: first.id, username: first.username, avatar: first.avatar });
+            setParticipants(others);
+            // Heuristic: if more than 1 other participant, treat as group
+            if (others.length > 1) {
+              setChatMeta(prev => ({ ...(prev || { type: 'GROUP' }), type: 'GROUP' }));
+            } else {
+              setChatMeta(prev => ({ ...(prev || { type: 'DIRECT' }), type: 'DIRECT' }));
+            }
           }
+        }
+      })
+      .catch(() => {});
+  }, [chatId]);
+
+  // Try to load chat name/type from chats list (if available)
+  useEffect(() => {
+    chatApi.getUserChats()
+      .then(chats => {
+        const c = chats.find(x => x.id === chatId);
+        if (c) {
+          setChatMeta({ type: c.type, name: c.name });
         }
       })
       .catch(() => {});
@@ -184,24 +205,61 @@ export default function ChatScreen() {
     }
   }, [messages]);
 
-  const renderHeader = () => (
-    <View style={styles.headerContainer}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <Text style={styles.backIcon}>‹</Text>
-      </TouchableOpacity>
-      <View style={styles.headerTitleContainer}>
-        <View style={styles.headerAvatar}>
-          <Text style={styles.headerAvatarText}>
-            {(peerUser?.username?.charAt(0) || '?').toUpperCase()}
+  const renderHeader = () => {
+    const isGroup = chatMeta?.type === 'GROUP' || participants.length > 1;
+    const displayName = isGroup
+      ? chatMeta?.name || participants.slice(0, 3).map(p => p.username).join(', ')
+      : (peerUser?.username || 'Chat');
+
+    return (
+      <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Text style={styles.backIcon}>‹</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.headerTitleContainer}
+          onPress={() => (navigation as any).navigate('GroupChatSettings', { chatId })}
+          disabled={!isGroup}
+          activeOpacity={0.7}
+        >
+          {isGroup ? (
+            <View style={styles.groupAvatarContainer}>
+              <View style={styles.groupAvatarMain}>
+                <Text style={styles.headerAvatarText}>
+                  {(participants[0]?.username?.charAt(0) || 'G').toUpperCase()}
+                </Text>
+              </View>
+              {participants[1] && (
+                <View style={[styles.groupAvatarSmall, { left: -8, top: 4 }]}>
+                  <Text style={styles.groupAvatarSmallText}>
+                    {participants[1].username.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              {participants[2] && (
+                <View style={[styles.groupAvatarSmall, { right: -8, top: 4 }]}>
+                  <Text style={styles.groupAvatarSmallText}>
+                    {participants[2].username.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+            </View>
+          ) : (
+            <View style={styles.headerAvatar}>
+              <Text style={styles.headerAvatarText}>
+                {(peerUser?.username?.charAt(0) || '?').toUpperCase()}
+              </Text>
+            </View>
+          )}
+          <Text style={styles.headerUsername} numberOfLines={1}>
+            {displayName}
           </Text>
-        </View>
-        <Text style={styles.headerUsername} numberOfLines={1}>
-          {peerUser?.username || 'Chat'}
-        </Text>
+          {isGroup && <Text style={styles.headerChevron}>›</Text>}
+        </TouchableOpacity>
+        <View style={styles.headerRightSpacer} />
       </View>
-      <View style={styles.headerRightSpacer} />
-    </View>
-  );
+    );
+  };
 
   return (
     <KeyboardAvoidingView
@@ -310,10 +368,44 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  groupAvatarContainer: {
+    width: 42,
+    height: 42,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  groupAvatarMain: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  groupAvatarSmall: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#34C759',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  groupAvatarSmallText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
   headerAvatarText: {
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  headerChevron: {
+    marginLeft: 4,
+    fontSize: 18,
+    color: '#999',
   },
   headerUsername: {
     fontSize: 18,
