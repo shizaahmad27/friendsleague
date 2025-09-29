@@ -6,6 +6,8 @@ import { PrismaService } from './common/prisma.service';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { InvitationModule } from './invitation/invitation.module';
 import { ChatModule } from './chat/chat.module';
+import { LeaguesModule } from './leagues/leagues.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { ChatModule } from './chat/chat.module';
     UsersModule,
     InvitationModule,
     ChatModule,
+    LeaguesModule,
+    EventsModule,
   ],
   providers: [PrismaService],
 })
