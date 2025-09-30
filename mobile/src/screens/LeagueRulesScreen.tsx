@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, TextInput } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { leaguesApi, LeagueRule, LeagueMember } from '../services/leaguesApi';
+import { useAuthStore } from '../store/authStore';
 
 type RulesRouteProp = RouteProp<{ LeagueRules: { leagueId: string } }, 'LeagueRules'>;
 
@@ -9,6 +10,7 @@ export default function LeagueRulesScreen() {
   const route = useRoute<RulesRouteProp>();
   const navigation = useNavigation<any>();
   const { leagueId } = route.params;
+  const { user } = useAuthStore();
 
   const [rules, setRules] = useState<LeagueRule[]>([]);
   const [members, setMembers] = useState<LeagueMember[]>([]);
@@ -26,6 +28,7 @@ export default function LeagueRulesScreen() {
   const [editDesc, setEditDesc] = useState('');
   const [editPoints, setEditPoints] = useState('');
   const [editCategory, setEditCategory] = useState<LeagueRule['category']>('WINS');
+  const [canEdit, setCanEdit] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,6 +39,8 @@ export default function LeagueRulesScreen() {
       ]);
       setRules(rulesData);
       setMembers(membersData);
+      const me = membersData.find(m => m.userId === user?.id);
+      setCanEdit(!!me?.isAdmin);
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message || 'Failed to load rules');
     } finally {
@@ -146,11 +151,19 @@ export default function LeagueRulesScreen() {
           contentContainerStyle={{ padding: 16 }}
           renderItem={({ item }) => (
             <View style={styles.row}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={styles.rowText}>{item.title} · {item.category} · {item.points} pts</Text>
-                <TouchableOpacity onPress={() => setEditing(item.id)}>
-                  <Text style={{ color: '#007AFF', fontWeight: '700' }}>Edit</Text>
-                </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.rowText}>
+                  {item.title} · {item.category} · {item.points} pts
+                </Text>
+                {canEdit ? (
+                  <TouchableOpacity
+                    onPress={() => { setEditing(item.id); setEditTitle(item.title); setEditDesc(item.description || ''); setEditPoints(String(item.points)); setEditCategory(item.category); }}
+                    style={{ marginLeft: 'auto', paddingHorizontal: 10, paddingVertical: 6 }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={{ color: '#007AFF', fontWeight: '800', fontSize: 20 }}>✎</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
               {editing === item.id && (
                 <View style={{ marginTop: 12 }}>
