@@ -57,7 +57,7 @@ export default function LeaguesScreen() {
               <Text style={styles.cardDescription}>
                 You haven't joined any leagues yet. Create or join a league to get started!
               </Text>
-              <TouchableOpacity style={styles.cardButton}>
+              <TouchableOpacity style={styles.cardButton} onPress={() => (navigation as any).navigate('LeagueCreate')}>
                 <Text style={styles.cardButtonText}>Create League</Text>
               </TouchableOpacity>
             </View>
@@ -68,7 +68,7 @@ export default function LeaguesScreen() {
               {!!item.description && (
                 <Text style={styles.cardDescription}>{item.description}</Text>
               )}
-              <TouchableOpacity style={styles.cardButton}>
+              <TouchableOpacity style={styles.cardButton} onPress={() => (navigation as any).navigate('LeagueDetails', { leagueId: item.id })}>
                 <Text style={styles.cardButtonText}>Open</Text>
               </TouchableOpacity>
             </View>

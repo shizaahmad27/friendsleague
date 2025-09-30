@@ -19,6 +19,8 @@ import ChatListScreen from '../screens/ChatListScreen';
 import ChatScreen from '../screens/ChatScreen';
 import CreateGroupChatScreen from '../screens/CreateGroupChatScreen';
 import GroupChatSettingsScreen from '../screens/GroupChatSettingsScreen';
+import LeagueCreateScreen from '../screens/LeagueCreateScreen';
+import LeagueDetailsScreen from '../screens/LeagueDetailsScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -57,6 +59,8 @@ export default function AppNavigator() {
             <Stack.Screen name="Chat" component={ChatScreen} />
             <Stack.Screen name="CreateGroupChat" component={CreateGroupChatScreen} />
             <Stack.Screen name="GroupChatSettings" component={GroupChatSettingsScreen} />
+            <Stack.Screen name="LeagueCreate" component={LeagueCreateScreen} />
+            <Stack.Screen name="LeagueDetails" component={LeagueDetailsScreen} />
           </>
         ) : (
           <>
