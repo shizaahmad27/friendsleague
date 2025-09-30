@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, TextInput } from 'react-native';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { leaguesApi, LeagueRule, LeagueMember } from '../services/leaguesApi';
 
 type RulesRouteProp = RouteProp<{ LeagueRules: { leagueId: string } }, 'LeagueRules'>;
 
 export default function LeagueRulesScreen() {
   const route = useRoute<RulesRouteProp>();
+  const navigation = useNavigation<any>();
   const { leagueId } = route.params;
 
   const [rules, setRules] = useState<LeagueRule[]>([]);
@@ -138,6 +139,9 @@ export default function LeagueRulesScreen() {
             <TouchableOpacity style={styles.button} onPress={handleAssign} disabled={assigning}>
               {assigning ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Assign Points</Text>}
             </TouchableOpacity>
+            <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate('LeagueLeaderboard', { leagueId })}>
+              <Text style={styles.buttonSecondaryText}>View Leaderboard</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.sectionTitleRow}><Text style={styles.sectionTitleText}>Rules</Text></View>
@@ -171,6 +175,8 @@ const styles = StyleSheet.create({
   chipTextActive: { color: '#007AFF', fontWeight: '600' },
   button: { backgroundColor: '#007AFF', paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
   buttonText: { color: 'white', fontSize: 16, fontWeight: '600' },
+  buttonSecondary: { marginTop: 8, paddingVertical: 12, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: '#007AFF' },
+  buttonSecondaryText: { color: '#007AFF', fontSize: 16, fontWeight: '600' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   row: { backgroundColor: 'white', padding: 16, borderRadius: 12, marginBottom: 12 },
   rowText: { color: '#333', fontSize: 16 },
