@@ -75,7 +75,12 @@ export default function LeagueMembersScreen() {
           contentContainerStyle={{ padding: 16 }}
           renderItem={({ item }) => (
             <View style={styles.row}>
-              <Text style={styles.rowText}>{item.username}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.rowText}>{item.username}</Text>
+                {item.isAdmin ? (
+                  <View style={styles.adminBadge}><Text style={styles.adminBadgeText}>Admin</Text></View>
+                ) : null}
+              </View>
               <TouchableOpacity style={styles.remove} onPress={() => handleRemove(item.userId)}>
                 <Text style={styles.removeText}>Remove</Text>
               </TouchableOpacity>
@@ -100,6 +105,8 @@ const styles = StyleSheet.create({
   rowText: { color: '#333', fontSize: 16 },
   remove: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#FF3B30', borderRadius: 8 },
   removeText: { color: 'white', fontWeight: '600' },
+  adminBadge: { marginLeft: 8, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: '#007AFF22', borderRadius: 8 },
+  adminBadgeText: { color: '#007AFF', fontWeight: '700', fontSize: 12 },
 });
 
 
