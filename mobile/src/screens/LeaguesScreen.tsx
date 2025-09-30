@@ -41,9 +41,11 @@ export default function LeaguesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Leagues</Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.title}>Leagues</Text>
+          <HamburgerMenu onLogout={handleLogout} />
+        </View>
         <Text style={styles.subtitle}>Manage your competitive leagues</Text>
-        <HamburgerMenu onLogout={handleLogout} />
       </View>
 
       <View style={styles.content}>
@@ -57,9 +59,6 @@ export default function LeaguesScreen() {
               <Text style={styles.cardDescription}>
                 You haven't joined any leagues yet. Create or join a league to get started!
               </Text>
-              <TouchableOpacity style={styles.cardButton} onPress={() => (navigation as any).navigate('LeagueCreate')}>
-                <Text style={styles.cardButtonText}>Create League</Text>
-              </TouchableOpacity>
             </View>
           ) : null}
           renderItem={({ item }) => (
@@ -74,6 +73,14 @@ export default function LeaguesScreen() {
             </View>
           )}
         />
+        <View style={styles.bottomBar}>
+          <TouchableOpacity 
+            style={styles.bottomCreateButton} 
+            onPress={() => (navigation as any).navigate('LeagueCreate')}
+          >
+            <Text style={styles.bottomCreateButtonText}>+ Create League</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -100,21 +107,58 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#333',
+    flex: 1,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-    marginTop: 4,
+    marginBottom: 0,
   },
   content: {
     flex: 1,
     padding: 20,
+    paddingBottom: 96,
+  },
+  bottomBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'white',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  bottomCreateButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  bottomCreateButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
   card: {
     backgroundColor: 'white',
