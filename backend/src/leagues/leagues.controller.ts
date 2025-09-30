@@ -19,6 +19,7 @@ import {
   UpdateLeagueDto,
   AddMemberDto,
   CreateRuleDto,
+  UpdateRuleDto,
   AssignPointsDto,
   JoinLeagueDto,
 } from './dto/leagues.dto';
@@ -166,6 +167,19 @@ export class LeaguesController {
     @Request() req: any,
   ) {
     return this.leaguesService.getRules(leagueId, req.user.id);
+  }
+
+  /**
+   * Update a league rule (admin only)
+   */
+  @Put(':id/rules/:ruleId')
+  async updateRule(
+    @Param('id') leagueId: string,
+    @Param('ruleId') ruleId: string,
+    @Request() req: any,
+    @Body() updateRuleDto: UpdateRuleDto,
+  ) {
+    return this.leaguesService.updateRule(leagueId, req.user.id, ruleId, updateRuleDto);
   }
 
   /**

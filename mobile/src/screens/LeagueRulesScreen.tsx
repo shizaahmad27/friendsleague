@@ -21,6 +21,11 @@ export default function LeagueRulesScreen() {
   const [assigning, setAssigning] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [reason, setReason] = useState('');
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editPoints, setEditPoints] = useState('');
+  const [editCategory, setEditCategory] = useState<LeagueRule['category']>('WINS');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,6 +63,22 @@ export default function LeagueRulesScreen() {
     }
   };
 
+  const handleSaveEdit = async (ruleId: string) => {
+    try {
+      const payload: any = {};
+      if (editTitle.trim()) payload.title = editTitle.trim();
+      if (editDesc.trim() || editDesc === '') payload.description = editDesc;
+      if (editPoints.trim()) payload.points = Number(editPoints);
+      if (editCategory) payload.category = editCategory;
+      await leaguesApi.updateRule(leagueId, ruleId, payload);
+      setEditing(null);
+      setEditTitle(''); setEditDesc(''); setEditPoints(''); setEditCategory('WINS');
+      await load();
+    } catch (e: any) {
+      Alert.alert('Error', e?.response?.data?.message || 'Failed to update rule');
+    }
+  };
+
   const handleAssign = async () => {
     if (!selectedMemberId.trim()) {
       Alert.alert('Select member', 'Please choose a member');
@@ -86,6 +107,8 @@ export default function LeagueRulesScreen() {
       setAssigning(false);
     }
   };
+
+  
 
   return (
     <View style={styles.container}>
@@ -117,49 +140,40 @@ export default function LeagueRulesScreen() {
           keyExtractor={(r) => r.id}
           ListHeaderComponent={
             <>
-              <View style={styles.sectionTitleRow}><Text style={styles.sectionTitleText}>Assign Points</Text></View>
-              <View style={styles.assignBox}>
-                <Text style={styles.label}>Select member</Text>
-                <View style={styles.chipsRow}>
-                  {members.map((m) => (
-                    <TouchableOpacity key={m.userId} style={[styles.chip, selectedMemberId === m.userId && styles.chipActive]} onPress={() => setSelectedMemberId(m.userId)}>
-                      <Text style={[styles.chipText, selectedMemberId === m.userId && styles.chipTextActive]}>{m.username}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <Text style={styles.label}>Quick select from rules</Text>
-                <View style={styles.chipsRow}>
-                  {rules.slice(0, 6).map((r) => (
-                    <TouchableOpacity key={r.id} style={styles.ruleChip} onPress={() => { setPoints(String(r.points)); setCategory(r.category); }}>
-                      <Text style={styles.ruleChipText}>{r.title} (+{r.points})</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <TextInput style={styles.input} placeholder="Points (e.g. 5 or -2)" keyboardType="numeric" value={points} onChangeText={setPoints} />
-                <Text style={styles.label}>Category: {category}</Text>
-                <View style={styles.chipsRow}>
-                  {(['WINS','PARTICIPATION','BONUS','PENALTY'] as LeagueRule['category'][]).map((c) => (
-                    <TouchableOpacity key={c} style={[styles.chip, category === c && styles.chipActive]} onPress={() => setCategory(c)}>
-                      <Text style={[styles.chipText, category === c && styles.chipTextActive]}>{c}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <TextInput style={styles.input} placeholder="Reason (optional)" value={reason} onChangeText={setReason} />
-                <TouchableOpacity style={styles.button} onPress={handleAssign} disabled={assigning}>
-                  {assigning ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Assign Points</Text>}
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate('LeagueLeaderboard', { leagueId })}>
-                  <Text style={styles.buttonSecondaryText}>View Leaderboard</Text>
-                </TouchableOpacity>
-              </View>
-
               <View style={styles.sectionTitleRow}><Text style={styles.sectionTitleText}>Rules</Text></View>
             </>
           }
           contentContainerStyle={{ padding: 16 }}
           renderItem={({ item }) => (
             <View style={styles.row}>
-              <Text style={styles.rowText}>{item.title} · {item.category} · {item.points} pts</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={styles.rowText}>{item.title} · {item.category} · {item.points} pts</Text>
+                <TouchableOpacity onPress={() => setEditing(item.id)}>
+                  <Text style={{ color: '#007AFF', fontWeight: '700' }}>Edit</Text>
+                </TouchableOpacity>
+              </View>
+              {editing === item.id && (
+                <View style={{ marginTop: 12 }}>
+                  <TextInput style={styles.input} placeholder="Title" value={editTitle} onChangeText={setEditTitle} />
+                  <TextInput style={styles.input} placeholder="Description" value={editDesc} onChangeText={setEditDesc} />
+                  <TextInput style={styles.input} placeholder="Points" keyboardType="numeric" value={editPoints} onChangeText={setEditPoints} />
+                  <View style={styles.chipsRow}>
+                    {(['WINS','PARTICIPATION','BONUS','PENALTY'] as LeagueRule['category'][]).map((c) => (
+                      <TouchableOpacity key={c} style={[styles.chip, editCategory === c && styles.chipActive]} onPress={() => setEditCategory(c)}>
+                        <Text style={[styles.chipText, editCategory === c && styles.chipTextActive]}>{c}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <TouchableOpacity style={styles.button} onPress={() => handleSaveEdit(item.id)}>
+                      <Text style={styles.buttonText}>Save</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.buttonSecondary} onPress={() => setEditing(null)}>
+                      <Text style={styles.buttonSecondaryText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
           )}
         />

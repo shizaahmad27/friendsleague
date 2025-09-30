@@ -343,21 +343,28 @@ let LeaguesService = class LeaguesService {
         return this.getLeagueById(leagueId, adminId);
     }
     async getMembers(leagueId, requesterId) {
-        await this.getLeagueById(leagueId, requesterId);
-        const members = await this.prisma.leagueMember.findMany({
-            where: { leagueId },
-            include: {
-                user: {
-                    select: { id: true, username: true, avatar: true },
+        const league = await this.getLeagueById(leagueId, requesterId);
+        const [members, delegatedAdmins] = await Promise.all([
+            this.prisma.leagueMember.findMany({
+                where: { leagueId },
+                include: {
+                    user: {
+                        select: { id: true, username: true, avatar: true },
+                    },
                 },
-            },
-            orderBy: [{ rank: 'asc' }],
-        });
+                orderBy: [{ rank: 'asc' }],
+            }),
+            this.prisma.leagueAdmin.findMany({
+                where: { leagueId },
+                select: { userId: true },
+            }),
+        ]);
+        const delegatedAdminSet = new Set(delegatedAdmins.map(a => a.userId));
         return members.map(m => ({
             userId: m.userId,
             username: m.user.username,
             avatar: m.user.avatar || undefined,
-            isAdmin: undefined,
+            isAdmin: m.userId === league.adminId || delegatedAdminSet.has(m.userId),
             joinedAt: m.joinedAt ?? new Date(0),
             totalPoints: m.points,
         }));
@@ -468,6 +475,23 @@ let LeaguesService = class LeaguesService {
             orderBy: { createdAt: 'desc' },
         });
         return rules;
+    }
+    async updateRule(leagueId, adminId, ruleId, updateRuleDto) {
+        await this.verifyAdminAccess(leagueId, adminId);
+        const rule = await this.prisma.leagueRule.findUnique({ where: { id: ruleId } });
+        if (!rule || rule.leagueId !== leagueId) {
+            throw new common_1.NotFoundException('Rule not found');
+        }
+        const updated = await this.prisma.leagueRule.update({
+            where: { id: ruleId },
+            data: {
+                title: updateRuleDto.title ?? undefined,
+                description: updateRuleDto.description ?? undefined,
+                points: updateRuleDto.points ?? undefined,
+                category: updateRuleDto.category ?? undefined,
+            },
+        });
+        return updated;
     }
     async assignPoints(leagueId, adminId, assignPointsDto) {
         await this.verifyAdminAccess(leagueId, adminId);

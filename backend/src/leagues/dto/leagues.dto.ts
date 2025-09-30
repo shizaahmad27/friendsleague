@@ -58,6 +58,29 @@ export class CreateRuleDto {
   category: PointCategory;
 }
 
+export class UpdateRuleDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(50)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  description?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(-1000)
+  @Max(1000)
+  points?: number;
+
+  @IsOptional()
+  @IsEnum(PointCategory)
+  category?: PointCategory;
+}
+
 export class AssignPointsDto {
   @IsString()
   userId: string;

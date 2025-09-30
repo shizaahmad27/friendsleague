@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.JoinLeagueDto = exports.AssignPointsDto = exports.CreateRuleDto = exports.AddMemberDto = exports.UpdateLeagueDto = exports.CreateLeagueDto = void 0;
+exports.JoinLeagueDto = exports.AssignPointsDto = exports.UpdateRuleDto = exports.CreateRuleDto = exports.AddMemberDto = exports.UpdateLeagueDto = exports.CreateLeagueDto = void 0;
 const class_validator_1 = require("class-validator");
 const client_1 = require("@prisma/client");
 class CreateLeagueDto {
@@ -84,6 +84,34 @@ __decorate([
     (0, class_validator_1.IsEnum)(client_1.PointCategory),
     __metadata("design:type", String)
 ], CreateRuleDto.prototype, "category", void 0);
+class UpdateRuleDto {
+}
+exports.UpdateRuleDto = UpdateRuleDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(1),
+    (0, class_validator_1.MaxLength)(50),
+    __metadata("design:type", String)
+], UpdateRuleDto.prototype, "title", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(200),
+    __metadata("design:type", String)
+], UpdateRuleDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(-1000),
+    (0, class_validator_1.Max)(1000),
+    __metadata("design:type", Number)
+], UpdateRuleDto.prototype, "points", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(client_1.PointCategory),
+    __metadata("design:type", String)
+], UpdateRuleDto.prototype, "category", void 0);
 class AssignPointsDto {
 }
 exports.AssignPointsDto = AssignPointsDto;

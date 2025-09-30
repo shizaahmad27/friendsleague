@@ -118,6 +118,9 @@ export default function LeagueDetailsScreen() {
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('LeagueRules', { leagueId })}>
           <Text style={styles.buttonText}>Rules {league.rules && league.rules.length ? `(${league.rules.length})` : ''}</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('LeagueAssignPoints', { leagueId })}>
+          <Text style={styles.buttonText}>Assign Points</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('LeagueLeaderboard', { leagueId })}>
           <Text style={styles.buttonText}>Leaderboard</Text>
         </TouchableOpacity>

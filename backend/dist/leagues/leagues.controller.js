@@ -60,6 +60,9 @@ let LeaguesController = class LeaguesController {
     async getRules(leagueId, req) {
         return this.leaguesService.getRules(leagueId, req.user.id);
     }
+    async updateRule(leagueId, ruleId, req, updateRuleDto) {
+        return this.leaguesService.updateRule(leagueId, req.user.id, ruleId, updateRuleDto);
+    }
     async assignPoints(leagueId, req, assignPointsDto) {
         return this.leaguesService.assignPoints(leagueId, req.user.id, assignPointsDto);
     }
@@ -180,6 +183,16 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], LeaguesController.prototype, "getRules", null);
+__decorate([
+    (0, common_1.Put)(':id/rules/:ruleId'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('ruleId')),
+    __param(2, (0, common_1.Request)()),
+    __param(3, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object, leagues_dto_1.UpdateRuleDto]),
+    __metadata("design:returntype", Promise)
+], LeaguesController.prototype, "updateRule", null);
 __decorate([
     (0, common_1.Post)(':id/points'),
     __param(0, (0, common_1.Param)('id')),

@@ -18,6 +18,12 @@ export declare class CreateRuleDto {
     points: number;
     category: PointCategory;
 }
+export declare class UpdateRuleDto {
+    title?: string;
+    description?: string;
+    points?: number;
+    category?: PointCategory;
+}
 export declare class AssignPointsDto {
     userId: string;
     points: number;

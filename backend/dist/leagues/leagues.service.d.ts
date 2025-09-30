@@ -1,5 +1,5 @@
 import { PrismaService } from '../common/prisma.service';
-import { CreateLeagueDto, UpdateLeagueDto, AddMemberDto, CreateRuleDto, AssignPointsDto } from './dto/leagues.dto';
+import { CreateLeagueDto, UpdateLeagueDto, AddMemberDto, CreateRuleDto, AssignPointsDto, UpdateRuleDto } from './dto/leagues.dto';
 export declare class LeaguesService {
     private prisma;
     constructor(prisma: PrismaService);
@@ -409,7 +409,7 @@ export declare class LeaguesService {
         userId: string;
         username: string;
         avatar: string;
-        isAdmin: any;
+        isAdmin: boolean;
         joinedAt: any;
         totalPoints: number;
     }[]>;
@@ -450,6 +450,15 @@ export declare class LeaguesService {
         title: string;
         category: import(".prisma/client").$Enums.PointCategory;
     }[]>;
+    updateRule(leagueId: string, adminId: string, ruleId: string, updateRuleDto: UpdateRuleDto): Promise<{
+        id: string;
+        description: string;
+        createdAt: Date;
+        points: number;
+        leagueId: string;
+        title: string;
+        category: import(".prisma/client").$Enums.PointCategory;
+    }>;
     assignPoints(leagueId: string, adminId: string, assignPointsDto: AssignPointsDto): Promise<{
         member: {
             id: string;

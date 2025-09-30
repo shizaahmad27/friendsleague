@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { PointCategory } from '@prisma/client';
-import { CreateLeagueDto, UpdateLeagueDto, AddMemberDto, CreateRuleDto, AssignPointsDto } from './dto/leagues.dto';
+import { CreateLeagueDto, UpdateLeagueDto, AddMemberDto, CreateRuleDto, AssignPointsDto, UpdateRuleDto } from './dto/leagues.dto';
 
 @Injectable()
 export class LeaguesService {
@@ -415,9 +415,10 @@ export class LeaguesService {
    */
   async getMembers(leagueId: string, requesterId: string) {
     // Ensure requester has access
-    await this.getLeagueById(leagueId, requesterId);
+    const league = await this.getLeagueById(leagueId, requesterId);
 
-    const members = await this.prisma.leagueMember.findMany({
+    const [members, delegatedAdmins] = await Promise.all([
+      this.prisma.leagueMember.findMany({
       where: { leagueId },
       include: {
         user: {
@@ -425,13 +426,20 @@ export class LeaguesService {
         },
       },
       orderBy: [{ rank: 'asc' }],
-    });
+    }),
+      this.prisma.leagueAdmin.findMany({
+        where: { leagueId },
+        select: { userId: true },
+      }),
+    ]);
+
+    const delegatedAdminSet = new Set(delegatedAdmins.map(a => a.userId));
 
     return members.map(m => ({
       userId: m.userId,
       username: m.user.username,
       avatar: m.user.avatar || undefined,
-      isAdmin: undefined, // client can infer via separate call; or extend below
+      isAdmin: m.userId === league.adminId || delegatedAdminSet.has(m.userId),
       joinedAt: (m as any).joinedAt ?? new Date(0),
       totalPoints: m.points,
     }));
@@ -592,6 +600,31 @@ export class LeaguesService {
       orderBy: { createdAt: 'desc' },
     });
     return rules;
+  }
+
+  /**
+   * Update a rule (admin only)
+   */
+  async updateRule(leagueId: string, adminId: string, ruleId: string, updateRuleDto: UpdateRuleDto) {
+    await this.verifyAdminAccess(leagueId, adminId);
+
+    // Ensure rule belongs to league
+    const rule = await this.prisma.leagueRule.findUnique({ where: { id: ruleId } });
+    if (!rule || rule.leagueId !== leagueId) {
+      throw new NotFoundException('Rule not found');
+    }
+
+    const updated = await this.prisma.leagueRule.update({
+      where: { id: ruleId },
+      data: {
+        title: updateRuleDto.title ?? undefined,
+        description: updateRuleDto.description ?? undefined,
+        points: updateRuleDto.points ?? undefined,
+        category: updateRuleDto.category ?? undefined as any,
+      },
+    });
+
+    return updated;
   }
 
   /**

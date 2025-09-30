@@ -83,6 +83,10 @@ export const leaguesApi = {
     const res = await api.post(`/leagues/${leagueId}/rules`, data);
     return res.data;
   },
+  updateRule: async (leagueId: string, ruleId: string, data: Partial<{ title: string; description?: string; points: number; category: LeagueRule['category']; }>): Promise<LeagueRule> => {
+    const res = await api.put(`/leagues/${leagueId}/rules/${ruleId}`, data);
+    return res.data;
+  },
   // Points assignment
   assignPoints: async (leagueId: string, data: { userId: string; points: number; reason?: string; category: LeagueRule['category']; ruleId?: string; }): Promise<void> => {
     await api.post(`/leagues/${leagueId}/points`, data);
