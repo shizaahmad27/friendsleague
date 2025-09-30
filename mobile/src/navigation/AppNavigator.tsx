@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuthStore } from '../store/authStore';
 import { RootStackParamList } from '../types';
 
@@ -20,6 +21,17 @@ import CreateGroupChatScreen from '../screens/CreateGroupChatScreen';
 import GroupChatSettingsScreen from '../screens/GroupChatSettingsScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator();
+
+function MainTabs() {
+  return (
+    <Tab.Navigator screenOptions={{ headerShown: false }}>
+      <Tab.Screen name="Friends" component={FriendsScreen} />
+      <Tab.Screen name="Leagues" component={LeaguesScreen} />
+      <Tab.Screen name="Events" component={EventsScreen} />
+    </Tab.Navigator>
+  );
+}
 
 export default function AppNavigator() {
   const { isAuthenticated } = useAuthStore();
@@ -34,6 +46,7 @@ export default function AppNavigator() {
         {isAuthenticated ? (
           <>
             <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="MainTabs" component={MainTabs} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Leagues" component={LeaguesScreen} />
             <Stack.Screen name="Friends" component={FriendsScreen} />

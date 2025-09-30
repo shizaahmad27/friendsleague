@@ -1,15 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import { RefreshControl, FlatList } from 'react-native';
+import { leaguesApi, League } from '../services/leaguesApi';
 import { useNavigation } from '@react-navigation/native';
 import HamburgerMenu from '../components/HamburgerMenu';
 
 export default function LeaguesScreen() {
   const navigation = useNavigation();
+  const [leagues, setLeagues] = useState<League[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const loadLeagues = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await leaguesApi.getLeagues();
+      setLeagues(data);
+    } catch (e) {
+      console.error('Failed to load leagues', e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadLeagues();
+  }, [loadLeagues]);
 
   const handleLogout = () => {
     // This will be handled by the parent component
@@ -25,25 +47,33 @@ export default function LeaguesScreen() {
       </View>
 
       <View style={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>🏆 My Leagues</Text>
-          <Text style={styles.cardDescription}>
-            You haven't joined any leagues yet. Create or join a league to get started!
-          </Text>
-          <TouchableOpacity style={styles.cardButton}>
-            <Text style={styles.cardButtonText}>Create League</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>🔍 Discover</Text>
-          <Text style={styles.cardDescription}>
-            Find leagues to join and compete with friends
-          </Text>
-          <TouchableOpacity style={styles.cardButton}>
-            <Text style={styles.cardButtonText}>Browse Leagues</Text>
-          </TouchableOpacity>
-        </View>
+        <FlatList
+          data={leagues}
+          keyExtractor={(item) => item.id}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadLeagues(); }} />}
+          ListEmptyComponent={!loading ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>🏆 My Leagues</Text>
+              <Text style={styles.cardDescription}>
+                You haven't joined any leagues yet. Create or join a league to get started!
+              </Text>
+              <TouchableOpacity style={styles.cardButton}>
+                <Text style={styles.cardButtonText}>Create League</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>{item.name}</Text>
+              {!!item.description && (
+                <Text style={styles.cardDescription}>{item.description}</Text>
+              )}
+              <TouchableOpacity style={styles.cardButton}>
+                <Text style={styles.cardButtonText}>Open</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        />
       </View>
     </View>
   );

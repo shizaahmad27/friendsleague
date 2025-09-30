@@ -12,7 +12,7 @@ class SocketService {
     const { user, accessToken } = useAuthStore.getState();
     if (!user || !accessToken) return;
 
-    this.socket = io('http://192.168.0.110:3000', {  // 192.168.0.110 //10.24.64.17 ntnu
+    this.socket = io('http://10.24.65.81:3000', {  // 192.168.0.110 //10.24.64.17 ntnu 10.24.65.81
       auth: {
         token: accessToken,
       },

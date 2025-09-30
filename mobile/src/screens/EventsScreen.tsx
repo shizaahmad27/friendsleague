@@ -1,15 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import { RefreshControl, FlatList } from 'react-native';
+import { eventsApi, EventItem } from '../services/eventsApi';
 import { useNavigation } from '@react-navigation/native';
 import HamburgerMenu from '../components/HamburgerMenu';
 
 export default function EventsScreen() {
   const navigation = useNavigation();
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const loadEvents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await eventsApi.getEvents();
+      setEvents(data);
+    } catch (e) {
+      console.error('Failed to load events', e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadEvents();
+  }, [loadEvents]);
 
   const handleLogout = () => {
     // This will be handled by the parent component
@@ -25,35 +47,33 @@ export default function EventsScreen() {
       </View>
 
       <View style={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>📅 My Events</Text>
-          <Text style={styles.cardDescription}>
-            You haven't created or joined any events yet. Start organizing!
-          </Text>
-          <TouchableOpacity style={styles.cardButton}>
-            <Text style={styles.cardButtonText}>Create Event</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>🔍 Discover Events</Text>
-          <Text style={styles.cardDescription}>
-            Find events organized by your friends and leagues
-          </Text>
-          <TouchableOpacity style={styles.cardButton}>
-            <Text style={styles.cardButtonText}>Browse Events</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>📊 Event History</Text>
-          <Text style={styles.cardDescription}>
-            View your past events and achievements
-          </Text>
-          <TouchableOpacity style={styles.cardButton}>
-            <Text style={styles.cardButtonText}>View History</Text>
-          </TouchableOpacity>
-        </View>
+        <FlatList
+          data={events}
+          keyExtractor={(item) => item.id}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadEvents(); }} />}
+          ListEmptyComponent={!loading ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>🎉 Upcoming Events</Text>
+              <Text style={styles.cardDescription}>
+                No events yet. Create an event to get started!
+              </Text>
+              <TouchableOpacity style={styles.cardButton}>
+                <Text style={styles.cardButtonText}>Create Event</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>{item.title}</Text>
+              {!!item.description && (
+                <Text style={styles.cardDescription}>{item.description}</Text>
+              )}
+              <TouchableOpacity style={styles.cardButton}>
+                <Text style={styles.cardButtonText}>Open</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        />
       </View>
     </View>
   );

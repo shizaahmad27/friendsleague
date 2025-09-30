@@ -15,6 +15,8 @@ const prisma_service_1 = require("./common/prisma.service");
 const throttler_1 = require("@nestjs/throttler");
 const invitation_module_1 = require("./invitation/invitation.module");
 const chat_module_1 = require("./chat/chat.module");
+const leagues_module_1 = require("./leagues/leagues.module");
+const events_module_1 = require("./events/events.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -32,6 +34,8 @@ exports.AppModule = AppModule = __decorate([
             users_module_1.UsersModule,
             invitation_module_1.InvitationModule,
             chat_module_1.ChatModule,
+            leagues_module_1.LeaguesModule,
+            events_module_1.EventsModule,
         ],
         providers: [prisma_service_1.PrismaService],
     })

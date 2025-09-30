@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore';
 // Create axios instance
 const api = axios.create({
   baseURL: __DEV__ 
-    ? 'http://192.168.0.110:3000/api'   // 192.168.0.110 //10.24.64.17 ntnu
+    ? 'http://10.24.65.81:3000/api'   // 192.168.0.110 //10.24.64.17 ntnu
     : 'https://api.friendsleague.com/api',  //production senere
   timeout: 10000,
   headers: {

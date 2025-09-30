@@ -369,9 +369,9 @@ export class EventsService {
     // Check if user is already a participant
     const existingParticipant = await this.prisma.eventParticipant.findUnique({
       where: {
-        userId_eventId: {
-          userId,
+        eventId_userId: {
           eventId,
+          userId,
         },
       },
     });
@@ -434,9 +434,9 @@ export class EventsService {
     // Remove user from event
     await this.prisma.eventParticipant.delete({
       where: {
-        userId_eventId: {
-          userId,
+        eventId_userId: {
           eventId,
+          userId,
         },
       },
     });
@@ -467,9 +467,9 @@ export class EventsService {
     // Check if user is already a participant
     const existingParticipant = await this.prisma.eventParticipant.findUnique({
       where: {
-        userId_eventId: {
-          userId,
+        eventId_userId: {
           eventId,
+          userId,
         },
       },
     });
@@ -527,9 +527,9 @@ export class EventsService {
     // Remove user from event
     await this.prisma.eventParticipant.delete({
       where: {
-        userId_eventId: {
-          userId,
+        eventId_userId: {
           eventId,
+          userId,
         },
       },
     });
@@ -572,9 +572,9 @@ export class EventsService {
     // Check if user is a participant
     const participant = await this.prisma.eventParticipant.findUnique({
       where: {
-        userId_eventId: {
-          userId,
+        eventId_userId: {
           eventId,
+          userId,
         },
       },
     });
@@ -586,9 +586,9 @@ export class EventsService {
     // Update participant's points
     const updatedParticipant = await this.prisma.eventParticipant.update({
       where: {
-        userId_eventId: {
-          userId,
+        eventId_userId: {
           eventId,
+          userId,
         },
       },
       data: {
