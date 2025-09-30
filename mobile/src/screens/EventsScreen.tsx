@@ -47,6 +47,9 @@ export default function EventsScreen() {
       </View>
 
       <View style={styles.content}>
+        <TouchableOpacity style={styles.createFloating} onPress={() => (navigation as any).navigate('EventCreate')}>
+          <Text style={styles.createFloatingText}>+ Create Event</Text>
+        </TouchableOpacity>
         <FlatList
           data={events}
           keyExtractor={(item) => item.id}
@@ -57,7 +60,7 @@ export default function EventsScreen() {
               <Text style={styles.cardDescription}>
                 No events yet. Create an event to get started!
               </Text>
-              <TouchableOpacity style={styles.cardButton}>
+              <TouchableOpacity style={styles.cardButton} onPress={() => (navigation as any).navigate('EventCreate')}>
                 <Text style={styles.cardButtonText}>Create Event</Text>
               </TouchableOpacity>
             </View>
@@ -68,7 +71,7 @@ export default function EventsScreen() {
               {!!item.description && (
                 <Text style={styles.cardDescription}>{item.description}</Text>
               )}
-              <TouchableOpacity style={styles.cardButton}>
+              <TouchableOpacity style={styles.cardButton} onPress={() => (navigation as any).navigate('EventDetails', { eventId: item.id })}>
                 <Text style={styles.cardButtonText}>Open</Text>
               </TouchableOpacity>
             </View>
@@ -116,6 +119,22 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  createFloating: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    zIndex: 10,
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  createFloatingText: { color: 'white', fontWeight: '700' },
   card: {
     backgroundColor: 'white',
     padding: 24,

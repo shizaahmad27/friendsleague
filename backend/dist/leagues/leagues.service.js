@@ -546,7 +546,13 @@ let LeaguesService = class LeaguesService {
                 { joinedAt: 'asc' },
             ],
         });
-        return members;
+        return members.map((m) => ({
+            userId: m.userId,
+            username: m.user.username,
+            avatar: m.user.avatar || undefined,
+            totalPoints: m.points,
+            rank: m.rank,
+        }));
     }
     async verifyAdminAccess(leagueId, userId) {
         const league = await this.prisma.league.findUnique({

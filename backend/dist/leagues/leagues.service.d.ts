@@ -472,21 +472,13 @@ export declare class LeaguesService {
         category: import(".prisma/client").$Enums.PointCategory;
         reason: string;
     }>;
-    getLeaderboard(leagueId: string): Promise<({
-        user: {
-            id: string;
-            username: string;
-            avatar: string;
-            isOnline: boolean;
-        };
-    } & {
-        id: string;
-        points: number;
-        rank: number;
-        joinedAt: Date;
+    getLeaderboard(leagueId: string): Promise<{
         userId: string;
-        leagueId: string;
-    })[]>;
+        username: string;
+        avatar: string;
+        totalPoints: number;
+        rank: number;
+    }[]>;
     private verifyAdminAccess;
     private recalculateRankings;
     private generateInviteCode;

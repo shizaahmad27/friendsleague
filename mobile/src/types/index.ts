@@ -43,6 +43,7 @@ export type RootStackParamList = {
   SignIn: undefined;
   SignUp: undefined;
   Home: undefined;
+  MainTabs: undefined;
   Profile: undefined;
   Leagues: undefined;
   Friends: undefined;
@@ -53,4 +54,16 @@ export type RootStackParamList = {
   Chat: { chatId: string };
   CreateGroupChat: undefined;
   GroupChatSettings: { chatId: string };
+  // Leagues
+  LeagueCreate: undefined;
+  LeagueDetails: { leagueId: string };
+  LeagueMembers: { leagueId: string };
+  LeagueAdmin: { leagueId: string };
+  LeagueRules: { leagueId: string };
+  LeagueRulesRead: { leagueId: string };
+  LeagueLeaderboard: { leagueId: string };
+  LeagueAssignPoints: { leagueId: string };
+  // Events
+  EventCreate: { leagueId?: string } | undefined;
+  EventDetails: { eventId: string };
 };

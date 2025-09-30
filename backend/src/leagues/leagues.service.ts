@@ -697,7 +697,14 @@ export class LeaguesService {
       ],
     });
 
-    return members;
+    // Map to mobile-expected shape
+    return members.map((m) => ({
+      userId: m.userId,
+      username: m.user.username,
+      avatar: m.user.avatar || undefined,
+      totalPoints: m.points,
+      rank: m.rank,
+    }));
   }
 
   /**

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp, useRoute, useFocusEffect } from '@react-navigation/native';
 import { leaguesApi, LeaderboardEntry } from '../services/leaguesApi';
 
 type LeaderboardRouteProp = RouteProp<{ LeagueLeaderboard: { leagueId: string } }, 'LeagueLeaderboard'>;
@@ -25,12 +25,19 @@ export default function LeagueLeaderboardScreen() {
   }, [leagueId]);
 
   useEffect(() => { load(); }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}><Text style={styles.title}>Leaderboard</Text></View>
       {loading ? (
         <View style={styles.center}><ActivityIndicator /></View>
+      ) : entries.length === 0 ? (
+        <View style={styles.center}><Text style={styles.sub}>No points yet. Assign points to see rankings.</Text></View>
       ) : (
         <FlatList
           data={entries}

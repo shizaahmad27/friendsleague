@@ -14,6 +14,8 @@ import LeaguesScreen from '../screens/LeaguesScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 import ActiveFriendsScreen from '../screens/ActiveFriendsScreen';
 import EventsScreen from '../screens/EventsScreen';
+import EventCreateScreen from '../screens/EventCreateScreen';
+import EventDetailsScreen from '../screens/EventDetailsScreen';
 import InviteCodeScreen from '../screens/InviteCodeScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import ChatScreen from '../screens/ChatScreen';
@@ -60,6 +62,8 @@ export default function AppNavigator() {
             <Stack.Screen name="Friends" component={FriendsScreen} />
             <Stack.Screen name="ActiveFriends" component={ActiveFriendsScreen} />
             <Stack.Screen name="Events" component={EventsScreen} />
+            <Stack.Screen name="EventCreate" component={EventCreateScreen} />
+            <Stack.Screen name="EventDetails" component={EventDetailsScreen} />
             <Stack.Screen name="InviteCode" component={InviteCodeScreen} />
             <Stack.Screen name="Messages" component={ChatListScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />
