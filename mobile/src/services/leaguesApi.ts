@@ -6,6 +6,8 @@ export interface League {
   description?: string;
   isPrivate: boolean;
   inviteCode?: string;
+  adminId?: string;
+  members?: Array<{ user: { id: string; username: string; avatar?: string } }>;
   createdAt: string;
   updatedAt: string;
 }

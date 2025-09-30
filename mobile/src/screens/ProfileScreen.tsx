@@ -14,6 +14,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useAuthStore } from '../store/authStore';
 import { usersApi } from '../services/usersApi';
+import { leaguesApi } from '../services/leaguesApi';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -24,6 +25,9 @@ export default function ProfileScreen() {
   // State for friends count
   const [friendsCount, setFriendsCount] = useState(0);
   const [isLoadingFriends, setIsLoadingFriends] = useState(false);
+  // State for leagues count
+  const [leaguesCount, setLeaguesCount] = useState(0);
+  const [isLoadingLeagues, setIsLoadingLeagues] = useState(false);
 
   // Load friends count
   const loadFriendsCount = async () => {
@@ -41,10 +45,25 @@ export default function ProfileScreen() {
     }
   };
 
+  // Load leagues count
+  const loadLeaguesCount = async () => {
+    setIsLoadingLeagues(true);
+    try {
+      const leagues = await leaguesApi.getLeagues();
+      setLeaguesCount(leagues.length);
+    } catch (error) {
+      console.error('Failed to load leagues count:', error);
+      setLeaguesCount(0);
+    } finally {
+      setIsLoadingLeagues(false);
+    }
+  };
+
   // Load friends count when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       loadFriendsCount();
+      loadLeaguesCount();
     }, [user])
   );
 
@@ -99,7 +118,16 @@ export default function ProfileScreen() {
             <Text style={styles.actionButtonText}>View All Leagues</Text>
             <Text style={styles.actionButtonArrow}>›</Text>
           </TouchableOpacity>
-          <Text style={styles.sectionSubtext}>You're currently in 0 leagues</Text>
+          <Text style={styles.sectionSubtext}>
+            {isLoadingLeagues ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#666" />
+                <Text style={styles.loadingText}>Loading...</Text>
+              </View>
+            ) : (
+              `You're currently in ${leaguesCount} league${leaguesCount !== 1 ? 's' : ''}`
+            )}
+          </Text>
         </View>
 
         <View style={styles.section}>
