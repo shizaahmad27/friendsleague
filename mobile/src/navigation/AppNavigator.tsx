@@ -21,6 +21,10 @@ import CreateGroupChatScreen from '../screens/CreateGroupChatScreen';
 import GroupChatSettingsScreen from '../screens/GroupChatSettingsScreen';
 import LeagueCreateScreen from '../screens/LeagueCreateScreen';
 import LeagueDetailsScreen from '../screens/LeagueDetailsScreen';
+import LeagueMembersScreen from '../screens/LeagueMembersScreen';
+import LeagueAdminScreen from '../screens/LeagueAdminScreen';
+import LeagueRulesScreen from '../screens/LeagueRulesScreen';
+import LeagueLeaderboardScreen from '../screens/LeagueLeaderboardScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -61,6 +65,10 @@ export default function AppNavigator() {
             <Stack.Screen name="GroupChatSettings" component={GroupChatSettingsScreen} />
             <Stack.Screen name="LeagueCreate" component={LeagueCreateScreen} />
             <Stack.Screen name="LeagueDetails" component={LeagueDetailsScreen} />
+            <Stack.Screen name="LeagueMembers" component={LeagueMembersScreen} />
+            <Stack.Screen name="LeagueAdmin" component={LeagueAdminScreen} />
+            <Stack.Screen name="LeagueRules" component={LeagueRulesScreen} />
+            <Stack.Screen name="LeagueLeaderboard" component={LeagueLeaderboardScreen} />
           </>
         ) : (
           <>

@@ -342,6 +342,26 @@ let LeaguesService = class LeaguesService {
         await this.recalculateRankings(leagueId);
         return this.getLeagueById(leagueId, adminId);
     }
+    async getMembers(leagueId, requesterId) {
+        await this.getLeagueById(leagueId, requesterId);
+        const members = await this.prisma.leagueMember.findMany({
+            where: { leagueId },
+            include: {
+                user: {
+                    select: { id: true, username: true, avatar: true },
+                },
+            },
+            orderBy: [{ rank: 'asc' }],
+        });
+        return members.map(m => ({
+            userId: m.userId,
+            username: m.user.username,
+            avatar: m.user.avatar || undefined,
+            isAdmin: undefined,
+            joinedAt: m.joinedAt ?? new Date(0),
+            totalPoints: m.points,
+        }));
+    }
     async removeMember(leagueId, adminId, userId) {
         await this.verifyAdminAccess(leagueId, adminId);
         const league = await this.prisma.league.findUnique({
@@ -440,6 +460,14 @@ let LeaguesService = class LeaguesService {
             },
         });
         return rule;
+    }
+    async getRules(leagueId, requesterId) {
+        await this.getLeagueById(leagueId, requesterId);
+        const rules = await this.prisma.leagueRule.findMany({
+            where: { leagueId },
+            orderBy: { createdAt: 'desc' },
+        });
+        return rules;
     }
     async assignPoints(leagueId, adminId, assignPointsDto) {
         await this.verifyAdminAccess(leagueId, adminId);

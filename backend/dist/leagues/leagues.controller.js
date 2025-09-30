@@ -42,6 +42,9 @@ let LeaguesController = class LeaguesController {
     async addMember(leagueId, req, addMemberDto) {
         return this.leaguesService.addMember(leagueId, req.user.id, addMemberDto);
     }
+    async getMembers(leagueId, req) {
+        return this.leaguesService.getMembers(leagueId, req.user.id);
+    }
     async removeMember(leagueId, userId, req) {
         return this.leaguesService.removeMember(leagueId, req.user.id, userId);
     }
@@ -53,6 +56,9 @@ let LeaguesController = class LeaguesController {
     }
     async createRule(leagueId, req, createRuleDto) {
         return this.leaguesService.createRule(leagueId, req.user.id, createRuleDto);
+    }
+    async getRules(leagueId, req) {
+        return this.leaguesService.getRules(leagueId, req.user.id);
     }
     async assignPoints(leagueId, req, assignPointsDto) {
         return this.leaguesService.assignPoints(leagueId, req.user.id, assignPointsDto);
@@ -123,6 +129,14 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], LeaguesController.prototype, "addMember", null);
 __decorate([
+    (0, common_1.Get)(':id/members'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], LeaguesController.prototype, "getMembers", null);
+__decorate([
     (0, common_1.Delete)(':id/members/:userId'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('userId')),
@@ -158,6 +172,14 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, leagues_dto_1.CreateRuleDto]),
     __metadata("design:returntype", Promise)
 ], LeaguesController.prototype, "createRule", null);
+__decorate([
+    (0, common_1.Get)(':id/rules'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], LeaguesController.prototype, "getRules", null);
 __decorate([
     (0, common_1.Post)(':id/points'),
     __param(0, (0, common_1.Param)('id')),

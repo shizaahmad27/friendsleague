@@ -411,6 +411,33 @@ export class LeaguesService {
   }
 
   /**
+   * Get members of a league (authorized users only)
+   */
+  async getMembers(leagueId: string, requesterId: string) {
+    // Ensure requester has access
+    await this.getLeagueById(leagueId, requesterId);
+
+    const members = await this.prisma.leagueMember.findMany({
+      where: { leagueId },
+      include: {
+        user: {
+          select: { id: true, username: true, avatar: true },
+        },
+      },
+      orderBy: [{ rank: 'asc' }],
+    });
+
+    return members.map(m => ({
+      userId: m.userId,
+      username: m.user.username,
+      avatar: m.user.avatar || undefined,
+      isAdmin: undefined, // client can infer via separate call; or extend below
+      joinedAt: (m as any).joinedAt ?? new Date(0),
+      totalPoints: m.points,
+    }));
+  }
+
+  /**
    * Remove a member from league (admin only)
    */
   async removeMember(leagueId: string, adminId: string, userId: string) {
@@ -551,6 +578,20 @@ export class LeaguesService {
     });
 
     return rule;
+  }
+
+  /**
+   * Get rules for a league (authorized users only)
+   */
+  async getRules(leagueId: string, requesterId: string) {
+    // Ensure requester has access
+    await this.getLeagueById(leagueId, requesterId);
+
+    const rules = await this.prisma.leagueRule.findMany({
+      where: { leagueId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rules;
   }
 
   /**

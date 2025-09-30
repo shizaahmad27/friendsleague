@@ -99,6 +99,17 @@ export class LeaguesController {
   }
 
   /**
+   * Get members of a league
+   */
+  @Get(':id/members')
+  async getMembers(
+    @Param('id') leagueId: string,
+    @Request() req: any,
+  ) {
+    return this.leaguesService.getMembers(leagueId, req.user.id);
+  }
+
+  /**
    * Remove a member from league (admin only)
    */
   @Delete(':id/members/:userId')
@@ -144,6 +155,17 @@ export class LeaguesController {
     @Body() createRuleDto: CreateRuleDto,
   ) {
     return this.leaguesService.createRule(leagueId, req.user.id, createRuleDto);
+  }
+
+  /**
+   * Get rules for a league
+   */
+  @Get(':id/rules')
+  async getRules(
+    @Param('id') leagueId: string,
+    @Request() req: any,
+  ) {
+    return this.leaguesService.getRules(leagueId, req.user.id);
   }
 
   /**
