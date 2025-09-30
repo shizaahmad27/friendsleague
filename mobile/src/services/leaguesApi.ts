@@ -8,6 +8,7 @@ export interface League {
   inviteCode?: string;
   adminId?: string;
   members?: Array<{ user: { id: string; username: string; avatar?: string } }>;
+  rules?: Array<{ id: string; title: string; description?: string; points: number; category: 'WINS' | 'PARTICIPATION' | 'BONUS' | 'PENALTY' }>; 
   createdAt: string;
   updatedAt: string;
 }

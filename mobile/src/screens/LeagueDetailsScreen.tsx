@@ -70,6 +70,18 @@ export default function LeagueDetailsScreen() {
         {!!league.description && <Text style={styles.subtitle}>{league.description}</Text>}
       </View>
 
+      {league.rules && league.rules.length > 0 ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Latest Rules</Text>
+          {league.rules.slice(0, 3).map((r) => (
+            <Text key={r.id} style={styles.ruleLine}>• {r.title} ({r.category}, {r.points} pts)</Text>
+          ))}
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('LeagueRulesRead', { leagueId })}>
+            <Text style={styles.buttonText}>View All Rules</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
       {!isMember && (
         <View style={styles.section}>
           {league.isPrivate ? (
@@ -104,7 +116,7 @@ export default function LeagueDetailsScreen() {
           <Text style={styles.buttonText}>Admin</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('LeagueRules', { leagueId })}>
-          <Text style={styles.buttonText}>Rules</Text>
+          <Text style={styles.buttonText}>Rules {league.rules && league.rules.length ? `(${league.rules.length})` : ''}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('LeagueLeaderboard', { leagueId })}>
           <Text style={styles.buttonText}>Leaderboard</Text>
@@ -121,6 +133,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 16, color: '#666', textAlign: 'center', marginTop: 4 },
   section: { padding: 20 },
   sectionTitle: { fontSize: 16, color: '#333', marginBottom: 10 },
+  ruleLine: { color: '#555', marginBottom: 6 },
   input: { backgroundColor: 'white', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12 },
   button: { backgroundColor: '#007AFF', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 16 },
   buttonText: { color: 'white', fontSize: 16, fontWeight: '600' },

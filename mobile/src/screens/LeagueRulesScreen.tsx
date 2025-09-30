@@ -16,6 +16,7 @@ export default function LeagueRulesScreen() {
   const [creating, setCreating] = useState<boolean>(false);
   const [title, setTitle] = useState('');
   const [points, setPoints] = useState('');
+  const [desc, setDesc] = useState('');
   const [category, setCategory] = useState<LeagueRule['category']>('WINS');
   const [assigning, setAssigning] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('');
@@ -43,9 +44,11 @@ export default function LeagueRulesScreen() {
     if (!title.trim() || !points.trim()) return;
     setCreating(true);
     try {
-      await leaguesApi.createRule(leagueId, { title: title.trim(), points: Number(points), category });
+      const description = (desc ?? '').slice(0, 200);
+      await leaguesApi.createRule(leagueId, { title: title.trim(), description, points: Number(points), category });
       setTitle('');
       setPoints('');
+      setDesc('');
       setCategory('WINS');
       await load();
     } catch (e: any) {
@@ -91,6 +94,8 @@ export default function LeagueRulesScreen() {
       <View style={styles.controls}>
         <TextInput style={styles.input} placeholder="Rule title" value={title} onChangeText={setTitle} />
         <TextInput style={styles.input} placeholder="Points" keyboardType="numeric" value={points} onChangeText={setPoints} />
+        <TextInput style={styles.input} placeholder="Description (optional, max 200)" value={desc} onChangeText={(t) => setDesc(t.slice(0,200))} />
+        <Text style={styles.helper}>{desc.length}/200</Text>
         <Text style={styles.label}>Category: {category}</Text>
         <View style={styles.chipsRow}>
           {(['WINS','PARTICIPATION','BONUS','PENALTY'] as LeagueRule['category'][]).map((c) => (
@@ -107,55 +112,57 @@ export default function LeagueRulesScreen() {
       {loading ? (
         <View style={styles.center}><ActivityIndicator /></View>
       ) : (
-        <>
-          <View style={styles.sectionTitleRow}><Text style={styles.sectionTitleText}>Assign Points</Text></View>
-          <View style={styles.assignBox}>
-            <Text style={styles.label}>Select member</Text>
-            <View style={styles.chipsRow}>
-              {members.map((m) => (
-                <TouchableOpacity key={m.userId} style={[styles.chip, selectedMemberId === m.userId && styles.chipActive]} onPress={() => setSelectedMemberId(m.userId)}>
-                  <Text style={[styles.chipText, selectedMemberId === m.userId && styles.chipTextActive]}>{m.username}</Text>
+        <FlatList
+          data={rules}
+          keyExtractor={(r) => r.id}
+          ListHeaderComponent={
+            <>
+              <View style={styles.sectionTitleRow}><Text style={styles.sectionTitleText}>Assign Points</Text></View>
+              <View style={styles.assignBox}>
+                <Text style={styles.label}>Select member</Text>
+                <View style={styles.chipsRow}>
+                  {members.map((m) => (
+                    <TouchableOpacity key={m.userId} style={[styles.chip, selectedMemberId === m.userId && styles.chipActive]} onPress={() => setSelectedMemberId(m.userId)}>
+                      <Text style={[styles.chipText, selectedMemberId === m.userId && styles.chipTextActive]}>{m.username}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <Text style={styles.label}>Quick select from rules</Text>
+                <View style={styles.chipsRow}>
+                  {rules.slice(0, 6).map((r) => (
+                    <TouchableOpacity key={r.id} style={styles.ruleChip} onPress={() => { setPoints(String(r.points)); setCategory(r.category); }}>
+                      <Text style={styles.ruleChipText}>{r.title} (+{r.points})</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput style={styles.input} placeholder="Points (e.g. 5 or -2)" keyboardType="numeric" value={points} onChangeText={setPoints} />
+                <Text style={styles.label}>Category: {category}</Text>
+                <View style={styles.chipsRow}>
+                  {(['WINS','PARTICIPATION','BONUS','PENALTY'] as LeagueRule['category'][]).map((c) => (
+                    <TouchableOpacity key={c} style={[styles.chip, category === c && styles.chipActive]} onPress={() => setCategory(c)}>
+                      <Text style={[styles.chipText, category === c && styles.chipTextActive]}>{c}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput style={styles.input} placeholder="Reason (optional)" value={reason} onChangeText={setReason} />
+                <TouchableOpacity style={styles.button} onPress={handleAssign} disabled={assigning}>
+                  {assigning ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Assign Points</Text>}
                 </TouchableOpacity>
-              ))}
-            </View>
-            <Text style={styles.label}>Quick select from rules</Text>
-            <View style={styles.chipsRow}>
-              {rules.slice(0, 6).map((r) => (
-                <TouchableOpacity key={r.id} style={styles.ruleChip} onPress={() => { setPoints(String(r.points)); setCategory(r.category); }}>
-                  <Text style={styles.ruleChipText}>{r.title} (+{r.points})</Text>
+                <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate('LeagueLeaderboard', { leagueId })}>
+                  <Text style={styles.buttonSecondaryText}>View Leaderboard</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-            <TextInput style={styles.input} placeholder="Points (e.g. 5 or -2)" keyboardType="numeric" value={points} onChangeText={setPoints} />
-            <Text style={styles.label}>Category: {category}</Text>
-            <View style={styles.chipsRow}>
-              {(['WINS','PARTICIPATION','BONUS','PENALTY'] as LeagueRule['category'][]).map((c) => (
-                <TouchableOpacity key={c} style={[styles.chip, category === c && styles.chipActive]} onPress={() => setCategory(c)}>
-                  <Text style={[styles.chipText, category === c && styles.chipTextActive]}>{c}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TextInput style={styles.input} placeholder="Reason (optional)" value={reason} onChangeText={setReason} />
-            <TouchableOpacity style={styles.button} onPress={handleAssign} disabled={assigning}>
-              {assigning ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Assign Points</Text>}
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate('LeagueLeaderboard', { leagueId })}>
-              <Text style={styles.buttonSecondaryText}>View Leaderboard</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.sectionTitleRow}><Text style={styles.sectionTitleText}>Rules</Text></View>
-          <FlatList
-            data={rules}
-            keyExtractor={(r) => r.id}
-            contentContainerStyle={{ padding: 16 }}
-            renderItem={({ item }) => (
-              <View style={styles.row}>
-                <Text style={styles.rowText}>{item.title} · {item.category} · {item.points} pts</Text>
               </View>
-            )}
-          />
-        </>
+
+              <View style={styles.sectionTitleRow}><Text style={styles.sectionTitleText}>Rules</Text></View>
+            </>
+          }
+          contentContainerStyle={{ padding: 16 }}
+          renderItem={({ item }) => (
+            <View style={styles.row}>
+              <Text style={styles.rowText}>{item.title} · {item.category} · {item.points} pts</Text>
+            </View>
+          )}
+        />
       )}
     </View>
   );
@@ -168,6 +175,7 @@ const styles = StyleSheet.create({
   controls: { padding: 16 },
   input: { backgroundColor: 'white', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, marginBottom: 8 },
   label: { color: '#666', marginBottom: 8 },
+  helper: { color: '#999', marginBottom: 8, textAlign: 'right' },
   chipsRow: { flexDirection: 'row', marginBottom: 8, flexWrap: 'wrap' },
   chip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, backgroundColor: '#eee', marginRight: 8, marginBottom: 8 },
   chipActive: { backgroundColor: '#007AFF22' },

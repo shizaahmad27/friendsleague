@@ -25,6 +25,7 @@ import LeagueMembersScreen from '../screens/LeagueMembersScreen';
 import LeagueAdminScreen from '../screens/LeagueAdminScreen';
 import LeagueRulesScreen from '../screens/LeagueRulesScreen';
 import LeagueLeaderboardScreen from '../screens/LeagueLeaderboardScreen';
+import LeagueRulesReadScreen from '../screens/LeagueRulesReadScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -68,6 +69,7 @@ export default function AppNavigator() {
             <Stack.Screen name="LeagueMembers" component={LeagueMembersScreen} />
             <Stack.Screen name="LeagueAdmin" component={LeagueAdminScreen} />
             <Stack.Screen name="LeagueRules" component={LeagueRulesScreen} />
+            <Stack.Screen name="LeagueRulesRead" component={LeagueRulesReadScreen} />
             <Stack.Screen name="LeagueLeaderboard" component={LeagueLeaderboardScreen} />
           </>
         ) : (

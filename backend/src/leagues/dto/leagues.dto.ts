@@ -41,7 +41,7 @@ export class AddMemberDto {
 
 export class CreateRuleDto {
   @IsString()
-  @MinLength(3)
+  @MinLength(1)
   @MaxLength(50)
   title: string;
 

@@ -65,7 +65,7 @@ class CreateRuleDto {
 exports.CreateRuleDto = CreateRuleDto;
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(3),
+    (0, class_validator_1.MinLength)(1),
     (0, class_validator_1.MaxLength)(50),
     __metadata("design:type", String)
 ], CreateRuleDto.prototype, "title", void 0);
