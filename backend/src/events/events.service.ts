@@ -98,6 +98,43 @@ export class EventsService {
   }
 
   /**
+   * List participants for an event (with access checks)
+   */
+  async getEventParticipants(eventId: string, userId: string) {
+    // Ensure user can access the event
+    await this.getEventById(eventId, userId);
+
+    const participants = await this.prisma.eventParticipant.findMany({
+      where: { eventId },
+      include: {
+        user: {
+          select: { id: true, username: true, avatar: true, isOnline: true },
+        },
+      },
+      orderBy: [
+        { rank: 'asc' },
+        { joinedAt: 'asc' },
+      ],
+    });
+
+    return participants;
+  }
+
+  /**
+   * List rules for an event (with access checks)
+   */
+  async getEventRules(eventId: string, userId: string) {
+    // Ensure user can access the event
+    await this.getEventById(eventId, userId);
+
+    const rules = await this.prisma.eventRule.findMany({
+      where: { eventId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rules;
+  }
+
+  /**
    * Get all events (public events + user's events)
    */
   async getEvents(userId: string) {

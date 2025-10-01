@@ -48,11 +48,9 @@ export default function LeaguesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Text style={styles.title}>Leagues</Text>
-          <HamburgerMenu onLogout={handleLogout} />
-        </View>
+        <Text style={styles.title}>Leagues</Text>
         <Text style={styles.subtitle}>Manage your competitive leagues</Text>
+        <HamburgerMenu onLogout={handleLogout} />
       </View>
 
       <View style={styles.content}>
@@ -128,24 +126,17 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#333',
-    flex: 1,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 0,
+    marginTop: 4,
   },
   content: {
     flex: 1,

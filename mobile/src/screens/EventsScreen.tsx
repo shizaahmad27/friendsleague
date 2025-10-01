@@ -74,11 +74,7 @@ export default function EventsScreen() {
           <TouchableOpacity style={[styles.chip, selectedLeagueId === 'STANDALONE' && styles.chipActive]} onPress={() => setSelectedLeagueId('STANDALONE')}>
             <Text style={[styles.chipText, selectedLeagueId === 'STANDALONE' && styles.chipTextActive]}>Standalone</Text>
           </TouchableOpacity>
-          {leagues.map(l => (
-            <TouchableOpacity key={l.id} style={[styles.chip, selectedLeagueId === l.id && styles.chipActive]} onPress={() => setSelectedLeagueId(l.id)}>
-              <Text style={[styles.chipText, selectedLeagueId === l.id && styles.chipTextActive]}>{l.name}</Text>
-            </TouchableOpacity>
-          ))}
+          
         </View>
 
         <FlatList

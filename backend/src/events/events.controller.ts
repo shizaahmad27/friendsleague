@@ -108,6 +108,17 @@ export class EventsController {
   }
 
   /**
+   * List participants for an event
+   */
+  @Get(':id/participants')
+  async getParticipants(
+    @Param('id') eventId: string,
+    @Request() req: any,
+  ) {
+    return this.eventsService.getEventParticipants(eventId, req.user.id);
+  }
+
+  /**
    * Remove a participant from event (admin only)
    */
   @Delete(':id/participants/:userId')
@@ -129,6 +140,17 @@ export class EventsController {
     @Body() createEventRuleDto: CreateEventRuleDto,
   ) {
     return this.eventsService.createEventRule(eventId, req.user.id, createEventRuleDto);
+  }
+
+  /**
+   * List rules for an event
+   */
+  @Get(':id/rules')
+  async getEventRules(
+    @Param('id') eventId: string,
+    @Request() req: any,
+  ) {
+    return this.eventsService.getEventRules(eventId, req.user.id);
   }
 
   /**
