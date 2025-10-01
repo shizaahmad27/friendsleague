@@ -1,23 +1,29 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { RouteProp, useRoute } from '@react-navigation/native';
-import { eventsApi, EventParticipant } from '../services/eventsApi';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { eventsApi, EventParticipant, EventItem } from '../services/eventsApi';
 
 type ParticipantsRoute = RouteProp<{ EventParticipants: { eventId: string } }, 'EventParticipants'>;
 
 export default function EventParticipantsScreen() {
   const route = useRoute<ParticipantsRoute>();
+  const navigation = useNavigation<any>();
   const { eventId } = route.params;
 
   const [participants, setParticipants] = useState<EventParticipant[]>([]);
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(false);
   const [userId, setUserId] = useState('');
+  const [event, setEvent] = useState<EventItem | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await eventsApi.getParticipants(eventId);
+      const [evt, data] = await Promise.all([
+        eventsApi.getEventById(eventId),
+        eventsApi.getParticipants(eventId),
+      ]);
+      setEvent(evt);
       setParticipants(data);
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message || 'Failed to load participants');
@@ -58,7 +64,21 @@ export default function EventParticipantsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}><Text style={styles.title}>Participants</Text></View>
+      <View style={styles.header}>
+        <Text style={styles.title}>Participants</Text>
+        {event ? (
+          event.leagueId ? (
+            <View style={styles.badgeRow}>
+              <Text style={styles.badge}>Linked to league</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('LeagueDetails', { leagueId: event.leagueId })}>
+                <Text style={styles.link}>Open League</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <Text style={styles.muted}>Standalone event</Text>
+          )
+        ) : null}
+      </View>
       <View style={styles.controls}>
         <TextInput style={styles.input} placeholder="User ID" value={userId} onChangeText={setUserId} />
         <TouchableOpacity style={styles.button} onPress={handleAdd} disabled={adding}>
@@ -90,6 +110,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 20, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#eee' },
   title: { fontSize: 22, fontWeight: '700', color: '#333' },
+  muted: { color: '#777', marginTop: 6 },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
+  badge: { backgroundColor: '#007AFF22', color: '#007AFF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, overflow: 'hidden' },
+  link: { color: '#007AFF', fontWeight: '700' },
   controls: { padding: 16 },
   input: { backgroundColor: 'white', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, marginBottom: 8 },
   button: { backgroundColor: '#007AFF', paddingVertical: 12, borderRadius: 12, alignItems: 'center' },

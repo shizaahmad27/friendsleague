@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
-import { eventsApi, EventRule, EventParticipant } from '../services/eventsApi';
+import { eventsApi, EventRule, EventParticipant, EventItem } from '../services/eventsApi';
 
 type RulesRoute = RouteProp<{ EventRules: { eventId: string } }, 'EventRules'>;
 
@@ -13,6 +13,7 @@ export default function EventRulesScreen() {
   const [rules, setRules] = useState<EventRule[]>([]);
   const [participants, setParticipants] = useState<EventParticipant[]>([]);
   const [loading, setLoading] = useState(false);
+  const [event, setEvent] = useState<EventItem | null>(null);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState('');
   const [points, setPoints] = useState('');
@@ -25,10 +26,12 @@ export default function EventRulesScreen() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [r, p] = await Promise.all([
+      const [evt, r, p] = await Promise.all([
+        eventsApi.getEventById(eventId),
         eventsApi.getRules(eventId),
         eventsApi.getParticipants(eventId),
       ]);
+      setEvent(evt);
       setRules(r);
       setParticipants(p);
     } catch (e: any) {
@@ -73,7 +76,21 @@ export default function EventRulesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}><Text style={styles.title}>Event Rules</Text></View>
+      <View style={styles.header}>
+        <Text style={styles.title}>Event Rules</Text>
+        {event ? (
+          event.leagueId ? (
+            <View style={styles.badgeRow}>
+              <Text style={styles.badge}>Linked to league</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('LeagueDetails', { leagueId: event.leagueId })}>
+                <Text style={styles.link}>Open League</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <Text style={styles.muted}>Standalone event</Text>
+          )
+        ) : null}
+      </View>
 
       <View style={styles.controls}>
         <TextInput style={styles.input} placeholder="Rule title" value={title} onChangeText={setTitle} />
@@ -139,6 +156,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 20, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#eee' },
   title: { fontSize: 22, fontWeight: '700', color: '#333' },
+  muted: { color: '#777', marginTop: 6 },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
+  badge: { backgroundColor: '#007AFF22', color: '#007AFF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, overflow: 'hidden' },
+  link: { color: '#007AFF', fontWeight: '700' },
   controls: { padding: 16 },
   input: { backgroundColor: 'white', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, marginBottom: 8 },
   label: { color: '#666', marginBottom: 8 },

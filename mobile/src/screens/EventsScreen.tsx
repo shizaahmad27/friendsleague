@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,18 +9,31 @@ import { RefreshControl, FlatList } from 'react-native';
 import { eventsApi, EventItem } from '../services/eventsApi';
 import { useNavigation } from '@react-navigation/native';
 import HamburgerMenu from '../components/HamburgerMenu';
+import { leaguesApi } from '../services/leaguesApi';
 
 export default function EventsScreen() {
   const navigation = useNavigation();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [leagues, setLeagues] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedLeagueId, setSelectedLeagueId] = useState<string | 'ALL'>('ALL');
 
-  const loadEvents = useCallback(async () => {
+  const leagueNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    leagues.forEach(l => { map[l.id] = l.name; });
+    return map;
+  }, [leagues]);
+
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await eventsApi.getEvents();
-      setEvents(data);
+      const [ev, lg] = await Promise.all([
+        eventsApi.getEvents(),
+        leaguesApi.getLeagues().catch(() => []),
+      ]);
+      setEvents(ev);
+      setLeagues((lg || []).map((l: any) => ({ id: l.id, name: l.name })));
     } catch (e) {
       console.error('Failed to load events', e);
     } finally {
@@ -29,12 +42,15 @@ export default function EventsScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadEvents();
-  }, [loadEvents]);
+  useEffect(() => { load(); }, [load]);
+
+  const filteredEvents = useMemo(() => {
+    if (selectedLeagueId === 'ALL') return events;
+    if (selectedLeagueId === 'STANDALONE') return events.filter(e => !e.leagueId);
+    return events.filter(e => e.leagueId === selectedLeagueId);
+  }, [events, selectedLeagueId]);
 
   const handleLogout = () => {
-    // This will be handled by the parent component
     console.log('Logout from Events screen');
   };
 
@@ -50,10 +66,25 @@ export default function EventsScreen() {
         <TouchableOpacity style={styles.createFloating} onPress={() => (navigation as any).navigate('EventCreate')}>
           <Text style={styles.createFloatingText}>+ Create Event</Text>
         </TouchableOpacity>
+
+        <View style={styles.filtersRow}>
+          <TouchableOpacity style={[styles.chip, selectedLeagueId === 'ALL' && styles.chipActive]} onPress={() => setSelectedLeagueId('ALL')}>
+            <Text style={[styles.chipText, selectedLeagueId === 'ALL' && styles.chipTextActive]}>All</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.chip, selectedLeagueId === 'STANDALONE' && styles.chipActive]} onPress={() => setSelectedLeagueId('STANDALONE')}>
+            <Text style={[styles.chipText, selectedLeagueId === 'STANDALONE' && styles.chipTextActive]}>Standalone</Text>
+          </TouchableOpacity>
+          {leagues.map(l => (
+            <TouchableOpacity key={l.id} style={[styles.chip, selectedLeagueId === l.id && styles.chipActive]} onPress={() => setSelectedLeagueId(l.id)}>
+              <Text style={[styles.chipText, selectedLeagueId === l.id && styles.chipTextActive]}>{l.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         <FlatList
-          data={events}
+          data={filteredEvents}
           keyExtractor={(item) => item.id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadEvents(); }} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
           ListEmptyComponent={!loading ? (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>🎉 Upcoming Events</Text>
@@ -67,7 +98,14 @@ export default function EventsScreen() {
           ) : null}
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>{item.title}</Text>
+              <View style={styles.cardHeaderRow}>
+                <Text style={styles.cardTitle}>{item.title}</Text>
+                {item.leagueId ? (
+                  <Text style={styles.badge}>{leagueNameById[item.leagueId] || 'League'}</Text>
+                ) : (
+                  <Text style={styles.badgeMuted}>Standalone</Text>
+                )}
+              </View>
               {!!item.description && (
                 <Text style={styles.cardDescription}>{item.description}</Text>
               )}
@@ -135,6 +173,11 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   createFloatingText: { color: 'white', fontWeight: '700' },
+  filtersRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 },
+  chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, backgroundColor: '#f0f0f0', marginRight: 8, marginBottom: 8 },
+  chipActive: { backgroundColor: '#007AFF22' },
+  chipText: { color: '#444' },
+  chipTextActive: { color: '#007AFF', fontWeight: '700' },
   card: {
     backgroundColor: 'white',
     padding: 24,
@@ -151,6 +194,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f0f0f0',
   },
+  cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  badge: { backgroundColor: '#007AFF22', color: '#007AFF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, overflow: 'hidden' },
+  badgeMuted: { backgroundColor: '#f0f0f0', color: '#666', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, overflow: 'hidden' },
   cardTitle: {
     fontSize: 20,
     fontWeight: '600',

@@ -37,6 +37,16 @@ export default function EventDetailsScreen() {
         {!!event.description && <Text style={styles.sub}>{event.description}</Text>}
         <Text style={styles.meta}>Privacy: {event.isPrivate ? 'Private' : 'Public'}</Text>
         <Text style={styles.meta}>Scoring: {event.hasScoring ? 'Enabled' : 'Simple list'}</Text>
+        {event.leagueId ? (
+          <View style={styles.badgeRow}>
+            <Text style={styles.badge}>Linked to league</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('LeagueDetails', { leagueId: event.leagueId })}>
+              <Text style={styles.link}>Open League</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <Text style={styles.muted}>Standalone event</Text>
+        )}
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('EventParticipants', { eventId })}>
           <Text style={styles.buttonText}>Participants</Text>
         </TouchableOpacity>
@@ -60,9 +70,13 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '700', color: '#333' },
   sub: { color: '#666' },
   meta: { color: '#333', marginTop: 8 },
+  muted: { color: '#777', marginTop: 8 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   button: { backgroundColor: '#007AFF', paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginTop: 12 },
   buttonText: { color: 'white', fontSize: 16, fontWeight: '600' },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+  badge: { backgroundColor: '#007AFF22', color: '#007AFF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, overflow: 'hidden' },
+  link: { color: '#007AFF', fontWeight: '700' },
 });
 
 

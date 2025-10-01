@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ export default function LeaguesScreen() {
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [filter, setFilter] = useState<'ALL' | 'MY' | 'PUBLIC'>('ALL');
 
   const loadLeagues = useCallback(async () => {
     setLoading(true);
@@ -33,6 +34,12 @@ export default function LeaguesScreen() {
     loadLeagues();
   }, [loadLeagues]);
 
+  const filteredLeagues = useMemo(() => {
+    if (filter === 'PUBLIC') return leagues.filter(l => !l.isPrivate);
+    // 'MY' assumes getLeagues already returns only leagues the user is in
+    return leagues;
+  }, [leagues, filter]);
+
   const handleLogout = () => {
     // This will be handled by the parent component
     console.log('Logout from Leagues screen');
@@ -49,8 +56,19 @@ export default function LeaguesScreen() {
       </View>
 
       <View style={styles.content}>
+        <View style={styles.filtersRow}>
+          <TouchableOpacity style={[styles.chip, filter === 'ALL' && styles.chipActive]} onPress={() => setFilter('ALL')}>
+            <Text style={[styles.chipText, filter === 'ALL' && styles.chipTextActive]}>All</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.chip, filter === 'MY' && styles.chipActive]} onPress={() => setFilter('MY')}>
+            <Text style={[styles.chipText, filter === 'MY' && styles.chipTextActive]}>My</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.chip, filter === 'PUBLIC' && styles.chipActive]} onPress={() => setFilter('PUBLIC')}>
+            <Text style={[styles.chipText, filter === 'PUBLIC' && styles.chipTextActive]}>Public</Text>
+          </TouchableOpacity>
+        </View>
         <FlatList
-          data={leagues}
+          data={filteredLeagues}
           keyExtractor={(item) => item.id}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadLeagues(); }} />}
           ListEmptyComponent={!loading ? (
@@ -63,7 +81,10 @@ export default function LeaguesScreen() {
           ) : null}
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>{item.name}</Text>
+              <View style={styles.cardHeaderRow}>
+                <Text style={styles.cardTitle}>{item.name}</Text>
+                {!item.isPrivate && <Text style={styles.badgePublic}>Public</Text>}
+              </View>
               {!!item.description && (
                 <Text style={styles.cardDescription}>{item.description}</Text>
               )}
@@ -131,6 +152,11 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 96,
   },
+  filtersRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 },
+  chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, backgroundColor: '#f0f0f0', marginRight: 8, marginBottom: 8 },
+  chipActive: { backgroundColor: '#007AFF22' },
+  chipText: { color: '#444' },
+  chipTextActive: { color: '#007AFF', fontWeight: '700' },
   bottomBar: {
     position: 'absolute',
     left: 0,
@@ -176,6 +202,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f0f0f0',
   },
+  cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  badgePublic: { backgroundColor: '#34C75922', color: '#34C759', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, overflow: 'hidden' },
   cardTitle: {
     fontSize: 20,
     fontWeight: '600',
