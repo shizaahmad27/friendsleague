@@ -12,7 +12,9 @@ class SocketService {
     const { user, accessToken } = useAuthStore.getState();
     if (!user || !accessToken) return;
 
-    this.socket = io('http://10.24.65.81:3000', {  // 192.168.0.110 //10.24.64.17 ntnu 10.24.65.81
+    this.socket = io('https://friendleague.onrender.com', {
+      transports: ['websocket'],
+      path: '/socket.io',
       auth: {
         token: accessToken,
       },

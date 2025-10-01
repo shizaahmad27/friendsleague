@@ -16,6 +16,9 @@ import ActiveFriendsScreen from '../screens/ActiveFriendsScreen';
 import EventsScreen from '../screens/EventsScreen';
 import EventCreateScreen from '../screens/EventCreateScreen';
 import EventDetailsScreen from '../screens/EventDetailsScreen';
+import EventParticipantsScreen from '../screens/EventParticipantsScreen';
+import EventRulesScreen from '../screens/EventRulesScreen';
+import EventLeaderboardScreen from '../screens/EventLeaderboardScreen';
 import InviteCodeScreen from '../screens/InviteCodeScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import ChatScreen from '../screens/ChatScreen';
@@ -64,6 +67,9 @@ export default function AppNavigator() {
             <Stack.Screen name="Events" component={EventsScreen} />
             <Stack.Screen name="EventCreate" component={EventCreateScreen} />
             <Stack.Screen name="EventDetails" component={EventDetailsScreen} />
+            <Stack.Screen name="EventParticipants" component={EventParticipantsScreen} />
+            <Stack.Screen name="EventRules" component={EventRulesScreen} />
+            <Stack.Screen name="EventLeaderboard" component={EventLeaderboardScreen} />
             <Stack.Screen name="InviteCode" component={InviteCodeScreen} />
             <Stack.Screen name="Messages" component={ChatListScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />

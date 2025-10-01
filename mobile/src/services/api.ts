@@ -4,9 +4,7 @@ import { useAuthStore } from '../store/authStore';
 
 // Create axios instance
 const api = axios.create({
-  baseURL: __DEV__ 
-    ? 'http://10.24.65.81:3000/api'   // 192.168.0.110 //10.24.64.17 ntnu
-    : 'https://api.friendsleague.com/api',  //production senere
+  baseURL: 'https://friendleague.onrender.com/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

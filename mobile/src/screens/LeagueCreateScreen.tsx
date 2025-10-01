@@ -45,6 +45,13 @@ export default function LeagueCreateScreen() {
           value={name}
           onChangeText={setName}
           maxLength={50}
+          editable={true}
+          selectTextOnFocus={true}
+          autoComplete="off"
+          textContentType="none"
+          autoCorrect={false}
+          autoCapitalize="words"
+          importantForAutofill="no"
         />
 
         <Text style={styles.label}>Description (optional)</Text>
@@ -55,6 +62,13 @@ export default function LeagueCreateScreen() {
           onChangeText={setDescription}
           maxLength={200}
           multiline
+          editable={true}
+          selectTextOnFocus={true}
+          autoComplete="off"
+          textContentType="none"
+          autoCorrect={false}
+          autoCapitalize="sentences"
+          importantForAutofill="no"
         />
 
         <View style={styles.switchRow}>
@@ -91,6 +105,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 12,
+    color: '#333',
+    fontSize: 16,
   },
   multiline: { height: 100, textAlignVertical: 'top' },
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 },

@@ -37,6 +37,15 @@ export default function EventDetailsScreen() {
         {!!event.description && <Text style={styles.sub}>{event.description}</Text>}
         <Text style={styles.meta}>Privacy: {event.isPrivate ? 'Private' : 'Public'}</Text>
         <Text style={styles.meta}>Scoring: {event.hasScoring ? 'Enabled' : 'Simple list'}</Text>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('EventParticipants', { eventId })}>
+          <Text style={styles.buttonText}>Participants</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('EventRules', { eventId })}>
+          <Text style={styles.buttonText}>Rules & Assign Points</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('EventLeaderboard', { eventId })}>
+          <Text style={styles.buttonText}>Leaderboard</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={() => Alert.alert('Not implemented', 'Scoring UI TBD')}>
           <Text style={styles.buttonText}>{event.hasScoring ? 'Open Scoreboard' : 'Open List'}</Text>
         </TouchableOpacity>

@@ -40,8 +40,32 @@ export default function EventCreateScreen() {
     <View style={styles.container}>
       <View style={styles.header}><Text style={styles.title}>Create Event</Text></View>
       <View style={{ padding: 16 }}>
-        <TextInput style={styles.input} placeholder="Title" value={title} onChangeText={setTitle} />
-        <TextInput style={styles.input} placeholder="Description (optional)" value={description} onChangeText={setDescription} />
+        <TextInput 
+          style={styles.input} 
+          placeholder="Title" 
+          value={title} 
+          onChangeText={setTitle}
+          editable={true}
+          selectTextOnFocus={true}
+          autoComplete="off"
+          textContentType="none"
+          autoCorrect={false}
+          autoCapitalize="sentences"
+          importantForAutofill="no"
+        />
+        <TextInput 
+          style={styles.input} 
+          placeholder="Description (optional)" 
+          value={description} 
+          onChangeText={setDescription}
+          editable={true}
+          selectTextOnFocus={true}
+          autoComplete="off"
+          textContentType="none"
+          autoCorrect={false}
+          autoCapitalize="sentences"
+          importantForAutofill="no"
+        />
         <View style={styles.rowBetween}>
           <Text style={styles.label}>Private</Text>
           <Switch value={isPrivate} onValueChange={setIsPrivate} />
@@ -62,7 +86,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 20, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#eee' },
   title: { fontSize: 22, fontWeight: '700', color: '#333' },
-  input: { backgroundColor: 'white', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, marginBottom: 8 },
+  input: { backgroundColor: 'white', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, marginBottom: 8, color: '#333', fontSize: 16 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8 },
   label: { color: '#333' },
   button: { backgroundColor: '#007AFF', paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginTop: 12 },

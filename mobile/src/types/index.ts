@@ -66,4 +66,7 @@ export type RootStackParamList = {
   // Events
   EventCreate: { leagueId?: string } | undefined;
   EventDetails: { eventId: string };
+  EventParticipants: { eventId: string };
+  EventRules: { eventId: string };
+  EventLeaderboard: { eventId: string };
 };
