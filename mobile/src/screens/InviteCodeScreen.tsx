@@ -15,6 +15,7 @@ import { RootStackParamList } from '../types';
 import HamburgerMenu from '../components/HamburgerMenu';
 import { useAuthStore } from '../store/authStore';
 import { invitationApi } from '../services/invitationApi';
+import { eventsApi } from '../services/eventsApi';
 import * as Clipboard from 'expo-clipboard';
 
 type InviteCodeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'InviteCode'>;
@@ -24,6 +25,7 @@ export default function InviteCodeScreen() {
   const { user } = useAuthStore();
   const [inviteCode, setInviteCode] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [eventCode, setEventCode] = useState('');
   const [myInviteCode, setMyInviteCode] = useState<string>('');
   const [isLoadingCode, setIsLoadingCode] = useState(false);
 
@@ -108,6 +110,20 @@ export default function InviteCodeScreen() {
     }
   };
 
+  const handleUseEventCode = async () => {
+    if (!eventCode.trim()) {
+      Alert.alert('Error', 'Please enter an event invite code');
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      // We need an eventId to use the code. Ask user for eventId or deep-link later.
+      Alert.alert('Info', 'To accept an event code, open the event link from the invite.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleScanQRCode = () => {
     // TODO: Implement QR code scanning
     Alert.alert('Coming Soon', 'QR code scanning will be available in a future update!');
@@ -143,6 +159,37 @@ export default function InviteCodeScreen() {
             <TouchableOpacity 
               style={[styles.useButton, isProcessing && styles.useButtonDisabled]} 
               onPress={handleUseInviteCode}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={styles.useButtonText}>Use Code</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>🎟️ Enter Event Invite Code</Text>
+          <Text style={styles.cardDescription}>
+            If you received an event invite code, paste it here from the shared link.
+          </Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.codeInput}
+              placeholder="Event code (e.g., A1B2C3D4)"
+              value={eventCode}
+              onChangeText={setEventCode}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              maxLength={8}
+              selectTextOnFocus={true}
+              clearButtonMode="while-editing"
+            />
+            <TouchableOpacity 
+              style={[styles.useButton, isProcessing && styles.useButtonDisabled]} 
+              onPress={handleUseEventCode}
               disabled={isProcessing}
             >
               {isProcessing ? (

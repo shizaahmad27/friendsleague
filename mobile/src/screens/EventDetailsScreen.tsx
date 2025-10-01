@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Modal, Share } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { eventsApi, EventItem } from '../services/eventsApi';
 
@@ -12,6 +12,8 @@ export default function EventDetailsScreen() {
 
   const [event, setEvent] = useState<EventItem | null>(null);
   const [loading, setLoading] = useState(false);
+  const [inviteModalVisible, setInviteModalVisible] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -56,11 +58,43 @@ export default function EventDetailsScreen() {
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('EventLeaderboard', { eventId })}>
           <Text style={styles.buttonText}>Leaderboard</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.buttonSecondary} onPress={async () => {
+          try {
+            const inv = await eventsApi.createInvitation(eventId, {} as any);
+            setInviteCode(inv.code);
+            setInviteModalVisible(true);
+          } catch (e: any) {
+            Alert.alert('Error', e?.response?.data?.message || 'Failed to generate invite');
+          }
+        }}>
+          <Text style={styles.buttonSecondaryText}>📤 Share / Invite</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={() => Alert.alert('Not implemented', 'Scoring UI TBD')}>
           <Text style={styles.buttonText}>{event.hasScoring ? 'Open Scoreboard' : 'Open List'}</Text>
         </TouchableOpacity>
       </View>
     </View>
+    <Modal visible={inviteModalVisible} transparent animationType="fade" onRequestClose={() => setInviteModalVisible(false)}>
+      <View style={styles.modalBackdrop}>
+        <View style={styles.modalCard}>
+          <Text style={styles.modalTitle}>Invite Code</Text>
+          <Text style={styles.modalCode}>{inviteCode || '—'}</Text>
+          <Text style={styles.modalSub}>Share this code. Non-friends must sign up then use the code in Invite Code screen.</Text>
+          <View style={styles.modalActionsRow}>
+            <TouchableOpacity style={[styles.smallBtn, styles.smallBtnPrimary]} onPress={async () => {
+              try {
+                await Share.share({ message: `Join my FriendsLeague event! Use invite code: ${inviteCode}` });
+              } catch {}
+            }}>
+              <Text style={styles.smallBtnText}>Share</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.smallBtn, styles.smallBtnOutline]} onPress={() => setInviteModalVisible(false)}>
+              <Text style={[styles.smallBtnText, styles.smallBtnOutlineText]}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -77,6 +111,19 @@ const styles = StyleSheet.create({
   badgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
   badge: { backgroundColor: '#007AFF22', color: '#007AFF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, overflow: 'hidden' },
   link: { color: '#007AFF', fontWeight: '700' },
+  buttonSecondary: { backgroundColor: 'white', paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginTop: 12, borderWidth: 1, borderColor: '#007AFF' },
+  buttonSecondaryText: { color: '#007AFF', fontSize: 16, fontWeight: '700' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  modalCard: { backgroundColor: 'white', padding: 20, borderRadius: 16, width: '84%' },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: '#333', marginBottom: 8 },
+  modalCode: { fontSize: 24, fontWeight: '800', color: '#007AFF', textAlign: 'center', marginVertical: 8 },
+  modalSub: { color: '#666', textAlign: 'center' },
+  modalActionsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 },
+  smallBtn: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10 },
+  smallBtnPrimary: { backgroundColor: '#007AFF' },
+  smallBtnOutline: { backgroundColor: 'white', borderWidth: 1, borderColor: '#007AFF' },
+  smallBtnText: { color: 'white', fontWeight: '700' },
+  smallBtnOutlineText: { color: '#007AFF' },
 });
 
 

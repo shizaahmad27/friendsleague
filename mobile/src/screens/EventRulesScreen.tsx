@@ -115,6 +115,19 @@ export default function EventRulesScreen() {
         <>
           <View style={styles.sectionTitleRow}><Text style={styles.sectionTitleText}>Assign Points</Text></View>
           <View style={styles.assignBox}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ color: '#333', fontWeight: '700' }}>Invite non-friends</Text>
+              <TouchableOpacity onPress={async () => {
+                try {
+                  await eventsApi.createInvitation(eventId, {});
+                  Alert.alert('Invite created', 'Share the invite code with your friends to join this event.');
+                } catch (e: any) {
+                  Alert.alert('Error', e?.response?.data?.message || 'Failed to create invitation');
+                }
+              }}>
+                <Text style={styles.link}>Generate Code</Text>
+              </TouchableOpacity>
+            </View>
             <View style={styles.chipsRow}>
               {participants.map((p) => (
                 <TouchableOpacity key={p.userId} style={[styles.chip, selectedUserId === p.userId && styles.chipActive]} onPress={() => setSelectedUserId(p.userId)}>

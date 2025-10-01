@@ -54,6 +54,11 @@ export default function LeaguesScreen() {
       </View>
 
       <View style={styles.content}>
+        {filter === 'PUBLIC' && (
+          <View style={styles.banner}>
+            <Text style={styles.bannerText}>Browsing public leagues. Tap a card to view details and join.</Text>
+          </View>
+        )}
         <View style={styles.filtersRow}>
           <TouchableOpacity style={[styles.chip, filter === 'ALL' && styles.chipActive]} onPress={() => setFilter('ALL')}>
             <Text style={[styles.chipText, filter === 'ALL' && styles.chipTextActive]}>All</Text>
@@ -144,6 +149,8 @@ const styles = StyleSheet.create({
     paddingBottom: 96,
   },
   filtersRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 },
+  banner: { backgroundColor: '#007AFF11', borderColor: '#007AFF22', borderWidth: 1, padding: 12, borderRadius: 12, marginBottom: 12 },
+  bannerText: { color: '#007AFF', fontWeight: '600' },
   chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, backgroundColor: '#f0f0f0', marginRight: 8, marginBottom: 8 },
   chipActive: { backgroundColor: '#007AFF22' },
   chipText: { color: '#444' },

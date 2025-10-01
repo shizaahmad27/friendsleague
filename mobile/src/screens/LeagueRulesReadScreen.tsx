@@ -80,9 +80,14 @@ export default function LeagueRulesReadScreen() {
                       </View>
                     </View>
                   ) : (
-                    <TouchableOpacity onPress={() => { setEditing(item.id); setEditTitle(item.title); setEditDesc(item.description || ''); setEditPoints(String(item.points)); setEditCategory(item.category); }} style={{ alignSelf: 'flex-end',  paddingHorizontal: 10, }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Text style={{ color: '#007AFF', fontWeight: '800', fontSize: 18 }}>✎ Edit</Text>
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12 }}>
+                      <TouchableOpacity onPress={() => { setEditing(item.id); setEditTitle(item.title); setEditDesc(item.description || ''); setEditPoints(String(item.points)); setEditCategory(item.category); }} style={{ alignSelf: 'flex-end',  paddingHorizontal: 10, }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Text style={{ color: '#007AFF', fontWeight: '800', fontSize: 18 }}>✎ Edit</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => (navigation as any).navigate('LeagueAssignPoints', { leagueId })} style={{ alignSelf: 'flex-end', paddingHorizontal: 10 }}>
+                        <Text style={{ color: '#34C759', fontWeight: '800', fontSize: 16 }}>➕ Assign</Text>
+                      </TouchableOpacity>
+                    </View>
                   )}
                 </View>
               ) : null}

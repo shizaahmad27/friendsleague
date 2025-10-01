@@ -68,6 +68,12 @@ export default function LeagueDetailsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>{league.name}</Text>
         {!!league.description && <Text style={styles.subtitle}>{league.description}</Text>}
+        <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 8 }}>
+          <Text style={{ color: '#666', marginRight: 12 }}>Members: {league.members?.length || 0}</Text>
+          {league.members?.some(m => m.user.id === user?.id && (m.isAdmin || league.adminId === user?.id)) && (
+            <Text style={{ backgroundColor: '#007AFF22', color: '#007AFF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>You’re admin</Text>
+          )}
+        </View>
       </View>
 
       {league.rules && league.rules.length > 0 ? (

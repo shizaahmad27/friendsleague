@@ -39,6 +39,16 @@ export interface EventLeaderboardEntry {
   rank: number;
 }
 
+export interface EventInvitation {
+  id: string;
+  eventId: string;
+  code: string;
+  email?: string;
+  phoneNumber?: string;
+  status: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED';
+  expiresAt: string;
+}
+
 export const eventsApi = {
   getEvents: async (): Promise<EventItem[]> => {
     const res = await api.get('/events');
@@ -99,6 +109,18 @@ export const eventsApi = {
   // Leaderboard
   getLeaderboard: async (eventId: string): Promise<EventLeaderboardEntry[]> => {
     const res = await api.get(`/events/${eventId}/leaderboard`);
+    return res.data;
+  },
+  // Invitations
+  createInvitation: async (
+    eventId: string,
+    data: { email?: string; phoneNumber?: string; expiresInDays?: number }
+  ): Promise<EventInvitation> => {
+    const res = await api.post(`/events/${eventId}/invitations`, data);
+    return res.data;
+  },
+  useInvitation: async (eventId: string, code: string): Promise<any> => {
+    const res = await api.post(`/events/${eventId}/invitations/use`, { code });
     return res.data;
   },
 };
