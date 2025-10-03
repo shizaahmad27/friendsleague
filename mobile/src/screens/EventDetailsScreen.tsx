@@ -33,68 +33,70 @@ export default function EventDetailsScreen() {
   if (!event) return <View style={styles.center}><Text style={styles.sub}>Event not found</Text></View>;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}><Text style={styles.title}>{event.title}</Text></View>
-      <View style={{ padding: 16 }}>
-        {!!event.description && <Text style={styles.sub}>{event.description}</Text>}
-        <Text style={styles.meta}>Privacy: {event.isPrivate ? 'Private' : 'Public'}</Text>
-        <Text style={styles.meta}>Scoring: {event.hasScoring ? 'Enabled' : 'Simple list'}</Text>
-        {event.leagueId ? (
-          <View style={styles.badgeRow}>
-            <Text style={styles.badge}>Linked to league</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('LeagueDetails', { leagueId: event.leagueId })}>
-              <Text style={styles.link}>Open League</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <Text style={styles.muted}>Standalone event</Text>
-        )}
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('EventParticipants', { eventId })}>
-          <Text style={styles.buttonText}>Participants</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('EventRules', { eventId })}>
-          <Text style={styles.buttonText}>Rules & Assign Points</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('EventLeaderboard', { eventId })}>
-          <Text style={styles.buttonText}>Leaderboard</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.buttonSecondary} onPress={async () => {
-          try {
-            const inv = await eventsApi.createInvitation(eventId, {} as any);
-            setInviteCode(inv.code);
-            setInviteModalVisible(true);
-          } catch (e: any) {
-            Alert.alert('Error', e?.response?.data?.message || 'Failed to generate invite');
-          }
-        }}>
-          <Text style={styles.buttonSecondaryText}>📤 Share / Invite</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => Alert.alert('Not implemented', 'Scoring UI TBD')}>
-          <Text style={styles.buttonText}>{event.hasScoring ? 'Open Scoreboard' : 'Open List'}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-    <Modal visible={inviteModalVisible} transparent animationType="fade" onRequestClose={() => setInviteModalVisible(false)}>
-      <View style={styles.modalBackdrop}>
-        <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>Invite Code</Text>
-          <Text style={styles.modalCode}>{inviteCode || '—'}</Text>
-          <Text style={styles.modalSub}>Share this code. Non-friends must sign up then use the code in Invite Code screen.</Text>
-          <View style={styles.modalActionsRow}>
-            <TouchableOpacity style={[styles.smallBtn, styles.smallBtnPrimary]} onPress={async () => {
-              try {
-                await Share.share({ message: `Join my FriendsLeague event! Use invite code: ${inviteCode}` });
-              } catch {}
-            }}>
-              <Text style={styles.smallBtnText}>Share</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.smallBtn, styles.smallBtnOutline]} onPress={() => setInviteModalVisible(false)}>
-              <Text style={[styles.smallBtnText, styles.smallBtnOutlineText]}>Done</Text>
-            </TouchableOpacity>
-          </View>
+    <>
+      <View style={styles.container}>
+        <View style={styles.header}><Text style={styles.title}>{event.title}</Text></View>
+        <View style={{ padding: 16 }}>
+          {!!event.description && <Text style={styles.sub}>{event.description}</Text>}
+          <Text style={styles.meta}>Privacy: {event.isPrivate ? 'Private' : 'Public'}</Text>
+          <Text style={styles.meta}>Scoring: {event.hasScoring ? 'Enabled' : 'Simple list'}</Text>
+          {event.leagueId ? (
+            <View style={styles.badgeRow}>
+              <Text style={styles.badge}>Linked to league</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('LeagueDetails', { leagueId: event.leagueId })}>
+                <Text style={styles.link}>Open League</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <Text style={styles.muted}>Standalone event</Text>
+          )}
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('EventParticipants', { eventId })}>
+            <Text style={styles.buttonText}>Participants</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('EventRules', { eventId })}>
+            <Text style={styles.buttonText}>Rules & Assign Points</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('EventLeaderboard', { eventId })}>
+            <Text style={styles.buttonText}>Leaderboard</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.buttonSecondary} onPress={async () => {
+            try {
+              const inv = await eventsApi.createInvitation(eventId, {} as any);
+              setInviteCode(inv.code);
+              setInviteModalVisible(true);
+            } catch (e: any) {
+              Alert.alert('Error', e?.response?.data?.message || 'Failed to generate invite');
+            }
+          }}>
+            <Text style={styles.buttonSecondaryText}>📤 Share / Invite</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => Alert.alert('Not implemented', 'Scoring UI TBD')}>
+            <Text style={styles.buttonText}>{event.hasScoring ? 'Open Scoreboard' : 'Open List'}</Text>
+          </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+      <Modal visible={inviteModalVisible} transparent animationType="fade" onRequestClose={() => setInviteModalVisible(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Invite Code</Text>
+            <Text style={styles.modalCode}>{inviteCode || '—'}</Text>
+            <Text style={styles.modalSub}>Share this code. Non-friends must sign up then use the code in Invite Code screen.</Text>
+            <View style={styles.modalActionsRow}>
+              <TouchableOpacity style={[styles.smallBtn, styles.smallBtnPrimary]} onPress={async () => {
+                try {
+                  await Share.share({ message: `Join my FriendsLeague event! Use invite code: ${inviteCode}` });
+                } catch {}
+              }}>
+                <Text style={styles.smallBtnText}>Share</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.smallBtn, styles.smallBtnOutline]} onPress={() => setInviteModalVisible(false)}>
+                <Text style={[styles.smallBtnText, styles.smallBtnOutlineText]}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
