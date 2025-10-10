@@ -11,7 +11,7 @@ import {
   Animated,
   Easing,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
+import BlurView from 'expo-blur/build/BlurView';
 import { Ionicons } from '@expo/vector-icons';
 import { MediaService, MediaFile, UploadProgress } from '../services/mediaService';
 
@@ -153,7 +153,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                 <View style={[styles.menuIcon, { backgroundColor: '#0A84FF' }]}>
                   <Ionicons name="document" size={16} color="#fff" />
                 </View>
-                <Text style={styles.menuText}>Docuent</Text>
+                <Text style={styles.menuText}>Document</Text>
               </TouchableOpacity>
             </Animated.View>
           </View>

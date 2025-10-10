@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import api from './api';
 
 export interface MediaFile {
@@ -39,13 +39,13 @@ export class MediaService {
    * Pick an image from camera or photo library
    */
   static async pickImage(): Promise<MediaFile | null> {
-    const hasPermission = await this.requestPermissions();
-    if (!hasPermission) {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
       throw new Error('Permission to access media library is required');
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1, // We'll compress it ourselves
@@ -96,13 +96,13 @@ export class MediaService {
    * Pick a video from library
    */
   static async pickVideo(): Promise<MediaFile | null> {
-    const hasPermission = await this.requestPermissions();
-    if (!hasPermission) {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
       throw new Error('Permission to access media library is required');
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      mediaTypes: ['videos'],
       allowsEditing: true,
       quality: 1,
     });
