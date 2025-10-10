@@ -34,13 +34,14 @@ export class ChatController {
     async sendMessage(
         @Param('chatId') chatId: string,
         @Request() req: any,
-        @Body() body: { content: string; type?: string },
+        @Body() body: { content: string; type?: string; mediaUrl?: string },
     ) {
         return this.chatService.sendMessage(
             chatId,
             req.user.id,
             body.content,
             (body.type as MessageType) || MessageType.TEXT,
+            body.mediaUrl,
           );
         }
 

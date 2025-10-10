@@ -12,10 +12,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChatService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../common/prisma.service");
+const s3_service_1 = require("../common/s3.service");
 const client_1 = require("@prisma/client");
 let ChatService = class ChatService {
-    constructor(prisma) {
+    constructor(prisma, s3Service) {
         this.prisma = prisma;
+        this.s3Service = s3Service;
     }
     async createDirectChat(userId1, userId2) {
         const existingChat = await this.prisma.chat.findFirst({
@@ -143,13 +145,17 @@ let ChatService = class ChatService {
             take: limit,
         });
     }
-    async sendMessage(chatId, senderId, content, type = client_1.MessageType.TEXT) {
+    async sendMessage(chatId, senderId, content, type = client_1.MessageType.TEXT, mediaUrl) {
+        if (mediaUrl && !this.s3Service.validateMediaUrl(mediaUrl)) {
+            throw new common_1.BadRequestException('Invalid media URL');
+        }
         const message = await this.prisma.message.create({
             data: {
                 content,
                 type,
                 senderId,
                 chatId,
+                mediaUrl,
             },
             include: {
                 sender: {
@@ -295,6 +301,7 @@ let ChatService = class ChatService {
 exports.ChatService = ChatService;
 exports.ChatService = ChatService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        s3_service_1.S3Service])
 ], ChatService);
 //# sourceMappingURL=chat.service.js.map

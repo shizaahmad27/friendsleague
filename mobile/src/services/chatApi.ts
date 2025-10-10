@@ -25,6 +25,7 @@ export interface Message {
   type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'FILE';
   senderId: string;
   chatId: string;
+  mediaUrl?: string;
   createdAt: string;
   sender?: {
     id: string;
@@ -53,8 +54,18 @@ export const chatApi = {
   },
 
   // Send message
-  sendMessage: async (chatId: string, content: string, type = 'TEXT'): Promise<Message> => {
-    const response = await api.post(`/chats/${chatId}/messages`, { content, type });
+  sendMessage: async (chatId: string, content: string, type = 'TEXT', mediaUrl?: string): Promise<Message> => {
+    const response = await api.post(`/chats/${chatId}/messages`, { content, type, mediaUrl });
+    return response.data;
+  },
+
+  // Get presigned URL for media upload
+  getPresignedUrl: async (fileName: string, fileType: string, fileSize: number): Promise<{
+    uploadUrl: string;
+    mediaUrl: string;
+    key: string;
+  }> => {
+    const response = await api.post('/upload/presigned-url', { fileName, fileType, fileSize });
     return response.data;
   },
 

@@ -1,8 +1,10 @@
 import { PrismaService } from '../common/prisma.service';
+import { S3Service } from '../common/s3.service';
 import { MessageType } from '@prisma/client';
 export declare class ChatService {
     private prisma;
-    constructor(prisma: PrismaService);
+    private s3Service;
+    constructor(prisma: PrismaService, s3Service: S3Service);
     createDirectChat(userId1: string, userId2: string): Promise<{
         name: string | null;
         id: string;
@@ -22,12 +24,12 @@ export declare class ChatService {
         createdAt: Date;
         updatedAt: Date;
         type: import(".prisma/client").$Enums.MessageType;
+        mediaUrl: string | null;
         chatId: string;
         content: string;
         senderId: string;
-        mediaUrl: string | null;
     })[]>;
-    sendMessage(chatId: string, senderId: string, content: string, type?: MessageType): Promise<{
+    sendMessage(chatId: string, senderId: string, content: string, type?: MessageType, mediaUrl?: string): Promise<{
         sender: {
             username: string;
             id: string;
@@ -38,10 +40,10 @@ export declare class ChatService {
         createdAt: Date;
         updatedAt: Date;
         type: import(".prisma/client").$Enums.MessageType;
+        mediaUrl: string | null;
         chatId: string;
         content: string;
         senderId: string;
-        mediaUrl: string | null;
     }>;
     markChatRead(chatId: string, userId: string): Promise<{
         success: boolean;

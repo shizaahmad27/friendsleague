@@ -12,9 +12,10 @@ export const useOnlineStatus = () => {
     if (isAuthenticated && user) {
       // Set user as online when they log in
       updateOnlineStatus(true);
+    } else {
+      // Set user as offline when they log out
+      updateOnlineStatus(false);
     }
-    // Note: We don't update online status to false here when user logs out
-    // because the auth store logout function handles this before clearing auth state
   }, [isAuthenticated, user]);
 
   // Update online status when app goes to background/foreground

@@ -8,6 +8,7 @@ import { InvitationModule } from './invitation/invitation.module';
 import { ChatModule } from './chat/chat.module';
 import { LeaguesModule } from './leagues/leagues.module';
 import { EventsModule } from './events/events.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { EventsModule } from './events/events.module';
     ChatModule,
     LeaguesModule,
     EventsModule,
+    UploadModule,
   ],
   providers: [PrismaService],
 })

@@ -73,7 +73,7 @@ export default function ProfileScreen() {
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', onPress: async () => await logout() },
+        { text: 'Logout', onPress: logout },
       ]
     );
   };

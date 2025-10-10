@@ -1,10 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { S3Service } from '../common/s3.service';
 import { ChatType, MessageType } from '@prisma/client';
 
 @Injectable()
 export class ChatService {
-constructor(private prisma: PrismaService) {}
+constructor(
+    private prisma: PrismaService,
+    private s3Service: S3Service,
+) {}
 
 async createDirectChat(userId1: string, userId2: string) {
     // Check if chat already exists
@@ -147,13 +151,19 @@ const chat = await this.prisma.chat.create({
         });
         }
     
-        async sendMessage(chatId: string, senderId: string, content: string, type: MessageType = MessageType.TEXT) {
+        async sendMessage(chatId: string, senderId: string, content: string, type: MessageType = MessageType.TEXT, mediaUrl?: string) {
+            // Validate mediaUrl if provided
+            if (mediaUrl && !this.s3Service.validateMediaUrl(mediaUrl)) {
+                throw new BadRequestException('Invalid media URL');
+            }
+
             const message = await this.prisma.message.create({
               data: {
                 content,
                 type,
                 senderId,
                 chatId,
+                mediaUrl,
               },
               include: {
                 sender: {

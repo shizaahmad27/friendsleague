@@ -15,6 +15,8 @@ import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { chatApi, Message, Chat } from '../services/chatApi';
 import socketService from '../services/socketService';
 import { useAuthStore } from '../store/authStore';
+import { MediaPicker } from '../components/MediaPicker';
+import { MessageMedia } from '../components/MessageMedia';
 
 type ChatScreenRouteProp = RouteProp<{ Chat: { chatId: string } }, 'Chat'>;
 
@@ -100,14 +102,19 @@ export default function ChatScreen() {
     }
   };
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !user?.id) return;
+  const sendMessage = async (mediaUrl?: string, mediaType?: 'IMAGE' | 'VIDEO' | 'FILE') => {
+    if ((!newMessage.trim() && !mediaUrl) || !user?.id) return;
 
     const messageContent = newMessage.trim();
     setNewMessage('');
 
     try {
-      const message = await chatApi.sendMessage(chatId, messageContent);
+      const message = await chatApi.sendMessage(
+        chatId, 
+        messageContent || (mediaType === 'IMAGE' ? '📷 Photo' : mediaType === 'VIDEO' ? '🎥 Video' : '📎 File'),
+        mediaType || 'TEXT',
+        mediaUrl
+      );
 
       const messageWithSender = { ...message, senderId: user.id };
 
@@ -148,14 +155,24 @@ export default function ChatScreen() {
           isOwnMessage ? styles.ownMessage : styles.otherMessage,
         ]}
       >
-        <Text
-          style={[
-            styles.messageText,
-            isOwnMessage ? styles.ownMessageText : styles.otherMessageText,
-          ]}
-        >
-          {item.content}
-        </Text>
+        {item.mediaUrl && item.type !== 'TEXT' ? (
+          <MessageMedia
+            mediaUrl={item.mediaUrl}
+            type={item.type}
+            isOwnMessage={isOwnMessage}
+          />
+        ) : null}
+        {item.content && (
+          <Text
+            style={[
+              styles.messageText,
+              isOwnMessage ? styles.ownMessageText : styles.otherMessageText,
+              item.mediaUrl && item.type !== 'TEXT' && styles.messageTextWithMedia,
+            ]}
+          >
+            {item.content}
+          </Text>
+        )}
       </View>
     );
   };
@@ -312,6 +329,9 @@ export default function ChatScreen() {
       )}
 
       <View style={styles.inputContainer}>
+        <MediaPicker
+          onMediaSelected={(mediaUrl, type) => sendMessage(mediaUrl, type)}
+        />
         <TextInput
           style={styles.textInput}
           value={newMessage}
@@ -325,7 +345,7 @@ export default function ChatScreen() {
             styles.sendButton,
             !newMessage.trim() && styles.sendButtonDisabled,
           ]}
-          onPress={sendMessage}
+          onPress={() => sendMessage()}
           disabled={!newMessage.trim()}
         >
           <Text style={styles.sendButtonText}>Send</Text>
@@ -515,5 +535,8 @@ const styles = StyleSheet.create({
   sendButtonText: {
     color: 'white',
     fontWeight: '600',
+  },
+  messageTextWithMedia: {
+    marginTop: 8,
   },
 });

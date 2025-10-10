@@ -17,6 +17,7 @@ const invitation_module_1 = require("./invitation/invitation.module");
 const chat_module_1 = require("./chat/chat.module");
 const leagues_module_1 = require("./leagues/leagues.module");
 const events_module_1 = require("./events/events.module");
+const upload_module_1 = require("./upload/upload.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -36,6 +37,7 @@ exports.AppModule = AppModule = __decorate([
             chat_module_1.ChatModule,
             leagues_module_1.LeaguesModule,
             events_module_1.EventsModule,
+            upload_module_1.UploadModule,
         ],
         providers: [prisma_service_1.PrismaService],
     })

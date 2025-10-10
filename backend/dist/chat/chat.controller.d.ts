@@ -23,14 +23,15 @@ export declare class ChatController {
         createdAt: Date;
         updatedAt: Date;
         type: import(".prisma/client").$Enums.MessageType;
+        mediaUrl: string | null;
         chatId: string;
         content: string;
         senderId: string;
-        mediaUrl: string | null;
     })[]>;
     sendMessage(chatId: string, req: any, body: {
         content: string;
         type?: string;
+        mediaUrl?: string;
     }): Promise<{
         sender: {
             username: string;
@@ -42,10 +43,10 @@ export declare class ChatController {
         createdAt: Date;
         updatedAt: Date;
         type: import(".prisma/client").$Enums.MessageType;
+        mediaUrl: string | null;
         chatId: string;
         content: string;
         senderId: string;
-        mediaUrl: string | null;
     }>;
     createGroupChat(req: any, body: {
         name: string;

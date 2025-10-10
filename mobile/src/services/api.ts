@@ -66,12 +66,12 @@ api.interceptors.response.use(
           return api(originalRequest);
         } else {
           console.log('No refresh token available');
-          await useAuthStore.getState().logout();
+          useAuthStore.getState().logout();
         }
       } catch (refreshError) {
         console.log('Token refresh failed:', refreshError);
         // Refresh failed, logout user
-        await useAuthStore.getState().logout();
+        useAuthStore.getState().logout();
         return Promise.reject(refreshError);
       }
     }
