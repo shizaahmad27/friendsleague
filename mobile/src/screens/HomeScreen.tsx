@@ -26,10 +26,10 @@ export default function HomeScreen() {
   const handleLogout = async () => {
     try {
       await authApi.logout();
-      logout();
+      await logout();
     } catch (error) {
       console.error('Logout error:', error);
-      logout();
+      await logout();
     }
   };
 
