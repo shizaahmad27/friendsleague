@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,10 @@ import {
   ActivityIndicator,
   Modal,
   Dimensions,
+  Animated,
+  Easing,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { MediaService, MediaFile, UploadProgress } from '../services/mediaService';
 
@@ -26,6 +29,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+  const panelAnim = useRef(new Animated.Value(0)).current; // 0 hidden, 1 visible
 
   const handleMediaSelection = async (pickerFunction: () => Promise<MediaFile | null>, type: 'IMAGE' | 'VIDEO' | 'FILE') => {
     try {
@@ -55,18 +59,23 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
     }
   };
 
-  const showMediaOptions = () => {
-    Alert.alert(
-      'Select Media',
-      'Choose the type of media you want to send',
-      [
-        { text: 'Camera', onPress: () => handleMediaSelection(MediaService.takePhoto, 'IMAGE') },
-        { text: 'Photo Library', onPress: () => handleMediaSelection(MediaService.pickImage, 'IMAGE') },
-        { text: 'Video', onPress: () => handleMediaSelection(MediaService.pickVideo, 'VIDEO') },
-        { text: 'Document', onPress: () => handleMediaSelection(MediaService.pickDocument, 'FILE') },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+  const openMenu = () => {
+    setIsModalVisible(true);
+    Animated.timing(panelAnim, {
+      toValue: 1,
+      duration: 460,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeMenu = () => {
+    Animated.timing(panelAnim, {
+      toValue: 0,
+      duration: 240,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: true,
+    }).start(() => setIsModalVisible(false));
   };
 
   if (isUploading) {
@@ -94,10 +103,63 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
   }
 
   return (
-    <TouchableOpacity style={styles.mediaButton} onPress={showMediaOptions}>
-      <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
-      <Text style={styles.mediaButtonText}>Media</Text>
-    </TouchableOpacity>
+    <>
+      <TouchableOpacity style={styles.mediaButton} onPress={openMenu}>
+        <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
+      </TouchableOpacity>
+
+      <Modal visible={isModalVisible} transparent animationType="none" onRequestClose={closeMenu}>
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={closeMenu}>
+          <BlurView intensity={20} style={StyleSheet.absoluteFill} />
+          <View style={styles.modalRoot} pointerEvents="box-none">
+            <Animated.View
+              style={[
+                styles.menuPanel,
+                {
+                  opacity: panelAnim,
+                  transform: [
+                    {
+                      translateY: panelAnim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }),
+                    },
+                    {
+                      scale: panelAnim.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); handleMediaSelection(MediaService.takePhoto, 'IMAGE'); }}>
+                <View style={[styles.menuIcon, { backgroundColor: '#FF9F0A' }]}>
+                  <Ionicons name="camera" size={16} color="#fff" />
+                </View>
+                <Text style={styles.menuText}>Camera</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); handleMediaSelection(MediaService.pickImage, 'IMAGE'); }}>
+                <View style={[styles.menuIcon, { backgroundColor: '#34C759' }]}>
+                  <Ionicons name="images" size={16} color="#fff" />
+                </View>
+                <Text style={styles.menuText}>Photos</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); handleMediaSelection(MediaService.pickVideo, 'VIDEO'); }}>
+                <View style={[styles.menuIcon, { backgroundColor: '#5856D6' }]}>
+                  <Ionicons name="videocam" size={16} color="#fff" />
+                </View>
+                <Text style={styles.menuText}>Video</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); handleMediaSelection(MediaService.pickDocument, 'FILE'); }}>
+                <View style={[styles.menuIcon, { backgroundColor: '#0A84FF' }]}>
+                  <Ionicons name="document" size={16} color="#fff" />
+                </View>
+                <Text style={styles.menuText}>Docuent</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
   );
 };
 
@@ -116,6 +178,48 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#007AFF',
     fontWeight: '500',
+  },
+  backdrop: {
+    flex: 1,
+  },
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  menuPanel: {
+    alignSelf: 'flex-start',
+    marginLeft: 16,
+    marginBottom: 90,
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    minWidth: 220,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)'
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+  },
+  menuIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  menuText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
   },
   uploadingContainer: {
     flexDirection: 'row',

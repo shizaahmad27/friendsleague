@@ -17,6 +17,7 @@ import socketService from '../services/socketService';
 import { useAuthStore } from '../store/authStore';
 import { MediaPicker } from '../components/MediaPicker';
 import { MessageMedia } from '../components/MessageMedia';
+import { Ionicons } from '@expo/vector-icons';
 
 type ChatScreenRouteProp = RouteProp<{ Chat: { chatId: string } }, 'Chat'>;
 
@@ -332,24 +333,28 @@ export default function ChatScreen() {
         <MediaPicker
           onMediaSelected={(mediaUrl, type) => sendMessage(mediaUrl, type)}
         />
-        <TextInput
-          style={styles.textInput}
-          value={newMessage}
-          onChangeText={handleTyping}
-          placeholder="Type a message..."
-          multiline
-          maxLength={1000}
-        />
-        <TouchableOpacity
-          style={[
-            styles.sendButton,
-            !newMessage.trim() && styles.sendButtonDisabled,
-          ]}
-          onPress={() => sendMessage()}
-          disabled={!newMessage.trim()}
-        >
-          <Text style={styles.sendButtonText}>Send</Text>
-        </TouchableOpacity>
+        <View style={styles.textInputWrapper}>
+          <TextInput
+            style={styles.textInput}
+            value={newMessage}
+            onChangeText={handleTyping}
+            placeholder="Type a message..."
+            multiline
+            maxLength={1000}
+          />
+          <TouchableOpacity
+            style={styles.sendIconButton}
+            onPress={() => sendMessage()}
+            disabled={!newMessage.trim()}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons
+              name="arrow-up-circle"
+              size={28}
+              color={newMessage.trim() ? '#007AFF' : '#ccc'}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -514,13 +519,23 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    maxHeight: 100,
+  },
+  textInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 2,
     borderColor: '#e0e0e0',
     borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingRight: 6,
     marginRight: 8,
-    maxHeight: 100,
+  },
+  sendIconButton: {
+    paddingLeft: 6,
+    paddingVertical: 4,
   },
   sendButton: {
     backgroundColor: '#007AFF',
@@ -531,10 +546,6 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#ccc',
-  },
-  sendButtonText: {
-    color: 'white',
-    fontWeight: '600',
   },
   messageTextWithMedia: {
     marginTop: 8,
