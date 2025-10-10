@@ -95,4 +95,29 @@ export class ChatController {
   ) {
     return this.chatService.markChatRead(chatId, req.user.id);
   }
+
+  // Message Reaction Endpoints
+  @Post('messages/:messageId/reactions')
+  async addReaction(
+    @Param('messageId') messageId: string,
+    @Request() req: any,
+    @Body() body: { emoji: string },
+  ) {
+    return this.chatService.addReaction(messageId, req.user.id, body.emoji);
+  }
+
+  @Delete('messages/:messageId/reactions/:emoji')
+  async removeReaction(
+    @Param('messageId') messageId: string,
+    @Param('emoji') emoji: string,
+    @Request() req: any,
+  ) {
+    const decodedEmoji = decodeURIComponent(emoji);
+    return this.chatService.removeReaction(messageId, req.user.id, decodedEmoji);
+  }
+
+  @Get('messages/:messageId/reactions')
+  async getReactions(@Param('messageId') messageId: string) {
+    return this.chatService.getReactions(messageId);
+  }
       }

@@ -18,6 +18,7 @@ interface MessageMediaProps {
   fileName?: string;
   fileSize?: number;
   isOwnMessage?: boolean;
+  onLongPress?: () => void;
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -28,6 +29,7 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   fileName,
   fileSize,
   isOwnMessage = false,
+  onLongPress,
 }) => {
   const [isFullscreenVisible, setIsFullscreenVisible] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -81,7 +83,11 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   };
 
   const renderImage = () => (
-    <TouchableOpacity onPress={handleMediaPress} style={styles.imageContainer}>
+    <TouchableOpacity 
+      onPress={handleMediaPress} 
+      onLongPress={onLongPress}
+      style={styles.imageContainer}
+    >
       {imageError ? (
         <View style={[styles.imageContainer, styles.errorContainer]}>
           <Ionicons name="image-outline" size={40} color="#999" />
@@ -106,7 +112,11 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   );
 
   const renderVideo = () => (
-    <TouchableOpacity onPress={handleMediaPress} style={styles.videoContainer}>
+    <TouchableOpacity 
+      onPress={handleMediaPress} 
+      onLongPress={onLongPress}
+      style={styles.videoContainer}
+    >
       <View style={styles.videoThumbnail}>
         <Ionicons name="play-circle" size={40} color="white" />
       </View>
@@ -117,7 +127,11 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   );
 
   const renderFile = () => (
-    <TouchableOpacity onPress={handleMediaPress} style={styles.fileContainer}>
+    <TouchableOpacity 
+      onPress={handleMediaPress} 
+      onLongPress={onLongPress}
+      style={styles.fileContainer}
+    >
       <View style={styles.fileIcon}>
         <Ionicons name={getFileIcon(fileName)} size={24} color="#007AFF" />
       </View>
@@ -171,6 +185,72 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
             }}
           />
         )}
+        
+        {/* Action Buttons Toolbar */}
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={async () => {
+              try {
+                console.log('Share button pressed');
+                const result = await MediaService.shareMedia(displayUrl);
+                if (result.method === 'clipboard') {
+                  Alert.alert('Success', 'Image URL copied to clipboard!');
+                }
+                // No alert needed for successful share via Web Share API
+              } catch (error) {
+                console.error('Failed to share media:', error);
+                Alert.alert('Error', 'Failed to share media');
+              }
+            }}
+          >
+            <Ionicons name="share-outline" size={28} color="#007AFF" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => {
+              console.log('React button pressed');
+              // TODO: Implement reaction picker
+            }}
+          >
+            <Ionicons name="add-circle-outline" size={28} color="#007AFF" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => {
+              console.log('Reply button pressed');
+              // TODO: Implement reply functionality
+            }}
+          >
+            <Ionicons name="arrow-undo-outline" size={28} color="#007AFF" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={async () => {
+              try {
+                console.log('Save button pressed');
+                await MediaService.saveMediaToLibrary(displayUrl);
+                Alert.alert('Success', 'Image saved to your photo library!');
+              } catch (error) {
+                console.error('Failed to save media:', error);
+                const errorMessage = error instanceof Error ? error.message : 'Failed to save image to library';
+                if (errorMessage.includes('copied to clipboard')) {
+                  Alert.alert(
+                    'Development Mode', 
+                    'In Expo Go, images can\'t be saved directly. This will work properly when the app is built and installed on your device! For now, the image URL has been copied to your clipboard.'
+                  );
+                } else {
+                  Alert.alert('Error', errorMessage);
+                }
+              }
+            }}
+          >
+            <Ionicons name="download-outline" size={28} color="#007AFF" />
+          </TouchableOpacity>
+        </View>
       </View>
     </Modal>
   );
@@ -296,5 +376,27 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
     opacity: 0.7,
+  },
+  // Action buttons styles
+  actionButtonsContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 40, // Extra padding for home indicator
+  },
+  actionButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 50,
   },
 });

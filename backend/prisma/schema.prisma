@@ -34,6 +34,7 @@ model User {
   friendOf         Friendship[]       @relation("FriendOf")
   sentInvitations Invitation[]  @relation("Inviter")
   receivedInvitations Invitation[]  @relation("Invitee")
+  messageReactions MessageReaction[]
 
   @@map("users")
 }
@@ -93,10 +94,26 @@ model Message {
   updatedAt DateTime    @updatedAt
 
   // Relations
-  sender User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
-  chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender   User            @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  chat     Chat            @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  reactions MessageReaction[]
 
   @@map("messages")
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  // Relations
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@map("message_reactions")
 }
 
 model League {

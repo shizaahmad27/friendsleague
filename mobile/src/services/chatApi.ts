@@ -27,6 +27,15 @@ export interface Message {
   chatId: string;
   mediaUrl?: string;
   createdAt: string;
+  reactions?: Array<{
+    emoji: string;
+    count: number;
+    users: Array<{
+      id: string;
+      username: string;
+      avatar?: string;
+    }>;
+  }>;
   sender?: {
     id: string;
     username: string;
@@ -103,6 +112,23 @@ export const chatApi = {
   },
   markChatRead: async (chatId: string): Promise<{ success: boolean }> => {
     const response = await api.put(`/chats/${chatId}/read`);
+    return response.data;
+  },
+
+  // Message Reaction Methods
+  addReaction: async (messageId: string, emoji: string): Promise<any> => {
+    const response = await api.post(`/chats/messages/${messageId}/reactions`, { emoji });
+    return response.data;
+  },
+
+  removeReaction: async (messageId: string, emoji: string): Promise<{ success: boolean }> => {
+    const encodedEmoji = encodeURIComponent(emoji);
+    const response = await api.delete(`/chats/messages/${messageId}/reactions/${encodedEmoji}`);
+    return response.data;
+  },
+
+  getReactions: async (messageId: string): Promise<any[]> => {
+    const response = await api.get(`/chats/messages/${messageId}/reactions`);
     return response.data;
   },
 };

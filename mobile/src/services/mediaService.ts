@@ -408,4 +408,109 @@ export class MediaService {
     
     return url;
   }
+
+  /**
+   * Share media using Web Share API or copy to clipboard
+   */
+  static async shareMedia(mediaUrl: string): Promise<{ success: boolean; method: 'share' | 'clipboard' }> {
+    try {
+      console.log('MediaService: Starting share for URL:', mediaUrl);
+      
+      // Check if Web Share API is available (works in Expo Go on mobile)
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        // Use Web Share API
+        await navigator.share({
+          title: 'Check out this image!',
+          text: 'Look at this image from FriendsLeague',
+          url: mediaUrl,
+        });
+        console.log('MediaService: Share completed successfully via Web Share API');
+        return { success: true, method: 'share' };
+      } else {
+        // Fallback: Copy URL to clipboard using Expo Clipboard
+        const Clipboard = await import('expo-clipboard');
+        await Clipboard.setStringAsync(mediaUrl);
+        console.log('MediaService: URL copied to clipboard');
+        return { success: true, method: 'clipboard' };
+      }
+    } catch (error) {
+      console.error('MediaService: Share failed:', error);
+      throw new Error('Failed to share media');
+    }
+  }
+
+  /**
+   * Save media to device photo library
+   */
+  static async saveMediaToLibrary(mediaUrl: string): Promise<void> {
+    try {
+      console.log('MediaService: Starting save to library for URL:', mediaUrl);
+      
+      // Download the image to a temporary file first
+      const filename = `image_${Date.now()}.jpg`;
+      const localUri = `${FileSystem.documentDirectory}${filename}`;
+      
+      console.log('MediaService: Downloading image to:', localUri);
+      const downloadResult = await FileSystem.downloadAsync(mediaUrl, localUri);
+      
+      if (downloadResult.status !== 200) {
+        throw new Error('Failed to download image');
+      }
+      
+      // Try to use expo-media-library if available (production builds)
+      try {
+        const MediaLibrary = (await import('expo-media-library')).default;
+        
+        // Request permissions
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status !== 'granted') {
+          throw new Error('Media library permission not granted');
+        }
+        
+        // Save to photo library
+        console.log('MediaService: Saving to photo library');
+        await MediaLibrary.saveToLibraryAsync(downloadResult.uri);
+        
+        // Clean up temporary file
+        await FileSystem.deleteAsync(localUri, { idempotent: true });
+        
+        console.log('MediaService: Successfully saved to library');
+        return;
+      } catch (mediaLibraryError) {
+        console.log('MediaService: expo-media-library not available, trying alternative method');
+        
+        // Fallback: Use Web Share API to save (works in Expo Go)
+        if (typeof navigator !== 'undefined' && navigator.share) {
+          // Create a blob from the downloaded file and share it
+          const response = await fetch(downloadResult.uri);
+          const blob = await response.blob();
+          
+          // Create a temporary URL for the blob
+          const blobUrl = URL.createObjectURL(blob);
+          
+          // Use Web Share API with the blob
+          await navigator.share({
+            title: 'Save Image',
+            files: [new File([blob], filename, { type: 'image/jpeg' })]
+          });
+          
+          // Clean up
+          URL.revokeObjectURL(blobUrl);
+          await FileSystem.deleteAsync(localUri, { idempotent: true });
+          
+          console.log('MediaService: Image shared for saving via Web Share API');
+          return;
+        } else {
+          // Final fallback: Copy URL to clipboard with instructions
+          const Clipboard = await import('expo-clipboard');
+          await Clipboard.setStringAsync(mediaUrl);
+          await FileSystem.deleteAsync(localUri, { idempotent: true });
+          throw new Error('Save not available in Expo Go - URL copied to clipboard. Open the URL in your browser and long-press the image to save it.');
+        }
+      }
+    } catch (error) {
+      console.error('MediaService: Save to library failed:', error);
+      throw new Error('Failed to save media to library');
+    }
+  }
 }

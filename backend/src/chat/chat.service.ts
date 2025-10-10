@@ -333,4 +333,146 @@ const chat = await this.prisma.chat.create({
             },
         });
     }
+
+    // Message Reaction Methods
+    async addReaction(messageId: string, userId: string, emoji: string) {
+        // Check if message exists
+        const message = await this.prisma.message.findUnique({
+            where: { id: messageId },
+            include: { chat: true },
+        });
+
+        if (!message) {
+            throw new BadRequestException('Message not found');
+        }
+
+        // Check if user is participant in the chat
+        const participant = await this.prisma.chatParticipant.findUnique({
+            where: {
+                chatId_userId: {
+                    chatId: message.chatId,
+                    userId: userId,
+                },
+            },
+        });
+
+        if (!participant) {
+            throw new BadRequestException('User is not a participant in this chat');
+        }
+
+        // Add or update reaction (upsert)
+        const reaction = await this.prisma.messageReaction.upsert({
+            where: {
+                messageId_userId_emoji: {
+                    messageId,
+                    userId,
+                    emoji,
+                },
+            },
+            update: {
+                createdAt: new Date(), // Update timestamp if reaction already exists
+            },
+            create: {
+                messageId,
+                userId,
+                emoji,
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        avatar: true,
+                    },
+                },
+            },
+        });
+
+        return reaction;
+    }
+
+    async removeReaction(messageId: string, userId: string, emoji: string) {
+        // Check if message exists
+        const message = await this.prisma.message.findUnique({
+            where: { id: messageId },
+            include: { chat: true },
+        });
+
+        if (!message) {
+            throw new BadRequestException('Message not found');
+        }
+
+        // Check if user is participant in the chat
+        const participant = await this.prisma.chatParticipant.findUnique({
+            where: {
+                chatId_userId: {
+                    chatId: message.chatId,
+                    userId: userId,
+                },
+            },
+        });
+
+        if (!participant) {
+            throw new BadRequestException('User is not a participant in this chat');
+        }
+
+        // Remove reaction
+        await this.prisma.messageReaction.deleteMany({
+            where: {
+                messageId,
+                userId,
+                emoji,
+            },
+        });
+
+        return { success: true };
+    }
+
+    async getReactions(messageId: string) {
+        // Check if message exists
+        const message = await this.prisma.message.findUnique({
+            where: { id: messageId },
+        });
+
+        if (!message) {
+            throw new BadRequestException('Message not found');
+        }
+
+        // Get all reactions for the message
+        const reactions = await this.prisma.messageReaction.findMany({
+            where: { messageId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        avatar: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: 'asc',
+            },
+        });
+
+        // Group reactions by emoji
+        const groupedReactions = reactions.reduce((acc, reaction) => {
+            if (!acc[reaction.emoji]) {
+                acc[reaction.emoji] = {
+                    emoji: reaction.emoji,
+                    count: 0,
+                    users: [],
+                };
+            }
+            acc[reaction.emoji].count++;
+            acc[reaction.emoji].users.push({
+                id: reaction.user.id,
+                username: reaction.user.username,
+                avatar: reaction.user.avatar,
+            });
+            return acc;
+        }, {} as Record<string, { emoji: string; count: number; users: any[] }>);
+
+        return Object.values(groupedReactions);
+    }
     }
