@@ -20,9 +20,21 @@ export interface Message {
   senderId: string;
   chatId: string;
   mediaUrl?: string;
+  replyToId?: string;
   createdAt: Date;
   updatedAt: Date;
   sender?: User;
+  replyTo?: Message;
+  reactions?: MessageReaction[];
+}
+
+export interface MessageReaction {
+  id: string;
+  messageId: string;
+  userId: string;
+  emoji: string;
+  createdAt: Date;
+  user?: User;
 }
 
 export interface Chat {

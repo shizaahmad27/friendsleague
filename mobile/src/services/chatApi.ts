@@ -26,6 +26,7 @@ export interface Message {
   senderId: string;
   chatId: string;
   mediaUrl?: string;
+  replyToId?: string;
   createdAt: string;
   reactions?: Array<{
     emoji: string;
@@ -41,6 +42,7 @@ export interface Message {
     username: string;
     avatar?: string;
   };
+  replyTo?: Message;
 }
 
 export const chatApi = {
@@ -63,8 +65,8 @@ export const chatApi = {
   },
 
   // Send message
-  sendMessage: async (chatId: string, content: string, type = 'TEXT', mediaUrl?: string): Promise<Message> => {
-    const response = await api.post(`/chats/${chatId}/messages`, { content, type, mediaUrl });
+  sendMessage: async (chatId: string, content: string, type = 'TEXT', mediaUrl?: string, replyToId?: string): Promise<Message> => {
+    const response = await api.post(`/chats/${chatId}/messages`, { content, type, mediaUrl, replyToId });
     return response.data;
   },
 

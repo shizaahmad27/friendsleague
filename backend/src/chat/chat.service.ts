@@ -1,13 +1,16 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { S3Service } from '../common/s3.service';
 import { ChatType, MessageType } from '@prisma/client';
+import { ChatGateway } from './chat.gateway';
 
 @Injectable()
 export class ChatService {
 constructor(
     private prisma: PrismaService,
     private s3Service: S3Service,
+    @Inject(forwardRef(() => ChatGateway))
+    private chatGateway: ChatGateway,
 ) {}
 
 async createDirectChat(userId1: string, userId2: string) {
@@ -142,6 +145,17 @@ const chat = await this.prisma.chat.create({
                 avatar: true,
                 },
             },
+            replyTo: {
+                include: {
+                    sender: {
+                        select: {
+                            id: true,
+                            username: true,
+                            avatar: true,
+                        },
+                    },
+                },
+            },
             },
             orderBy: {
             createdAt: 'desc',
@@ -151,10 +165,26 @@ const chat = await this.prisma.chat.create({
         });
         }
     
-        async sendMessage(chatId: string, senderId: string, content: string, type: MessageType = MessageType.TEXT, mediaUrl?: string) {
+        async sendMessage(chatId: string, senderId: string, content: string, type: MessageType = MessageType.TEXT, mediaUrl?: string, replyToId?: string) {
             // Validate mediaUrl if provided
             if (mediaUrl && !this.s3Service.validateMediaUrl(mediaUrl)) {
                 throw new BadRequestException('Invalid media URL');
+            }
+
+            // Validate replyToId if provided
+            if (replyToId) {
+                const replyToMessage = await this.prisma.message.findUnique({
+                    where: { id: replyToId },
+                    include: { chat: true },
+                });
+
+                if (!replyToMessage) {
+                    throw new BadRequestException('Reply message not found');
+                }
+
+                if (replyToMessage.chatId !== chatId) {
+                    throw new BadRequestException('Reply message is not in the same chat');
+                }
             }
 
             const message = await this.prisma.message.create({
@@ -164,6 +194,7 @@ const chat = await this.prisma.chat.create({
                 senderId,
                 chatId,
                 mediaUrl,
+                replyToId,
               },
               include: {
                 sender: {
@@ -171,6 +202,17 @@ const chat = await this.prisma.chat.create({
                     id: true,
                     username: true,
                     avatar: true,
+                  },
+                },
+                replyTo: {
+                  include: {
+                    sender: {
+                      select: {
+                        id: true,
+                        username: true,
+                        avatar: true,
+                      },
+                    },
                   },
                 },
               },
@@ -388,6 +430,14 @@ const chat = await this.prisma.chat.create({
             },
         });
 
+        // Emit socket event for real-time reaction updates
+        this.chatGateway.server.to(message.chatId).emit('reactionAdded', {
+            messageId,
+            userId,
+            emoji,
+            reaction,
+        });
+
         return reaction;
     }
 
@@ -423,6 +473,13 @@ const chat = await this.prisma.chat.create({
                 userId,
                 emoji,
             },
+        });
+
+        // Emit socket event for real-time reaction updates
+        this.chatGateway.server.to(message.chatId).emit('reactionRemoved', {
+            messageId,
+            userId,
+            emoji,
         });
 
         return { success: true };

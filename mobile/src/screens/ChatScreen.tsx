@@ -21,6 +21,7 @@ import { MediaPicker } from '../components/MediaPicker';
 import { MessageMedia } from '../components/MessageMedia';
 import { MessageReactions } from '../components/MessageReactions';
 import { ReactionPicker } from '../components/ReactionPicker';
+import MessageReplyPreview from '../components/MessageReplyPreview';
 import { MediaService } from '../services/mediaService';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -41,6 +42,7 @@ export default function ChatScreen() {
   const [fullscreenMessage, setFullscreenMessage] = useState<Message | null>(null);
   const [reactionPickerVisible, setReactionPickerVisible] = useState(false);
   const [selectedMessageForReaction, setSelectedMessageForReaction] = useState<Message | null>(null);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [peerUser, setPeerUser] = useState<{ id: string; username: string; avatar?: string } | null>(null);
   const [chatMeta, setChatMeta] = useState<{ type: Chat['type']; name?: string } | null>(null);
   const [participants, setParticipants] = useState<Array<{ id: string; username: string; avatar?: string }>>([]);
@@ -78,8 +80,80 @@ export default function ChatScreen() {
       }
     };
 
+    const handleReactionAdded = (data: { messageId: string; userId: string; emoji: string; reaction: any }) => {
+      setMessages(prev => prev.map(message => {
+        if (message.id === data.messageId) {
+          // Update reactions for this message
+          const existingReactions = message.reactions || [];
+          const existingReactionIndex = existingReactions.findIndex(r => r.emoji === data.emoji);
+          
+          if (existingReactionIndex >= 0) {
+            // Update existing reaction
+            const updatedReactions = [...existingReactions];
+            updatedReactions[existingReactionIndex] = {
+              ...updatedReactions[existingReactionIndex],
+              count: updatedReactions[existingReactionIndex].count + 1,
+              users: [...updatedReactions[existingReactionIndex].users, {
+                id: data.userId,
+                username: data.reaction.user.username,
+                avatar: data.reaction.user.avatar,
+              }],
+            };
+            return { ...message, reactions: updatedReactions };
+          } else {
+            // Add new reaction
+            return {
+              ...message,
+              reactions: [
+                ...existingReactions,
+                {
+                  emoji: data.emoji,
+                  count: 1,
+                  users: [{
+                    id: data.userId,
+                    username: data.reaction.user.username,
+                    avatar: data.reaction.user.avatar,
+                  }],
+                },
+              ],
+            };
+          }
+        }
+        return message;
+      }));
+    };
+
+    const handleReactionRemoved = (data: { messageId: string; userId: string; emoji: string }) => {
+      setMessages(prev => prev.map(message => {
+        if (message.id === data.messageId) {
+          const existingReactions = message.reactions || [];
+          const updatedReactions = existingReactions
+            .map(reaction => {
+              if (reaction.emoji === data.emoji) {
+                const updatedUsers = reaction.users.filter(user => user.id !== data.userId);
+                if (updatedUsers.length === 0) {
+                  return null; // Mark for removal
+                }
+                return {
+                  ...reaction,
+                  count: updatedUsers.length,
+                  users: updatedUsers,
+                };
+              }
+              return reaction;
+            })
+            .filter((reaction): reaction is NonNullable<typeof reaction> => reaction !== null);
+          
+          return { ...message, reactions: updatedReactions };
+        }
+        return message;
+      }));
+    };
+
     socketService.onNewMessage(handleNewMessage);
     socketService.onUserTyping(handleUserTyping);
+    socketService.onReactionAdded(handleReactionAdded);
+    socketService.onReactionRemoved(handleReactionRemoved);
 
     // Re-join on reconnect to keep room subscription
     const sock = socketService.getSocket();
@@ -90,6 +164,8 @@ export default function ChatScreen() {
       socketService.emitTyping(chatId, user.id, false);
       socketService.offNewMessage(handleNewMessage);
       socketService.offUserTyping(handleUserTyping);
+      socketService.offReactionAdded(handleReactionAdded);
+      socketService.offReactionRemoved(handleReactionRemoved);
       sock?.off('connect', onReconnect);
     };
   }, [chatId, user?.id]);
@@ -123,7 +199,8 @@ export default function ChatScreen() {
         chatId, 
         messageContent || '', // Send empty string instead of emoji + text
         mediaType || 'TEXT',
-        mediaUrl
+        mediaUrl,
+        replyingTo?.id
       );
 
       const messageWithSender = { ...message, senderId: user.id };
@@ -134,6 +211,9 @@ export default function ChatScreen() {
 
       socketService.emitTyping(chatId, user.id, false);
       setIsTyping(false);
+      
+      // Clear reply state after sending
+      setReplyingTo(null);
     } catch (error) {
       console.error('Failed to send message:', error);
       Alert.alert('Error', 'Failed to send message. Please try again.');
@@ -164,8 +244,7 @@ export default function ChatScreen() {
         await chatApi.addReaction(selectedMessageForReaction.id, emoji);
       }
 
-      // Refresh messages to get updated reactions
-      loadMessages();
+      // Real-time updates will handle the UI updates via socket events
     } catch (error) {
       console.error('Failed to handle reaction:', error);
       Alert.alert('Error', 'Failed to update reaction');
@@ -205,12 +284,29 @@ export default function ChatScreen() {
         onLongPress={() => handleReactionPress(item)}
         activeOpacity={0.7}
       >
+        {/* Reply Preview */}
+        {item.replyTo && (
+          <MessageReplyPreview 
+            replyTo={item.replyTo} 
+            onPress={() => {
+              // Scroll to the replied message
+              const replyIndex = messages.findIndex(msg => msg.id === item.replyTo?.id);
+              if (replyIndex !== -1) {
+                flatListRef.current?.scrollToIndex({ index: replyIndex, animated: true });
+              }
+            }}
+          />
+        )}
+        
         {isMediaMessage && item.mediaUrl ? (
           <MessageMedia
             mediaUrl={item.mediaUrl}
             type={item.type as 'IMAGE' | 'VIDEO' | 'FILE'}
             isOwnMessage={isOwnMessage}
             onLongPress={() => handleReactionPress(item)}
+            messageId={item.id}
+            onReactionPress={() => handleReactionPress(item)}
+            onReplyPress={() => handleReplyPress(item)}
           />
         ) : null}
         {item.content && (
@@ -394,6 +490,15 @@ export default function ChatScreen() {
         </View>
       )}
 
+      {/* Reply Header */}
+      {replyingTo && (
+        <MessageReplyPreview 
+          replyTo={replyingTo} 
+          isInHeader={true}
+          onClose={() => setReplyingTo(null)}
+        />
+      )}
+
       <View style={styles.inputContainer}>
         <MediaPicker
           onMediaSelected={(mediaUrl, type) => sendMessage(mediaUrl, type)}
@@ -479,7 +584,11 @@ export default function ChatScreen() {
                     .filter(msg => msg.type === 'VIDEO' && msg.mediaUrl)
                     .slice(0, 6)
                     .map((msg, index) => (
-                      <TouchableOpacity key={msg.id} style={styles.mediaItem}>
+                      <TouchableOpacity 
+                        key={msg.id} 
+                        style={styles.mediaItem}
+                        onPress={() => setFullscreenMessage(msg)}
+                      >
                         <View style={styles.videoThumbnail}>
                           <Ionicons name="play-circle" size={30} color="white" />
                         </View>
@@ -501,7 +610,11 @@ export default function ChatScreen() {
                     .filter(msg => msg.type === 'FILE' && msg.mediaUrl)
                     .slice(0, 5)
                     .map((msg, index) => (
-                      <TouchableOpacity key={msg.id} style={styles.fileItem}>
+                      <TouchableOpacity 
+                        key={msg.id} 
+                        style={styles.fileItem}
+                        onPress={() => setFullscreenMessage(msg)}
+                      >
                         <View style={styles.fileIcon}>
                           <Ionicons name="document" size={20} color="#007AFF" />
                         </View>
@@ -517,7 +630,7 @@ export default function ChatScreen() {
         </View>
       </Modal>
 
-      {/* Fullscreen Image Modal */}
+      {/* Fullscreen Media Modal */}
       <Modal
         visible={fullscreenMessage !== null}
         transparent={true}
@@ -532,11 +645,29 @@ export default function ChatScreen() {
             <Ionicons name="close" size={30} color="white" />
           </TouchableOpacity>
           {fullscreenMessage && fullscreenMessage.mediaUrl && (
-            <Image
-              source={{ uri: fullscreenMessage.mediaUrl }}
-              style={styles.fullscreenImage}
-              resizeMode="contain"
-            />
+            <>
+              {fullscreenMessage.type === 'IMAGE' && (
+                <Image
+                  source={{ uri: fullscreenMessage.mediaUrl }}
+                  style={styles.fullscreenImage}
+                  resizeMode="contain"
+                />
+              )}
+              {fullscreenMessage.type === 'VIDEO' && (
+                <View style={styles.fullscreenVideoContainer}>
+                  <Ionicons name="play-circle" size={80} color="white" />
+                  <Text style={styles.fullscreenVideoText}>Video Preview</Text>
+                  <Text style={styles.fullscreenVideoSubtext}>Tap to play in fullscreen</Text>
+                </View>
+              )}
+              {fullscreenMessage.type === 'FILE' && (
+                <View style={styles.fullscreenFileContainer}>
+                  <Ionicons name="document" size={80} color="#007AFF" />
+                  <Text style={styles.fullscreenFileText}>File Preview</Text>
+                  <Text style={styles.fullscreenFileSubtext}>Tap to download or open</Text>
+                </View>
+              )}
+            </>
           )}
           
           {/* Action Buttons Toolbar */}
@@ -577,8 +708,8 @@ export default function ChatScreen() {
               <TouchableOpacity 
                 style={styles.actionButton}
                 onPress={() => {
-                  console.log('Reply button pressed');
-                  // TODO: Implement reply functionality
+                  setFullscreenMessage(null);
+                  handleReplyPress(fullscreenMessage);
                 }}
               >
                 <Ionicons name="arrow-undo-outline" size={28} color="#007AFF" />
@@ -944,6 +1075,44 @@ const styles = StyleSheet.create({
   fullscreenImage: {
     width: '100%',
     height: '100%',
+  },
+  fullscreenVideoContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    width: '100%',
+    height: '100%',
+  },
+  fullscreenVideoText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 20,
+  },
+  fullscreenVideoSubtext: {
+    color: '#ccc',
+    fontSize: 16,
+    marginTop: 8,
+  },
+  fullscreenFileContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    width: '100%',
+    height: '100%',
+  },
+  fullscreenFileText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 20,
+  },
+  fullscreenFileSubtext: {
+    color: '#ccc',
+    fontSize: 16,
+    marginTop: 8,
   },
   // Action buttons styles
   actionButtonsContainer: {

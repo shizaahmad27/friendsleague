@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,10 @@ import {
   Modal,
   Dimensions,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 
 interface ReactionPickerProps {
   visible: boolean;
@@ -19,7 +21,7 @@ interface ReactionPickerProps {
 const { width: screenWidth } = Dimensions.get('window');
 
 // Default reactions (like iMessage)
-const DEFAULT_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏', '?', '!'];
+const DEFAULT_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '❓'];
 
 // Extended emoji set for the full picker
 const EXTENDED_EMOJIS = [
@@ -64,7 +66,7 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
 
   const renderDefaultReactions = () => (
     <View style={styles.defaultReactionsContainer}>
-      {DEFAULT_REACTIONS.map((emoji, index) => (
+        {DEFAULT_REACTIONS.map((emoji, index) => (
         <TouchableOpacity
           key={index}
           style={styles.emojiButton}

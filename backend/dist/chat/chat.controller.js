@@ -31,7 +31,7 @@ let ChatController = class ChatController {
         return this.chatService.getChatMessages(chatId, parseInt(page), parseInt(limit));
     }
     async sendMessage(chatId, req, body) {
-        return this.chatService.sendMessage(chatId, req.user.id, body.content, body.type || client_1.MessageType.TEXT, body.mediaUrl);
+        return this.chatService.sendMessage(chatId, req.user.id, body.content, body.type || client_1.MessageType.TEXT, body.mediaUrl, body.replyToId);
     }
     async createGroupChat(req, body) {
         return this.chatService.createGroupChat(req.user.id, body.name, body.description, body.participantIds);

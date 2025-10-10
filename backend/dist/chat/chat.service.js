@@ -8,16 +8,21 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChatService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../common/prisma.service");
 const s3_service_1 = require("../common/s3.service");
 const client_1 = require("@prisma/client");
+const chat_gateway_1 = require("./chat.gateway");
 let ChatService = class ChatService {
-    constructor(prisma, s3Service) {
+    constructor(prisma, s3Service, chatGateway) {
         this.prisma = prisma;
         this.s3Service = s3Service;
+        this.chatGateway = chatGateway;
     }
     async createDirectChat(userId1, userId2) {
         const existingChat = await this.prisma.chat.findFirst({
@@ -137,6 +142,17 @@ let ChatService = class ChatService {
                         avatar: true,
                     },
                 },
+                replyTo: {
+                    include: {
+                        sender: {
+                            select: {
+                                id: true,
+                                username: true,
+                                avatar: true,
+                            },
+                        },
+                    },
+                },
             },
             orderBy: {
                 createdAt: 'desc',
@@ -145,9 +161,21 @@ let ChatService = class ChatService {
             take: limit,
         });
     }
-    async sendMessage(chatId, senderId, content, type = client_1.MessageType.TEXT, mediaUrl) {
+    async sendMessage(chatId, senderId, content, type = client_1.MessageType.TEXT, mediaUrl, replyToId) {
         if (mediaUrl && !this.s3Service.validateMediaUrl(mediaUrl)) {
             throw new common_1.BadRequestException('Invalid media URL');
+        }
+        if (replyToId) {
+            const replyToMessage = await this.prisma.message.findUnique({
+                where: { id: replyToId },
+                include: { chat: true },
+            });
+            if (!replyToMessage) {
+                throw new common_1.BadRequestException('Reply message not found');
+            }
+            if (replyToMessage.chatId !== chatId) {
+                throw new common_1.BadRequestException('Reply message is not in the same chat');
+            }
         }
         const message = await this.prisma.message.create({
             data: {
@@ -156,6 +184,7 @@ let ChatService = class ChatService {
                 senderId,
                 chatId,
                 mediaUrl,
+                replyToId,
             },
             include: {
                 sender: {
@@ -163,6 +192,17 @@ let ChatService = class ChatService {
                         id: true,
                         username: true,
                         avatar: true,
+                    },
+                },
+                replyTo: {
+                    include: {
+                        sender: {
+                            select: {
+                                id: true,
+                                username: true,
+                                avatar: true,
+                            },
+                        },
                     },
                 },
             },
@@ -342,6 +382,12 @@ let ChatService = class ChatService {
                 },
             },
         });
+        this.chatGateway.server.to(message.chatId).emit('reactionAdded', {
+            messageId,
+            userId,
+            emoji,
+            reaction,
+        });
         return reaction;
     }
     async removeReaction(messageId, userId, emoji) {
@@ -369,6 +415,11 @@ let ChatService = class ChatService {
                 userId,
                 emoji,
             },
+        });
+        this.chatGateway.server.to(message.chatId).emit('reactionRemoved', {
+            messageId,
+            userId,
+            emoji,
         });
         return { success: true };
     }
@@ -416,7 +467,9 @@ let ChatService = class ChatService {
 exports.ChatService = ChatService;
 exports.ChatService = ChatService = __decorate([
     (0, common_1.Injectable)(),
+    __param(2, (0, common_1.Inject)((0, common_1.forwardRef)(() => chat_gateway_1.ChatGateway))),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        s3_service_1.S3Service])
+        s3_service_1.S3Service,
+        chat_gateway_1.ChatGateway])
 ], ChatService);
 //# sourceMappingURL=chat.service.js.map

@@ -81,6 +81,30 @@ class SocketService {
     }
   }
 
+  onReactionAdded(callback: (data: { messageId: string; userId: string; emoji: string; reaction: any }) => void) {
+    if (this.socket) {
+      this.socket.on('reactionAdded', callback);
+    }
+  }
+
+  offReactionAdded(callback: (data: { messageId: string; userId: string; emoji: string; reaction: any }) => void) {
+    if (this.socket) {
+      this.socket.off('reactionAdded', callback);
+    }
+  }
+
+  onReactionRemoved(callback: (data: { messageId: string; userId: string; emoji: string }) => void) {
+    if (this.socket) {
+      this.socket.on('reactionRemoved', callback);
+    }
+  }
+
+  offReactionRemoved(callback: (data: { messageId: string; userId: string; emoji: string }) => void) {
+    if (this.socket) {
+      this.socket.off('reactionRemoved', callback);
+    }
+  }
+
   getSocket() {
     return this.socket;
   }

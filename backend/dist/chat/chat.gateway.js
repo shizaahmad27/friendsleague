@@ -44,6 +44,21 @@ let ChatGateway = class ChatGateway {
             isTyping: data.isTyping,
         });
     }
+    handleReactionAdded(data, client) {
+        client.to(data.chatId).emit('reactionAdded', {
+            messageId: data.messageId,
+            userId: data.userId,
+            emoji: data.emoji,
+            reaction: data.reaction,
+        });
+    }
+    handleReactionRemoved(data, client) {
+        client.to(data.chatId).emit('reactionRemoved', {
+            messageId: data.messageId,
+            userId: data.userId,
+            emoji: data.emoji,
+        });
+    }
 };
 exports.ChatGateway = ChatGateway;
 __decorate([
@@ -74,6 +89,22 @@ __decorate([
     __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
     __metadata("design:returntype", void 0)
 ], ChatGateway.prototype, "handleTyping", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('reactionAdded'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], ChatGateway.prototype, "handleReactionAdded", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('reactionRemoved'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], ChatGateway.prototype, "handleReactionRemoved", null);
 exports.ChatGateway = ChatGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {

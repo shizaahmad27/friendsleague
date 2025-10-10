@@ -9,9 +9,9 @@ export declare class EventsService {
             id: string;
         };
         invitations: {
+            id: string;
             email: string | null;
             phoneNumber: string | null;
-            id: string;
             createdAt: Date;
             updatedAt: Date;
             status: import(".prisma/client").$Enums.InvitationStatus;
@@ -21,8 +21,8 @@ export declare class EventsService {
         }[];
         participants: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
                 isOnline: boolean;
             };
@@ -35,8 +35,8 @@ export declare class EventsService {
             eventId: string;
         })[];
         admin: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
         rules: {
@@ -65,8 +65,8 @@ export declare class EventsService {
     }>;
     getEventParticipants(eventId: string, userId: string): Promise<({
         user: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
             isOnline: boolean;
         };
@@ -97,8 +97,8 @@ export declare class EventsService {
         };
         participants: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
                 isOnline: boolean;
             };
@@ -111,8 +111,8 @@ export declare class EventsService {
             eventId: string;
         })[];
         admin: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
         rules: {
@@ -145,8 +145,8 @@ export declare class EventsService {
         };
         participants: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
                 isOnline: boolean;
             };
@@ -159,8 +159,8 @@ export declare class EventsService {
             eventId: string;
         })[];
         admin: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
         rules: {
@@ -193,9 +193,9 @@ export declare class EventsService {
             id: string;
         };
         invitations: {
+            id: string;
             email: string | null;
             phoneNumber: string | null;
-            id: string;
             createdAt: Date;
             updatedAt: Date;
             status: import(".prisma/client").$Enums.InvitationStatus;
@@ -205,8 +205,8 @@ export declare class EventsService {
         }[];
         participants: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
                 isOnline: boolean;
             };
@@ -219,8 +219,8 @@ export declare class EventsService {
             eventId: string;
         })[];
         admin: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
         rules: {
@@ -253,9 +253,9 @@ export declare class EventsService {
             id: string;
         };
         invitations: {
+            id: string;
             email: string | null;
             phoneNumber: string | null;
-            id: string;
             createdAt: Date;
             updatedAt: Date;
             status: import(".prisma/client").$Enums.InvitationStatus;
@@ -265,8 +265,8 @@ export declare class EventsService {
         }[];
         participants: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
                 isOnline: boolean;
             };
@@ -279,8 +279,8 @@ export declare class EventsService {
             eventId: string;
         })[];
         admin: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
         rules: {
@@ -313,9 +313,9 @@ export declare class EventsService {
             id: string;
         };
         invitations: {
+            id: string;
             email: string | null;
             phoneNumber: string | null;
-            id: string;
             createdAt: Date;
             updatedAt: Date;
             status: import(".prisma/client").$Enums.InvitationStatus;
@@ -325,8 +325,8 @@ export declare class EventsService {
         }[];
         participants: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
                 isOnline: boolean;
             };
@@ -339,8 +339,8 @@ export declare class EventsService {
             eventId: string;
         })[];
         admin: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
         rules: {
@@ -376,9 +376,9 @@ export declare class EventsService {
             id: string;
         };
         invitations: {
+            id: string;
             email: string | null;
             phoneNumber: string | null;
-            id: string;
             createdAt: Date;
             updatedAt: Date;
             status: import(".prisma/client").$Enums.InvitationStatus;
@@ -388,8 +388,8 @@ export declare class EventsService {
         }[];
         participants: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
                 isOnline: boolean;
             };
@@ -402,8 +402,8 @@ export declare class EventsService {
             eventId: string;
         })[];
         admin: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
         rules: {
@@ -456,9 +456,9 @@ export declare class EventsService {
         reason: string;
     }>;
     createEventInvitation(eventId: string, adminId: string, createEventInvitationDto: CreateEventInvitationDto): Promise<{
+        id: string;
         email: string | null;
         phoneNumber: string | null;
-        id: string;
         createdAt: Date;
         updatedAt: Date;
         status: import(".prisma/client").$Enums.InvitationStatus;
@@ -472,9 +472,9 @@ export declare class EventsService {
             id: string;
         };
         invitations: {
+            id: string;
             email: string | null;
             phoneNumber: string | null;
-            id: string;
             createdAt: Date;
             updatedAt: Date;
             status: import(".prisma/client").$Enums.InvitationStatus;
@@ -484,8 +484,8 @@ export declare class EventsService {
         }[];
         participants: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
                 isOnline: boolean;
             };
@@ -498,8 +498,8 @@ export declare class EventsService {
             eventId: string;
         })[];
         admin: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
         rules: {
@@ -528,8 +528,8 @@ export declare class EventsService {
     }>;
     getEventLeaderboard(eventId: string): Promise<({
         user: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
             isOnline: boolean;
         };

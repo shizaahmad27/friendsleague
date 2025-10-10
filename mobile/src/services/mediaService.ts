@@ -39,17 +39,12 @@ export class MediaService {
    * Pick an image from camera or photo library
    */
   static async pickImage(): Promise<MediaFile | null> {
-    console.log('MediaService: pickImage() function called');
-    console.log('MediaService: Requesting media library permissions...');
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    console.log('MediaService: Media library permission status:', status);
     
     if (status !== 'granted') {
-      console.log('MediaService: Media library permission denied');
       throw new Error('Permission to access media library is required');
     }
 
-    console.log('MediaService: Launching image library...');
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
@@ -57,15 +52,12 @@ export class MediaService {
       quality: 0.8, // Start with some compression to reduce initial file size
     });
 
-    console.log('MediaService: Image library result:', result);
     
     if (result.canceled || !result.assets[0]) {
-      console.log('MediaService: Image library was canceled or no assets');
       return null;
     }
 
     const asset = result.assets[0];
-    console.log('MediaService: Image library asset:', asset);
     
     return {
       uri: asset.uri,
@@ -79,32 +71,24 @@ export class MediaService {
    * Take a photo with camera
    */
   static async takePhoto(): Promise<MediaFile | null> {
-    console.log('MediaService: takePhoto() function called');
-    console.log('MediaService: Requesting camera permissions...');
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    console.log('MediaService: Camera permission status:', status);
     
     if (status !== 'granted') {
-      console.log('MediaService: Camera permission denied');
       throw new Error('Permission to access camera is required');
     }
 
-    console.log('MediaService: Launching camera...');
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8, // Start with some compression to reduce initial file size
     });
 
-    console.log('MediaService: Camera result:', result);
     
     if (result.canceled || !result.assets[0]) {
-      console.log('MediaService: Camera was canceled or no assets');
       return null;
     }
 
     const asset = result.assets[0];
-    console.log('MediaService: Camera asset:', asset);
     
     return {
       uri: asset.uri,
@@ -174,7 +158,6 @@ export class MediaService {
     }
 
     const originalSize = (fileInfo as any).size || 0;
-    console.log('MediaService: Original image size:', this.formatFileSize(originalSize));
 
     // Smart compression based on file size
     let compressionQuality = this.IMAGE_QUALITY;
@@ -184,13 +167,11 @@ export class MediaService {
     if (originalSize > 2 * 1024 * 1024) {
       compressionQuality = 0.5;
       maxWidth = 1024;
-      console.log('MediaService: Using aggressive compression for large file');
     }
     // If file is large (>1MB), use moderate compression
     else if (originalSize > 1024 * 1024) {
       compressionQuality = 0.6;
       maxWidth = 1280;
-      console.log('MediaService: Using moderate compression for medium file');
     }
 
     const manipResult = await ImageManipulator.manipulateAsync(
@@ -211,8 +192,6 @@ export class MediaService {
     const compressedInfo = await FileSystem.getInfoAsync(manipResult.uri);
     const compressedSize = (compressedInfo as any).size || 0;
     
-    console.log('MediaService: Compressed image size:', this.formatFileSize(compressedSize));
-    console.log('MediaService: Compression ratio:', Math.round((1 - compressedSize / originalSize) * 100) + '%');
     
     return {
       uri: manipResult.uri,
@@ -226,7 +205,6 @@ export class MediaService {
    * Get presigned URL from backend
    */
   static async getPresignedUrl(fileName: string, fileType: string, fileSize: number): Promise<PresignedUrlResponse> {
-    console.log('MediaService: Requesting presigned URL for:', { fileName, fileType, fileSize });
     
     const response = await api.post('/upload/presigned-url', {
       fileName,
@@ -234,7 +212,6 @@ export class MediaService {
       fileSize,
     });
 
-    console.log('MediaService: Presigned URL response:', response.data);
     return response.data;
   }
 
@@ -248,10 +225,6 @@ export class MediaService {
     onProgress?: (progress: UploadProgress) => void,
     maxRetries: number = 3
   ): Promise<void> {
-    console.log('MediaService: Starting S3 upload...');
-    console.log('MediaService: Upload URL:', uploadUrl);
-    console.log('MediaService: File URI:', fileUri);
-    console.log('MediaService: File Type:', fileType);
     
     const uploadOptions: any = {
       httpMethod: 'PUT',
@@ -273,17 +246,14 @@ export class MediaService {
       };
     }
 
-    console.log('MediaService: Upload options:', uploadOptions);
     
     let lastError: Error | null = null;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`MediaService: Upload attempt ${attempt}/${maxRetries}`);
         
         const response = await FileSystem.uploadAsync(uploadUrl, fileUri, uploadOptions);
         
-        console.log('MediaService: Upload response:', response);
 
         if (response.status !== 200) {
           console.error('MediaService: Upload failed with status:', response.status);
@@ -292,7 +262,6 @@ export class MediaService {
           throw new Error(`Upload failed with status: ${response.status}. Response: ${response.body}`);
         }
         
-        console.log('MediaService: Upload successful!');
         return; // Success, exit the retry loop
         
       } catch (error) {
@@ -302,7 +271,6 @@ export class MediaService {
         // If this is not the last attempt, wait before retrying
         if (attempt < maxRetries) {
           const waitTime = Math.pow(2, attempt) * 1000; // Exponential backoff: 2s, 4s, 8s
-          console.log(`MediaService: Waiting ${waitTime}ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
         }
       }
@@ -323,10 +291,8 @@ export class MediaService {
     // Compress image if it's an image and larger than 500KB
     let processedFile = mediaFile;
     if (mediaFile.type.startsWith('image/') && mediaFile.size > 500 * 1024) {
-      console.log('MediaService: File is large enough to compress, compressing...');
       processedFile = await this.compressImage(mediaFile.uri);
     } else if (mediaFile.type.startsWith('image/')) {
-      console.log('MediaService: File is small enough, skipping compression for speed');
     }
 
     // Get presigned URL
@@ -389,20 +355,17 @@ export class MediaService {
   static validateAndFixS3Url(url: string): string {
     if (!url) return url;
     
-    console.log('MediaService: Validating S3 URL:', url);
     
     // Check if URL contains the wrong region and fix it
     // The bucket is in eu-north-1 but URLs might be generated with us-north-1
     if (url.includes('us-north-1')) {
       const fixedUrl = url.replace('us-north-1', 'eu-north-1');
-      console.log('MediaService: Fixed region in URL:', fixedUrl);
       return fixedUrl;
     }
     
     // Check if URL contains us-east-1 and fix it
     if (url.includes('us-east-1')) {
       const fixedUrl = url.replace('us-east-1', 'eu-north-1');
-      console.log('MediaService: Fixed region in URL:', fixedUrl);
       return fixedUrl;
     }
     
@@ -414,9 +377,7 @@ export class MediaService {
    */
   static async shareMedia(mediaUrl: string): Promise<{ success: boolean; method: 'share' | 'clipboard' }> {
     try {
-      console.log('MediaService: Starting share for URL:', mediaUrl);
-      
-      // Check if Web Share API is available (works in Expo Go on mobile)
+            // Check if Web Share API is available (works in Expo Go on mobile)
       if (typeof navigator !== 'undefined' && navigator.share) {
         // Use Web Share API
         await navigator.share({
@@ -424,17 +385,14 @@ export class MediaService {
           text: 'Look at this image from FriendsLeague',
           url: mediaUrl,
         });
-        console.log('MediaService: Share completed successfully via Web Share API');
         return { success: true, method: 'share' };
       } else {
         // Fallback: Copy URL to clipboard using Expo Clipboard
         const Clipboard = await import('expo-clipboard');
         await Clipboard.setStringAsync(mediaUrl);
-        console.log('MediaService: URL copied to clipboard');
         return { success: true, method: 'clipboard' };
       }
     } catch (error) {
-      console.error('MediaService: Share failed:', error);
       throw new Error('Failed to share media');
     }
   }
@@ -444,13 +402,11 @@ export class MediaService {
    */
   static async saveMediaToLibrary(mediaUrl: string): Promise<void> {
     try {
-      console.log('MediaService: Starting save to library for URL:', mediaUrl);
       
       // Download the image to a temporary file first
       const filename = `image_${Date.now()}.jpg`;
       const localUri = `${FileSystem.documentDirectory}${filename}`;
       
-      console.log('MediaService: Downloading image to:', localUri);
       const downloadResult = await FileSystem.downloadAsync(mediaUrl, localUri);
       
       if (downloadResult.status !== 200) {
@@ -468,16 +424,15 @@ export class MediaService {
         }
         
         // Save to photo library
-        console.log('MediaService: Saving to photo library');
         await MediaLibrary.saveToLibraryAsync(downloadResult.uri);
         
         // Clean up temporary file
         await FileSystem.deleteAsync(localUri, { idempotent: true });
         
-        console.log('MediaService: Successfully saved to library');
+      
         return;
       } catch (mediaLibraryError) {
-        console.log('MediaService: expo-media-library not available, trying alternative method');
+    
         
         // Fallback: Use Web Share API to save (works in Expo Go)
         if (typeof navigator !== 'undefined' && navigator.share) {
@@ -498,7 +453,6 @@ export class MediaService {
           URL.revokeObjectURL(blobUrl);
           await FileSystem.deleteAsync(localUri, { idempotent: true });
           
-          console.log('MediaService: Image shared for saving via Web Share API');
           return;
         } else {
           // Final fallback: Copy URL to clipboard with instructions

@@ -19,6 +19,9 @@ interface MessageMediaProps {
   fileSize?: number;
   isOwnMessage?: boolean;
   onLongPress?: () => void;
+  messageId?: string;
+  onReactionPress?: () => void;
+  onReplyPress?: () => void;
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -30,6 +33,9 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   fileSize,
   isOwnMessage = false,
   onLongPress,
+  messageId,
+  onReactionPress,
+  onReplyPress,
 }) => {
   const [isFullscreenVisible, setIsFullscreenVisible] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -37,10 +43,8 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   // Debug logging for image URLs and URL validation
   React.useEffect(() => {
     if (type === 'IMAGE') {
-      console.log('MessageMedia: Original Image URL:', mediaUrl);
       const validatedUrl = MediaService.validateAndFixS3Url(mediaUrl);
       if (validatedUrl !== mediaUrl) {
-        console.log('MessageMedia: Using validated URL:', validatedUrl);
       }
     }
   }, [mediaUrl, type]);
@@ -104,7 +108,6 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
             setImageError(true);
           }}
           onLoad={() => {
-            console.log('MessageMedia: Image loaded successfully:', displayUrl);
           }}
         />
       )}
@@ -211,7 +214,9 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
             style={styles.actionButton}
             onPress={() => {
               console.log('React button pressed');
-              // TODO: Implement reaction picker
+              if (onReactionPress) {
+                onReactionPress();
+              }
             }}
           >
             <Ionicons name="add-circle-outline" size={28} color="#007AFF" />
@@ -220,8 +225,8 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
           <TouchableOpacity 
             style={styles.actionButton}
             onPress={() => {
-              console.log('Reply button pressed');
-              // TODO: Implement reply functionality
+              setIsFullscreenVisible(false);
+              onReplyPress?.();
             }}
           >
             <Ionicons name="arrow-undo-outline" size={28} color="#007AFF" />

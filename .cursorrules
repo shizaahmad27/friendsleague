@@ -26,6 +26,11 @@ FriendLeague er en sosial applikasjon som kombinerer meldingsfunksjonalitet med 
 - **AWS S3** - Filopplasting
 - **Firebase** - Push notifications
 
+### Hosting
+- Databasen er hosted på Neon
+- Backend er hosted på Render
+- Redis er hosted på Upstash
+
 ## 📁 Prosjektstruktur
 ```
 (kan endres)

@@ -18,4 +18,17 @@ export declare class ChatGateway implements OnGatewayConnection, OnGatewayDiscon
         userId: string;
         isTyping: boolean;
     }, client: Socket): void;
+    handleReactionAdded(data: {
+        chatId: string;
+        messageId: string;
+        userId: string;
+        emoji: string;
+        reaction: any;
+    }, client: Socket): void;
+    handleReactionRemoved(data: {
+        chatId: string;
+        messageId: string;
+        userId: string;
+        emoji: string;
+    }, client: Socket): void;
 }

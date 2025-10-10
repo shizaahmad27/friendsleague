@@ -5,14 +5,14 @@ export declare class LeaguesController {
     constructor(leaguesService: LeaguesService);
     createLeague(req: any, createLeagueDto: CreateLeagueDto): Promise<{
         admin: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
         members: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
                 isOnline: boolean;
             };
@@ -35,8 +35,8 @@ export declare class LeaguesController {
         }[];
         admins: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
             };
         } & {
@@ -62,14 +62,14 @@ export declare class LeaguesController {
             events: number;
         };
         admin: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
         members: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
                 isOnline: boolean;
             };
@@ -102,14 +102,14 @@ export declare class LeaguesController {
     })[]>;
     getLeagueById(leagueId: string, req: any): Promise<{
         admin: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
         members: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
                 isOnline: boolean;
             };
@@ -133,8 +133,8 @@ export declare class LeaguesController {
         events: ({
             participants: ({
                 user: {
-                    username: string;
                     id: string;
+                    username: string;
                     avatar: string;
                 };
             } & {
@@ -162,8 +162,8 @@ export declare class LeaguesController {
         })[];
         admins: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
             };
         } & {
@@ -185,14 +185,14 @@ export declare class LeaguesController {
     }>;
     updateLeague(leagueId: string, req: any, updateLeagueDto: UpdateLeagueDto): Promise<{
         admin: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
         members: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
                 isOnline: boolean;
             };
@@ -215,8 +215,8 @@ export declare class LeaguesController {
         }[];
         admins: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
             };
         } & {
@@ -238,14 +238,14 @@ export declare class LeaguesController {
     }>;
     joinLeague(leagueId: string, req: any, joinLeagueDto: JoinLeagueDto): Promise<{
         admin: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
         members: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
                 isOnline: boolean;
             };
@@ -269,8 +269,8 @@ export declare class LeaguesController {
         events: ({
             participants: ({
                 user: {
-                    username: string;
                     id: string;
+                    username: string;
                     avatar: string;
                 };
             } & {
@@ -298,8 +298,8 @@ export declare class LeaguesController {
         })[];
         admins: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
             };
         } & {
@@ -324,14 +324,14 @@ export declare class LeaguesController {
     }>;
     addMember(leagueId: string, req: any, addMemberDto: AddMemberDto): Promise<{
         admin: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
         members: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
                 isOnline: boolean;
             };
@@ -355,8 +355,8 @@ export declare class LeaguesController {
         events: ({
             participants: ({
                 user: {
-                    username: string;
                     id: string;
+                    username: string;
                     avatar: string;
                 };
             } & {
@@ -384,8 +384,8 @@ export declare class LeaguesController {
         })[];
         admins: ({
             user: {
-                username: string;
                 id: string;
+                username: string;
                 avatar: string;
             };
         } & {
@@ -418,8 +418,8 @@ export declare class LeaguesController {
     }>;
     grantAdminRights(leagueId: string, userId: string, req: any): Promise<{
         user: {
-            username: string;
             id: string;
+            username: string;
             avatar: string;
         };
     } & {

@@ -64,5 +64,32 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             isTyping: data.isTyping,
         });
     }
+
+    @SubscribeMessage('reactionAdded')
+    handleReactionAdded(
+        @MessageBody() data: { chatId: string; messageId: string; userId: string; emoji: string; reaction: any },
+        @ConnectedSocket() client: Socket,
+    ) {
+        // Broadcast reaction to all users in the chat
+        client.to(data.chatId).emit('reactionAdded', {
+            messageId: data.messageId,
+            userId: data.userId,
+            emoji: data.emoji,
+            reaction: data.reaction,
+        });
+    }
+
+    @SubscribeMessage('reactionRemoved')
+    handleReactionRemoved(
+        @MessageBody() data: { chatId: string; messageId: string; userId: string; emoji: string },
+        @ConnectedSocket() client: Socket,
+    ) {
+        // Broadcast reaction removal to all users in the chat
+        client.to(data.chatId).emit('reactionRemoved', {
+            messageId: data.messageId,
+            userId: data.userId,
+            emoji: data.emoji,
+        });
+    }
 }
 
