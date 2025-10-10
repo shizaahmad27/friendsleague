@@ -24,8 +24,8 @@ export interface UploadProgress {
 }
 
 export class MediaService {
-  private static readonly MAX_IMAGE_WIDTH = 1920;
-  private static readonly IMAGE_QUALITY = 0.8;
+  private static readonly MAX_IMAGE_WIDTH = 1280; // Reduced from 1920 for faster uploads
+  private static readonly IMAGE_QUALITY = 0.7; // Reduced from 0.8 for smaller files
 
   /**
    * Request camera/photo library permissions
@@ -39,23 +39,34 @@ export class MediaService {
    * Pick an image from camera or photo library
    */
   static async pickImage(): Promise<MediaFile | null> {
+    console.log('MediaService: pickImage() function called');
+    console.log('MediaService: Requesting media library permissions...');
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    console.log('MediaService: Media library permission status:', status);
+    
     if (status !== 'granted') {
+      console.log('MediaService: Media library permission denied');
       throw new Error('Permission to access media library is required');
     }
 
+    console.log('MediaService: Launching image library...');
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1, // We'll compress it ourselves
+      quality: 0.8, // Start with some compression to reduce initial file size
     });
 
+    console.log('MediaService: Image library result:', result);
+    
     if (result.canceled || !result.assets[0]) {
+      console.log('MediaService: Image library was canceled or no assets');
       return null;
     }
 
     const asset = result.assets[0];
+    console.log('MediaService: Image library asset:', asset);
+    
     return {
       uri: asset.uri,
       name: asset.fileName || `image_${Date.now()}.jpg`,
@@ -68,22 +79,33 @@ export class MediaService {
    * Take a photo with camera
    */
   static async takePhoto(): Promise<MediaFile | null> {
+    console.log('MediaService: takePhoto() function called');
+    console.log('MediaService: Requesting camera permissions...');
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    console.log('MediaService: Camera permission status:', status);
+    
     if (status !== 'granted') {
+      console.log('MediaService: Camera permission denied');
       throw new Error('Permission to access camera is required');
     }
 
+    console.log('MediaService: Launching camera...');
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1, // We'll compress it ourselves
+      quality: 0.8, // Start with some compression to reduce initial file size
     });
 
+    console.log('MediaService: Camera result:', result);
+    
     if (result.canceled || !result.assets[0]) {
+      console.log('MediaService: Camera was canceled or no assets');
       return null;
     }
 
     const asset = result.assets[0];
+    console.log('MediaService: Camera asset:', asset);
+    
     return {
       uri: asset.uri,
       name: asset.fileName || `photo_${Date.now()}.jpg`,
@@ -143,7 +165,7 @@ export class MediaService {
   }
 
   /**
-   * Compress an image to reduce file size
+   * Compress an image to reduce file size with smart compression
    */
   static async compressImage(imageUri: string): Promise<MediaFile> {
     const fileInfo = await FileSystem.getInfoAsync(imageUri);
@@ -151,28 +173,52 @@ export class MediaService {
       throw new Error('Image file not found');
     }
 
+    const originalSize = (fileInfo as any).size || 0;
+    console.log('MediaService: Original image size:', this.formatFileSize(originalSize));
+
+    // Smart compression based on file size
+    let compressionQuality = this.IMAGE_QUALITY;
+    let maxWidth = this.MAX_IMAGE_WIDTH;
+
+    // If file is very large (>2MB), use more aggressive compression
+    if (originalSize > 2 * 1024 * 1024) {
+      compressionQuality = 0.5;
+      maxWidth = 1024;
+      console.log('MediaService: Using aggressive compression for large file');
+    }
+    // If file is large (>1MB), use moderate compression
+    else if (originalSize > 1024 * 1024) {
+      compressionQuality = 0.6;
+      maxWidth = 1280;
+      console.log('MediaService: Using moderate compression for medium file');
+    }
+
     const manipResult = await ImageManipulator.manipulateAsync(
       imageUri,
       [
         {
           resize: {
-            width: this.MAX_IMAGE_WIDTH,
+            width: maxWidth,
           },
         },
       ],
       {
-        compress: this.IMAGE_QUALITY,
+        compress: compressionQuality,
         format: ImageManipulator.SaveFormat.JPEG,
       }
     );
 
     const compressedInfo = await FileSystem.getInfoAsync(manipResult.uri);
+    const compressedSize = (compressedInfo as any).size || 0;
+    
+    console.log('MediaService: Compressed image size:', this.formatFileSize(compressedSize));
+    console.log('MediaService: Compression ratio:', Math.round((1 - compressedSize / originalSize) * 100) + '%');
     
     return {
       uri: manipResult.uri,
       name: `compressed_${Date.now()}.jpg`,
       type: 'image/jpeg',
-      size: (compressedInfo as any).size || 0,
+      size: compressedSize,
     };
   }
 
@@ -180,30 +226,40 @@ export class MediaService {
    * Get presigned URL from backend
    */
   static async getPresignedUrl(fileName: string, fileType: string, fileSize: number): Promise<PresignedUrlResponse> {
+    console.log('MediaService: Requesting presigned URL for:', { fileName, fileType, fileSize });
+    
     const response = await api.post('/upload/presigned-url', {
       fileName,
       fileType,
       fileSize,
     });
 
+    console.log('MediaService: Presigned URL response:', response.data);
     return response.data;
   }
 
   /**
-   * Upload file to S3 using presigned URL
+   * Upload file to S3 using presigned URL with retry logic
    */
   static async uploadToS3(
     fileUri: string,
     uploadUrl: string,
     fileType: string,
-    onProgress?: (progress: UploadProgress) => void
+    onProgress?: (progress: UploadProgress) => void,
+    maxRetries: number = 3
   ): Promise<void> {
+    console.log('MediaService: Starting S3 upload...');
+    console.log('MediaService: Upload URL:', uploadUrl);
+    console.log('MediaService: File URI:', fileUri);
+    console.log('MediaService: File Type:', fileType);
+    
     const uploadOptions: any = {
       httpMethod: 'PUT',
       headers: {
         'Content-Type': fileType,
       },
-      uploadType: 'BINARY_CONTENT',
+      uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+      timeout: 120000, // 2 minute timeout for the upload itself
     };
 
     if (onProgress) {
@@ -217,11 +273,44 @@ export class MediaService {
       };
     }
 
-    const response = await FileSystem.uploadAsync(uploadUrl, fileUri, uploadOptions);
+    console.log('MediaService: Upload options:', uploadOptions);
+    
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`MediaService: Upload attempt ${attempt}/${maxRetries}`);
+        
+        const response = await FileSystem.uploadAsync(uploadUrl, fileUri, uploadOptions);
+        
+        console.log('MediaService: Upload response:', response);
 
-    if (response.status !== 200) {
-      throw new Error(`Upload failed with status: ${response.status}`);
+        if (response.status !== 200) {
+          console.error('MediaService: Upload failed with status:', response.status);
+          console.error('MediaService: Upload response body:', response.body);
+          console.error('MediaService: Upload response headers:', response.headers);
+          throw new Error(`Upload failed with status: ${response.status}. Response: ${response.body}`);
+        }
+        
+        console.log('MediaService: Upload successful!');
+        return; // Success, exit the retry loop
+        
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown upload error');
+        console.error(`MediaService: Upload attempt ${attempt} failed:`, lastError.message);
+        
+        // If this is not the last attempt, wait before retrying
+        if (attempt < maxRetries) {
+          const waitTime = Math.pow(2, attempt) * 1000; // Exponential backoff: 2s, 4s, 8s
+          console.log(`MediaService: Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
     }
+    
+    // All retries failed
+    console.error('MediaService: All upload attempts failed');
+    throw new Error(`Upload failed after ${maxRetries} attempts. Last error: ${lastError?.message}`);
   }
 
   /**
@@ -231,10 +320,13 @@ export class MediaService {
     mediaFile: MediaFile,
     onProgress?: (progress: UploadProgress) => void
   ): Promise<string> {
-    // Compress image if it's an image
+    // Compress image if it's an image and larger than 500KB
     let processedFile = mediaFile;
-    if (mediaFile.type.startsWith('image/')) {
+    if (mediaFile.type.startsWith('image/') && mediaFile.size > 500 * 1024) {
+      console.log('MediaService: File is large enough to compress, compressing...');
       processedFile = await this.compressImage(mediaFile.uri);
+    } else if (mediaFile.type.startsWith('image/')) {
+      console.log('MediaService: File is small enough, skipping compression for speed');
     }
 
     // Get presigned URL
@@ -289,5 +381,31 @@ export class MediaService {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Validate and potentially fix S3 URL format
+   */
+  static validateAndFixS3Url(url: string): string {
+    if (!url) return url;
+    
+    console.log('MediaService: Validating S3 URL:', url);
+    
+    // Check if URL contains the wrong region and fix it
+    // The bucket is in eu-north-1 but URLs might be generated with us-north-1
+    if (url.includes('us-north-1')) {
+      const fixedUrl = url.replace('us-north-1', 'eu-north-1');
+      console.log('MediaService: Fixed region in URL:', fixedUrl);
+      return fixedUrl;
+    }
+    
+    // Check if URL contains us-east-1 and fix it
+    if (url.includes('us-east-1')) {
+      const fixedUrl = url.replace('us-east-1', 'eu-north-1');
+      console.log('MediaService: Fixed region in URL:', fixedUrl);
+      return fixedUrl;
+    }
+    
+    return url;
   }
 }

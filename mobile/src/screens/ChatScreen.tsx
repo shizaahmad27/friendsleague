@@ -112,7 +112,7 @@ export default function ChatScreen() {
     try {
       const message = await chatApi.sendMessage(
         chatId, 
-        messageContent || (mediaType === 'IMAGE' ? '📷 Photo' : mediaType === 'VIDEO' ? '🎥 Video' : '📎 File'),
+        messageContent || '', // Send empty string instead of emoji + text
         mediaType || 'TEXT',
         mediaUrl
       );
@@ -148,18 +148,20 @@ export default function ChatScreen() {
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isOwnMessage = item.senderId === user?.id;
+    const isMediaMessage = item.mediaUrl && item.type !== 'TEXT';
 
     return (
       <View
         style={[
-          styles.messageContainer,
+          isMediaMessage ? styles.mediaMessageContainer : styles.messageContainer,
           isOwnMessage ? styles.ownMessage : styles.otherMessage,
+          !isMediaMessage && (isOwnMessage ? styles.ownMessageBackground : styles.otherMessageBackground),
         ]}
       >
-        {item.mediaUrl && item.type !== 'TEXT' ? (
+        {isMediaMessage && item.mediaUrl ? (
           <MessageMedia
             mediaUrl={item.mediaUrl}
-            type={item.type}
+            type={item.type as 'IMAGE' | 'VIDEO' | 'FILE'}
             isOwnMessage={isOwnMessage}
           />
         ) : null}
@@ -168,7 +170,7 @@ export default function ChatScreen() {
             style={[
               styles.messageText,
               isOwnMessage ? styles.ownMessageText : styles.otherMessageText,
-              item.mediaUrl && item.type !== 'TEXT' && styles.messageTextWithMedia,
+              isMediaMessage && styles.messageTextWithMedia,
             ]}
           >
             {item.content}
@@ -459,12 +461,21 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 16,
   },
+  mediaMessageContainer: {
+    maxWidth: '80%',
+    marginVertical: 4,
+    // No padding, background, or border radius for media messages
+  },
   ownMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: '#007AFF',
   },
   otherMessage: {
     alignSelf: 'flex-start',
+  },
+  ownMessageBackground: {
+    backgroundColor: '#007AFF',
+  },
+  otherMessageBackground: {
     backgroundColor: 'white',
   },
   messageText: {

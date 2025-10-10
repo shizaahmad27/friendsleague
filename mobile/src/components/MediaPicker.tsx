@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -31,35 +31,93 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const panelAnim = useRef(new Animated.Value(0)).current; // 0 hidden, 1 visible
 
-  const handleMediaSelection = async (pickerFunction: () => Promise<MediaFile | null>, type: 'IMAGE' | 'VIDEO' | 'FILE') => {
-    try {
-      setIsModalVisible(false);
-      setIsUploading(true);
-      setUploadProgress(null);
-
-      const mediaFile = await pickerFunction();
-      if (!mediaFile) {
+  // Auto-reset stuck uploading state after 60 seconds
+  useEffect(() => {
+    if (isUploading) {
+      const resetTimeout = setTimeout(() => {
+        console.log('MediaPicker: Auto-resetting stuck uploading state');
         setIsUploading(false);
+        setUploadProgress(null);
+      }, 60000); // 60 seconds
+
+      return () => clearTimeout(resetTimeout);
+    }
+  }, [isUploading]);
+
+  const handleMediaSelection = async (pickerFunction: () => Promise<MediaFile | null>, type: 'IMAGE' | 'VIDEO' | 'FILE') => {
+    console.log('MediaPicker: Starting media selection for type:', type);
+    
+    // Reset any previous state first
+    setIsUploading(false);
+    setUploadProgress(null);
+    
+    try {
+      // Close modal first
+      closeMenu();
+      console.log('MediaPicker: Modal closing, waiting before launching picker...');
+      
+      // Wait for modal to fully close before launching picker
+      // This is crucial for iOS - native pickers can't launch while modal is active
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('MediaPicker: Modal closed, calling picker function...');
+      
+      // Only set uploading to true after we actually get a file
+      const mediaFile = await pickerFunction();
+      console.log('MediaPicker: Picker function completed, mediaFile:', mediaFile);
+      
+      if (!mediaFile) {
+        // User cancelled or no file selected
+        console.log('MediaPicker: No file selected, returning');
         return;
       }
 
-      // Upload the media
-      const mediaUrl = await MediaService.uploadMedia(mediaFile, (progress) => {
-        setUploadProgress(progress);
-        onUploadProgress?.(progress);
-      });
+      // Now we have a file, start uploading
+      console.log('MediaPicker: File selected, starting upload...');
+      setIsUploading(true);
+      setUploadProgress(null);
 
-      onMediaSelected(mediaUrl, type);
+      // Add a timeout to prevent infinite uploading state
+      const uploadTimeout = setTimeout(() => {
+        console.log('MediaPicker: Upload timeout, resetting state');
+        setIsUploading(false);
+        setUploadProgress(null);
+        Alert.alert('Upload Timeout', 'Upload is taking too long. Please check your internet connection and try again.');
+      }, 120000); 
+
+      try {
+        // Upload the media
+        console.log('MediaPicker: Starting upload process...');
+        const mediaUrl = await MediaService.uploadMedia(mediaFile, (progress) => {
+          console.log('MediaPicker: Upload progress:', progress.percentage + '%');
+          setUploadProgress(progress);
+          onUploadProgress?.(progress);
+        });
+
+        clearTimeout(uploadTimeout);
+        console.log('MediaPicker: Upload completed, mediaUrl:', mediaUrl);
+        onMediaSelected(mediaUrl, type);
+      } catch (uploadError) {
+        clearTimeout(uploadTimeout);
+        throw uploadError;
+      }
     } catch (error) {
-      console.error('Media upload error:', error);
-      Alert.alert('Upload Error', 'Failed to upload media. Please try again.');
+      console.error('MediaPicker: Media upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      Alert.alert('Upload Error', `Failed to upload media: ${errorMessage}. Please try again.`);
     } finally {
+      console.log('MediaPicker: Resetting upload state');
       setIsUploading(false);
       setUploadProgress(null);
     }
   };
 
   const openMenu = () => {
+    console.log('MediaPicker: Opening menu, isUploading:', isUploading);
+    if (isUploading) {
+      console.log('MediaPicker: Currently uploading, ignoring menu open');
+      return;
+    }
     setIsModalVisible(true);
     Animated.timing(panelAnim, {
       toValue: 1,
@@ -70,12 +128,21 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
   };
 
   const closeMenu = () => {
+    console.log('MediaPicker: Closing menu');
     Animated.timing(panelAnim, {
       toValue: 0,
       duration: 240,
       easing: Easing.in(Easing.cubic),
       useNativeDriver: true,
     }).start(() => setIsModalVisible(false));
+  };
+
+  // Reset function to clear any stuck state
+  const resetState = () => {
+    console.log('MediaPicker: Resetting state');
+    setIsUploading(false);
+    setUploadProgress(null);
+    setIsModalVisible(false);
   };
 
   if (isUploading) {
@@ -98,6 +165,9 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
             </Text>
           </View>
         )}
+        <TouchableOpacity style={styles.resetButton} onPress={resetState}>
+          <Text style={styles.resetButtonText}>Reset</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -128,28 +198,34 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                 },
               ]}
             >
-              <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); handleMediaSelection(MediaService.takePhoto, 'IMAGE'); }}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => { 
+                console.log('MediaPicker: Camera button pressed');
+                handleMediaSelection(MediaService.takePhoto, 'IMAGE'); 
+              }}>
                 <View style={[styles.menuIcon, { backgroundColor: '#FF9F0A' }]}>
                   <Ionicons name="camera" size={16} color="#fff" />
                 </View>
                 <Text style={styles.menuText}>Camera</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); handleMediaSelection(MediaService.pickImage, 'IMAGE'); }}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => { 
+                console.log('MediaPicker: Photos button pressed');
+                handleMediaSelection(MediaService.pickImage, 'IMAGE'); 
+              }}>
                 <View style={[styles.menuIcon, { backgroundColor: '#34C759' }]}>
                   <Ionicons name="images" size={16} color="#fff" />
                 </View>
                 <Text style={styles.menuText}>Photos</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); handleMediaSelection(MediaService.pickVideo, 'VIDEO'); }}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => { handleMediaSelection(MediaService.pickVideo, 'VIDEO'); }}>
                 <View style={[styles.menuIcon, { backgroundColor: '#5856D6' }]}>
                   <Ionicons name="videocam" size={16} color="#fff" />
                 </View>
                 <Text style={styles.menuText}>Video</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); handleMediaSelection(MediaService.pickDocument, 'FILE'); }}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => { handleMediaSelection(MediaService.pickDocument, 'FILE'); }}>
                 <View style={[styles.menuIcon, { backgroundColor: '#0A84FF' }]}>
                   <Ionicons name="document" size={16} color="#fff" />
                 </View>
@@ -266,6 +342,19 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 12,
     color: '#666',
+    textAlign: 'center',
+  },
+  resetButton: {
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#FF3B30',
+    borderRadius: 6,
+  },
+  resetButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
     textAlign: 'center',
   },
 });

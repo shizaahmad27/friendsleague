@@ -32,8 +32,24 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   const [isFullscreenVisible, setIsFullscreenVisible] = useState(false);
   const [imageError, setImageError] = useState(false);
 
+  // Debug logging for image URLs and URL validation
+  React.useEffect(() => {
+    if (type === 'IMAGE') {
+      console.log('MessageMedia: Original Image URL:', mediaUrl);
+      const validatedUrl = MediaService.validateAndFixS3Url(mediaUrl);
+      if (validatedUrl !== mediaUrl) {
+        console.log('MessageMedia: Using validated URL:', validatedUrl);
+      }
+    }
+  }, [mediaUrl, type]);
+
+  // Get the validated URL for display
+  const displayUrl = MediaService.validateAndFixS3Url(mediaUrl);
+
   const handleMediaPress = () => {
     if (type === 'IMAGE') {
+      // Reset error state when opening fullscreen
+      setImageError(false);
       setIsFullscreenVisible(true);
     } else if (type === 'VIDEO') {
       // TODO: Implement video player
@@ -73,15 +89,19 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
         </View>
       ) : (
         <Image
-          source={{ uri: mediaUrl }}
+          source={{ uri: displayUrl }}
           style={styles.image}
           resizeMode="cover"
-          onError={() => setImageError(true)}
+          onError={(error) => {
+            console.error('MessageMedia: Image load error:', error);
+            console.error('MessageMedia: Failed URL:', displayUrl);
+            setImageError(true);
+          }}
+          onLoad={() => {
+            console.log('MessageMedia: Image loaded successfully:', displayUrl);
+          }}
         />
       )}
-      <View style={styles.imageOverlay}>
-        <Ionicons name="expand-outline" size={16} color="white" />
-      </View>
     </TouchableOpacity>
   );
 
@@ -129,11 +149,28 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
         >
           <Ionicons name="close" size={30} color="white" />
         </TouchableOpacity>
-        <Image
-          source={{ uri: mediaUrl }}
-          style={styles.fullscreenImage}
-          resizeMode="contain"
-        />
+        {imageError ? (
+          <View style={styles.fullscreenErrorContainer}>
+            <Ionicons name="image-outline" size={80} color="#999" />
+            <Text style={styles.fullscreenErrorText}>Failed to load image</Text>
+            <Text style={styles.fullscreenErrorUrl}>{displayUrl}</Text>
+          </View>
+        ) : (
+          <Image
+            source={{ uri: displayUrl }}
+            style={styles.fullscreenImage}
+            resizeMode="contain"
+            onError={(error) => {
+              console.error('MessageMedia: Fullscreen image load error:', error);
+              console.error('MessageMedia: Failed fullscreen URL:', displayUrl);
+              setImageError(true);
+            }}
+            onLoad={() => {
+              console.log('MessageMedia: Fullscreen image loaded successfully:', displayUrl);
+              setImageError(false);
+            }}
+          />
+        )}
       </View>
     </Modal>
   );
@@ -150,8 +187,7 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    maxWidth: screenWidth * 0.7,
-    marginVertical: 2,
+    // No margins - let ChatScreen handle spacing
   },
   ownMessage: {
     alignSelf: 'flex-end',
@@ -165,14 +201,6 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 12,
-  },
-  imageOverlay: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 12,
-    padding: 4,
   },
   errorContainer: {
     width: 200,
@@ -249,5 +277,24 @@ const styles = StyleSheet.create({
   fullscreenImage: {
     width: screenWidth,
     height: screenHeight,
+  },
+  fullscreenErrorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  fullscreenErrorText: {
+    color: 'white',
+    fontSize: 18,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  fullscreenErrorUrl: {
+    color: '#999',
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: 'center',
+    opacity: 0.7,
   },
 });
