@@ -77,6 +77,30 @@ let EventsService = class EventsService {
         await this.recalculateEventRankings(event.id);
         return event;
     }
+    async getEventParticipants(eventId, userId) {
+        await this.getEventById(eventId, userId);
+        const participants = await this.prisma.eventParticipant.findMany({
+            where: { eventId },
+            include: {
+                user: {
+                    select: { id: true, username: true, avatar: true, isOnline: true },
+                },
+            },
+            orderBy: [
+                { rank: 'asc' },
+                { joinedAt: 'asc' },
+            ],
+        });
+        return participants;
+    }
+    async getEventRules(eventId, userId) {
+        await this.getEventById(eventId, userId);
+        const rules = await this.prisma.eventRule.findMany({
+            where: { eventId },
+            orderBy: { createdAt: 'desc' },
+        });
+        return rules;
+    }
     async getEvents(userId) {
         const events = await this.prisma.event.findMany({
             where: {

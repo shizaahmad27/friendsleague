@@ -63,6 +63,30 @@ export declare class EventsService {
         maxParticipants: number | null;
         hasScoring: boolean;
     }>;
+    getEventParticipants(eventId: string, userId: string): Promise<({
+        user: {
+            username: string;
+            id: string;
+            avatar: string;
+            isOnline: boolean;
+        };
+    } & {
+        id: string;
+        userId: string;
+        joinedAt: Date;
+        points: number;
+        rank: number;
+        eventId: string;
+    })[]>;
+    getEventRules(eventId: string, userId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        description: string;
+        title: string;
+        points: number;
+        category: import(".prisma/client").$Enums.PointCategory;
+        eventId: string;
+    }[]>;
     getEvents(userId: string): Promise<({
         league: {
             name: string;

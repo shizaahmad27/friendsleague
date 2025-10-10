@@ -5,38 +5,38 @@ export declare class LeaguesController {
     constructor(leaguesService: LeaguesService);
     createLeague(req: any, createLeagueDto: CreateLeagueDto): Promise<{
         admin: {
-            id: string;
             username: string;
+            id: string;
             avatar: string;
         };
         members: ({
             user: {
-                id: string;
                 username: string;
+                id: string;
                 avatar: string;
                 isOnline: boolean;
             };
         } & {
             id: string;
+            userId: string;
+            joinedAt: Date;
             points: number;
             rank: number;
-            joinedAt: Date;
-            userId: string;
             leagueId: string;
         })[];
         rules: {
             id: string;
-            description: string;
             createdAt: Date;
-            points: number;
-            leagueId: string;
+            description: string;
             title: string;
+            points: number;
             category: import(".prisma/client").$Enums.PointCategory;
+            leagueId: string;
         }[];
         admins: ({
             user: {
-                id: string;
                 username: string;
+                id: string;
                 avatar: string;
             };
         } & {
@@ -47,114 +47,114 @@ export declare class LeaguesController {
             grantedBy: string;
         })[];
     } & {
-        id: string;
         name: string;
-        description: string | null;
-        isPrivate: boolean;
+        id: string;
         inviteCode: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
+        isPrivate: boolean;
         adminId: string;
     }>;
     getLeagues(req: any): Promise<({
-        admin: {
-            id: string;
-            username: string;
-            avatar: string;
-        };
-        members: ({
-            user: {
-                id: string;
-                username: string;
-                avatar: string;
-                isOnline: boolean;
-            };
-        } & {
-            id: string;
-            points: number;
-            rank: number;
-            joinedAt: Date;
-            userId: string;
-            leagueId: string;
-        })[];
-        rules: {
-            id: string;
-            description: string;
-            createdAt: Date;
-            points: number;
-            leagueId: string;
-            title: string;
-            category: import(".prisma/client").$Enums.PointCategory;
-        }[];
         _count: {
             members: number;
             events: number;
         };
+        admin: {
+            username: string;
+            id: string;
+            avatar: string;
+        };
+        members: ({
+            user: {
+                username: string;
+                id: string;
+                avatar: string;
+                isOnline: boolean;
+            };
+        } & {
+            id: string;
+            userId: string;
+            joinedAt: Date;
+            points: number;
+            rank: number;
+            leagueId: string;
+        })[];
+        rules: {
+            id: string;
+            createdAt: Date;
+            description: string;
+            title: string;
+            points: number;
+            category: import(".prisma/client").$Enums.PointCategory;
+            leagueId: string;
+        }[];
     } & {
-        id: string;
         name: string;
-        description: string | null;
-        isPrivate: boolean;
+        id: string;
         inviteCode: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
+        isPrivate: boolean;
         adminId: string;
     })[]>;
     getLeagueById(leagueId: string, req: any): Promise<{
         admin: {
-            id: string;
             username: string;
+            id: string;
             avatar: string;
         };
         members: ({
             user: {
-                id: string;
                 username: string;
+                id: string;
                 avatar: string;
                 isOnline: boolean;
             };
         } & {
             id: string;
+            userId: string;
+            joinedAt: Date;
             points: number;
             rank: number;
-            joinedAt: Date;
-            userId: string;
             leagueId: string;
         })[];
         rules: {
             id: string;
-            description: string;
             createdAt: Date;
-            points: number;
-            leagueId: string;
+            description: string;
             title: string;
+            points: number;
             category: import(".prisma/client").$Enums.PointCategory;
+            leagueId: string;
         }[];
         events: ({
             participants: ({
                 user: {
-                    id: string;
                     username: string;
+                    id: string;
                     avatar: string;
                 };
             } & {
                 id: string;
+                userId: string;
+                joinedAt: Date;
                 points: number;
                 rank: number;
-                joinedAt: Date;
-                userId: string;
                 eventId: string;
             })[];
         } & {
             id: string;
-            description: string | null;
-            isPrivate: boolean;
             inviteCode: string | null;
             createdAt: Date;
             updatedAt: Date;
+            description: string | null;
+            isPrivate: boolean;
+            title: string;
             adminId: string;
             leagueId: string | null;
-            title: string;
             startDate: Date;
             endDate: Date;
             maxParticipants: number | null;
@@ -162,8 +162,8 @@ export declare class LeaguesController {
         })[];
         admins: ({
             user: {
-                id: string;
                 username: string;
+                id: string;
                 avatar: string;
             };
         } & {
@@ -174,49 +174,49 @@ export declare class LeaguesController {
             grantedBy: string;
         })[];
     } & {
-        id: string;
         name: string;
-        description: string | null;
-        isPrivate: boolean;
+        id: string;
         inviteCode: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
+        isPrivate: boolean;
         adminId: string;
     }>;
     updateLeague(leagueId: string, req: any, updateLeagueDto: UpdateLeagueDto): Promise<{
         admin: {
-            id: string;
             username: string;
+            id: string;
             avatar: string;
         };
         members: ({
             user: {
-                id: string;
                 username: string;
+                id: string;
                 avatar: string;
                 isOnline: boolean;
             };
         } & {
             id: string;
+            userId: string;
+            joinedAt: Date;
             points: number;
             rank: number;
-            joinedAt: Date;
-            userId: string;
             leagueId: string;
         })[];
         rules: {
             id: string;
-            description: string;
             createdAt: Date;
-            points: number;
-            leagueId: string;
+            description: string;
             title: string;
+            points: number;
             category: import(".prisma/client").$Enums.PointCategory;
+            leagueId: string;
         }[];
         admins: ({
             user: {
-                id: string;
                 username: string;
+                id: string;
                 avatar: string;
             };
         } & {
@@ -227,70 +227,70 @@ export declare class LeaguesController {
             grantedBy: string;
         })[];
     } & {
-        id: string;
         name: string;
-        description: string | null;
-        isPrivate: boolean;
+        id: string;
         inviteCode: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
+        isPrivate: boolean;
         adminId: string;
     }>;
     joinLeague(leagueId: string, req: any, joinLeagueDto: JoinLeagueDto): Promise<{
         admin: {
-            id: string;
             username: string;
+            id: string;
             avatar: string;
         };
         members: ({
             user: {
-                id: string;
                 username: string;
+                id: string;
                 avatar: string;
                 isOnline: boolean;
             };
         } & {
             id: string;
+            userId: string;
+            joinedAt: Date;
             points: number;
             rank: number;
-            joinedAt: Date;
-            userId: string;
             leagueId: string;
         })[];
         rules: {
             id: string;
-            description: string;
             createdAt: Date;
-            points: number;
-            leagueId: string;
+            description: string;
             title: string;
+            points: number;
             category: import(".prisma/client").$Enums.PointCategory;
+            leagueId: string;
         }[];
         events: ({
             participants: ({
                 user: {
-                    id: string;
                     username: string;
+                    id: string;
                     avatar: string;
                 };
             } & {
                 id: string;
+                userId: string;
+                joinedAt: Date;
                 points: number;
                 rank: number;
-                joinedAt: Date;
-                userId: string;
                 eventId: string;
             })[];
         } & {
             id: string;
-            description: string | null;
-            isPrivate: boolean;
             inviteCode: string | null;
             createdAt: Date;
             updatedAt: Date;
+            description: string | null;
+            isPrivate: boolean;
+            title: string;
             adminId: string;
             leagueId: string | null;
-            title: string;
             startDate: Date;
             endDate: Date;
             maxParticipants: number | null;
@@ -298,8 +298,8 @@ export declare class LeaguesController {
         })[];
         admins: ({
             user: {
-                id: string;
                 username: string;
+                id: string;
                 avatar: string;
             };
         } & {
@@ -310,13 +310,13 @@ export declare class LeaguesController {
             grantedBy: string;
         })[];
     } & {
-        id: string;
         name: string;
-        description: string | null;
-        isPrivate: boolean;
+        id: string;
         inviteCode: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
+        isPrivate: boolean;
         adminId: string;
     }>;
     leaveLeague(leagueId: string, req: any): Promise<{
@@ -324,59 +324,59 @@ export declare class LeaguesController {
     }>;
     addMember(leagueId: string, req: any, addMemberDto: AddMemberDto): Promise<{
         admin: {
-            id: string;
             username: string;
+            id: string;
             avatar: string;
         };
         members: ({
             user: {
-                id: string;
                 username: string;
+                id: string;
                 avatar: string;
                 isOnline: boolean;
             };
         } & {
             id: string;
+            userId: string;
+            joinedAt: Date;
             points: number;
             rank: number;
-            joinedAt: Date;
-            userId: string;
             leagueId: string;
         })[];
         rules: {
             id: string;
-            description: string;
             createdAt: Date;
-            points: number;
-            leagueId: string;
+            description: string;
             title: string;
+            points: number;
             category: import(".prisma/client").$Enums.PointCategory;
+            leagueId: string;
         }[];
         events: ({
             participants: ({
                 user: {
-                    id: string;
                     username: string;
+                    id: string;
                     avatar: string;
                 };
             } & {
                 id: string;
+                userId: string;
+                joinedAt: Date;
                 points: number;
                 rank: number;
-                joinedAt: Date;
-                userId: string;
                 eventId: string;
             })[];
         } & {
             id: string;
-            description: string | null;
-            isPrivate: boolean;
             inviteCode: string | null;
             createdAt: Date;
             updatedAt: Date;
+            description: string | null;
+            isPrivate: boolean;
+            title: string;
             adminId: string;
             leagueId: string | null;
-            title: string;
             startDate: Date;
             endDate: Date;
             maxParticipants: number | null;
@@ -384,8 +384,8 @@ export declare class LeaguesController {
         })[];
         admins: ({
             user: {
-                id: string;
                 username: string;
+                id: string;
                 avatar: string;
             };
         } & {
@@ -396,13 +396,13 @@ export declare class LeaguesController {
             grantedBy: string;
         })[];
     } & {
-        id: string;
         name: string;
-        description: string | null;
-        isPrivate: boolean;
+        id: string;
         inviteCode: string | null;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
+        isPrivate: boolean;
         adminId: string;
     }>;
     getMembers(leagueId: string, req: any): Promise<{
@@ -418,8 +418,8 @@ export declare class LeaguesController {
     }>;
     grantAdminRights(leagueId: string, userId: string, req: any): Promise<{
         user: {
-            id: string;
             username: string;
+            id: string;
             avatar: string;
         };
     } & {
@@ -434,38 +434,38 @@ export declare class LeaguesController {
     }>;
     createRule(leagueId: string, req: any, createRuleDto: CreateRuleDto): Promise<{
         id: string;
-        description: string;
         createdAt: Date;
-        points: number;
-        leagueId: string;
+        description: string;
         title: string;
+        points: number;
         category: import(".prisma/client").$Enums.PointCategory;
+        leagueId: string;
     }>;
     getRules(leagueId: string, req: any): Promise<{
         id: string;
-        description: string;
         createdAt: Date;
-        points: number;
-        leagueId: string;
+        description: string;
         title: string;
+        points: number;
         category: import(".prisma/client").$Enums.PointCategory;
+        leagueId: string;
     }[]>;
     updateRule(leagueId: string, ruleId: string, req: any, updateRuleDto: UpdateRuleDto): Promise<{
         id: string;
-        description: string;
         createdAt: Date;
-        points: number;
-        leagueId: string;
+        description: string;
         title: string;
+        points: number;
         category: import(".prisma/client").$Enums.PointCategory;
+        leagueId: string;
     }>;
     assignPoints(leagueId: string, req: any, assignPointsDto: AssignPointsDto): Promise<{
         member: {
             id: string;
+            userId: string;
+            joinedAt: Date;
             points: number;
             rank: number;
-            joinedAt: Date;
-            userId: string;
             leagueId: string;
         };
         pointsAdded: number;

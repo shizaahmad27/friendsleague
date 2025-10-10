@@ -45,11 +45,17 @@ let EventsController = class EventsController {
     async addParticipant(eventId, req, addParticipantDto) {
         return this.eventsService.addParticipant(eventId, req.user.id, addParticipantDto);
     }
+    async getParticipants(eventId, req) {
+        return this.eventsService.getEventParticipants(eventId, req.user.id);
+    }
     async removeParticipant(eventId, userId, req) {
         return this.eventsService.removeParticipant(eventId, req.user.id, userId);
     }
     async createEventRule(eventId, req, createEventRuleDto) {
         return this.eventsService.createEventRule(eventId, req.user.id, createEventRuleDto);
+    }
+    async getEventRules(eventId, req) {
+        return this.eventsService.getEventRules(eventId, req.user.id);
     }
     async assignEventPoints(eventId, req, assignEventPointsDto) {
         return this.eventsService.assignEventPoints(eventId, req.user.id, assignEventPointsDto);
@@ -134,6 +140,14 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], EventsController.prototype, "addParticipant", null);
 __decorate([
+    (0, common_1.Get)(':id/participants'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], EventsController.prototype, "getParticipants", null);
+__decorate([
     (0, common_1.Delete)(':id/participants/:userId'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('userId')),
@@ -151,6 +165,14 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, events_dto_1.CreateEventRuleDto]),
     __metadata("design:returntype", Promise)
 ], EventsController.prototype, "createEventRule", null);
+__decorate([
+    (0, common_1.Get)(':id/rules'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], EventsController.prototype, "getEventRules", null);
 __decorate([
     (0, common_1.Post)(':id/points'),
     __param(0, (0, common_1.Param)('id')),

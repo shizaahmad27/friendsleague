@@ -406,6 +406,21 @@ export declare class EventsController {
         maxParticipants: number | null;
         hasScoring: boolean;
     }>;
+    getParticipants(eventId: string, req: any): Promise<({
+        user: {
+            username: string;
+            id: string;
+            avatar: string;
+            isOnline: boolean;
+        };
+    } & {
+        id: string;
+        userId: string;
+        joinedAt: Date;
+        points: number;
+        rank: number;
+        eventId: string;
+    })[]>;
     removeParticipant(eventId: string, userId: string, req: any): Promise<{
         success: boolean;
     }>;
@@ -418,6 +433,15 @@ export declare class EventsController {
         category: import(".prisma/client").$Enums.PointCategory;
         eventId: string;
     }>;
+    getEventRules(eventId: string, req: any): Promise<{
+        id: string;
+        createdAt: Date;
+        description: string;
+        title: string;
+        points: number;
+        category: import(".prisma/client").$Enums.PointCategory;
+        eventId: string;
+    }[]>;
     assignEventPoints(eventId: string, req: any, assignEventPointsDto: AssignEventPointsDto): Promise<{
         participant: {
             id: string;

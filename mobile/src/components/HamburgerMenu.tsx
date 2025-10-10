@@ -66,6 +66,14 @@ export default function HamburgerMenu({ onLogout }: HamburgerMenuProps) {
             <View style={styles.menuItems}>
               <TouchableOpacity 
                 style={styles.menuItem} 
+                onPress={() => handleMenuPress('Home')}
+              >
+                <Text style={styles.menuItemIcon}>🏠</Text>
+                <Text style={styles.menuItemText}>Home</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.menuItem} 
                 onPress={() => handleMenuPress('Profile')}
               >
                 <Text style={styles.menuItemIcon}>👤</Text>
