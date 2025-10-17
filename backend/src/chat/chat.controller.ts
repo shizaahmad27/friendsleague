@@ -34,7 +34,7 @@ export class ChatController {
     async sendMessage(
         @Param('chatId') chatId: string,
         @Request() req: any,
-        @Body() body: { content: string; type?: string; mediaUrl?: string; replyToId?: string },
+        @Body() body: { content: string; type?: string; mediaUrl?: string },
     ) {
         return this.chatService.sendMessage(
             chatId,
@@ -42,7 +42,6 @@ export class ChatController {
             body.content,
             (body.type as MessageType) || MessageType.TEXT,
             body.mediaUrl,
-            body.replyToId,
           );
         }
 
