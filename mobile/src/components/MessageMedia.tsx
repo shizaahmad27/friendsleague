@@ -9,6 +9,7 @@ import {
   Dimensions,
   Modal,
 } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MediaService } from '../services/mediaService';
 import { Video, ResizeMode } from 'expo-av';
@@ -28,6 +29,7 @@ interface MessageMediaProps {
   messageId?: string;
   onReactionPress?: () => void;
   onReplyPress?: () => void;
+  pending?: boolean;
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -42,6 +44,7 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   messageId,
   onReactionPress,
   onReplyPress,
+  pending = false,
 }) => {
   const [isFullscreenVisible, setIsFullscreenVisible] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -503,6 +506,12 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
       {type === 'IMAGE' && renderFullscreenImage()}
       {type === 'VIDEO' && renderFullscreenVideo()}
       {type === 'FILE' && renderFileViewer()}
+      {pending && (
+        <View style={styles.sendingOverlay}>
+          <ActivityIndicator size="small" color="#fff" />
+          <Text style={styles.sendingText}>Sending…</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -697,5 +706,22 @@ const styles = StyleSheet.create({
   downloadText: {
     color: 'white',
     fontSize: 14,
+  },
+  sendingOverlay: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sendingText: {
+    color: 'white',
+    fontSize: 12,
+    marginLeft: 6,
   },
 });

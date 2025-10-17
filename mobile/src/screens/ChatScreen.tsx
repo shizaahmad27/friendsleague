@@ -256,6 +256,10 @@ export default function ChatScreen() {
     handleEmojiSelect(emoji);
   };
 
+  const handleReplyPress = (message: Message) => {
+    setReplyingTo(message);
+  };
+
   const handleTyping = (text: string) => {
     setNewMessage(text);
 
@@ -501,7 +505,33 @@ export default function ChatScreen() {
 
       <View style={styles.inputContainer}>
         <MediaPicker
-          onMediaSelected={(mediaUrl, type) => sendMessage(mediaUrl, type)}
+          onPreviewSelected={(localUri, type) => {
+            // Insert a provisional message at top (inverted list) with a temp id
+            const tempId = `temp-${Date.now()}`;
+            const provisional: Message = {
+              id: tempId,
+              content: '',
+              type,
+              senderId: user?.id || 'me',
+              chatId,
+              mediaUrl: localUri,
+              createdAt: new Date().toISOString(),
+            } as Message;
+            setMessages(prev => [provisional, ...prev]);
+          }}
+          onMediaSelected={(mediaUrl, type, localUri) => {
+            // Replace provisional with real message after upload
+            const tempPrefix = 'temp-';
+            setMessages(prev => {
+              const idx = prev.findIndex(m => m.mediaUrl === localUri && m.id.startsWith(tempPrefix));
+              if (idx === -1) return prev; // if not found, do nothing
+              const copy = [...prev];
+              copy.splice(idx, 1); // remove provisional
+              return copy;
+            });
+            // Now send the real message once
+            sendMessage(mediaUrl, type);
+          }}
         />
         <View style={styles.textInputWrapper}>
           <TextInput

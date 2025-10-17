@@ -24,8 +24,8 @@ export interface UploadProgress {
 }
 
 export class MediaService {
-  private static readonly MAX_IMAGE_WIDTH = 1280; // Reduced from 1920 for faster uploads
-  private static readonly IMAGE_QUALITY = 0.7; // Reduced from 0.8 for smaller files
+  private static readonly MAX_IMAGE_WIDTH = 2048; // Balance of quality and size
+  private static readonly IMAGE_QUALITY = 0.78; // Slightly higher quality while still compressing
 
   /**
    * Request camera/photo library permissions

@@ -16,8 +16,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { MediaService, MediaFile, UploadProgress } from '../services/mediaService';
 
 interface MediaPickerProps {
-  onMediaSelected: (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE') => void;
+  onMediaSelected: (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE', localUri?: string) => void;
   onUploadProgress?: (progress: UploadProgress) => void;
+  onPreviewSelected?: (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE') => void;
 }
 
 const { width } = Dimensions.get('window');
@@ -25,6 +26,7 @@ const { width } = Dimensions.get('window');
 export const MediaPicker: React.FC<MediaPickerProps> = ({
   onMediaSelected,
   onUploadProgress,
+  onPreviewSelected,
 }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -72,9 +74,14 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
         return;
       }
 
-      // Now we have a file, start uploading
+      // Now we have a file, first emit local preview
+      try {
+        onPreviewSelected?.(mediaFile.uri, type);
+      } catch {}
+
+      // Start uploading in background (do NOT show uploading UI)
       console.log('MediaPicker: File selected, starting upload...');
-      setIsUploading(true);
+      setIsUploading(false);
       setUploadProgress(null);
 
       // Add a timeout to prevent infinite uploading state
@@ -96,7 +103,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
 
         clearTimeout(uploadTimeout);
         console.log('MediaPicker: Upload completed, mediaUrl:', mediaUrl);
-        onMediaSelected(mediaUrl, type);
+        onMediaSelected(mediaUrl, type, mediaFile.uri);
       } catch (uploadError) {
         clearTimeout(uploadTimeout);
         throw uploadError;
@@ -106,8 +113,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       Alert.alert('Upload Error', `Failed to upload media: ${errorMessage}. Please try again.`);
     } finally {
-      console.log('MediaPicker: Resetting upload state');
-      setIsUploading(false);
+      console.log('MediaPicker: Background upload finished or failed');
       setUploadProgress(null);
     }
   };
@@ -145,7 +151,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
     setIsModalVisible(false);
   };
 
-  if (isUploading) {
+  if (false) {
     return (
       <View style={styles.uploadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
