@@ -122,8 +122,11 @@ export interface ApiResponse<T> {
 // Socket.io event types
 export interface SocketEvents {
   // Chat events
-  'message:send': (message: Omit<Message, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  'message:received': (message: Message) => void;
+  // Align with gateway/client naming
+  'joinChat': (payload: { chatId: string; userId: string }) => void;
+  'sendMessage': (payload: { chatId: string; message: Message }) => void;
+  'newMessage': (message: Message) => void;
+  'user:typing': (payload: { userId: string; isTyping: boolean }) => void;
   'user:online': (userId: string) => void;
   'user:offline': (userId: string) => void;
   

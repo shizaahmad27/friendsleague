@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MediaService } from '../services/mediaService';
+import { Video, ResizeMode } from 'expo-av';
+import * as WebBrowser from 'expo-web-browser';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import { WebView } from 'react-native-webview';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 
 interface MessageMediaProps {
   mediaUrl: string;
@@ -39,6 +45,13 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
 }) => {
   const [isFullscreenVisible, setIsFullscreenVisible] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isVideoVisible, setIsVideoVisible] = useState(false);
+  const [isFileVisible, setIsFileVisible] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null);
+  const [mediaWidth, setMediaWidth] = useState<number>(200);
+  const [mediaHeight, setMediaHeight] = useState<number>(300);
 
   // Debug logging for image URLs and URL validation
   React.useEffect(() => {
@@ -52,25 +65,140 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   // Get the validated URL for display
   const displayUrl = MediaService.validateAndFixS3Url(mediaUrl);
 
+  // Derive a reasonable filename from the URL if missing
+  const effectiveFileName = useMemo(() => {
+    if (fileName) return fileName;
+    try {
+      const withoutQuery = displayUrl.split('?')[0];
+      const parts = withoutQuery.split('/');
+      const last = parts[parts.length - 1];
+      return last || `file_${Date.now()}`;
+    } catch {
+      return `file_${Date.now()}`;
+    }
+  }, [fileName, displayUrl]);
+
+  // Generate a video thumbnail lazily for preview
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (type !== 'VIDEO' || !displayUrl) return;
+      try {
+        const { uri } = await VideoThumbnails.getThumbnailAsync(displayUrl, { time: 1000 });
+        if (!cancelled) setVideoThumbnail(uri);
+      } catch {
+        if (!cancelled) setVideoThumbnail(null);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [type, displayUrl]);
+
+  // Compute non-square media dimensions similar to iMessage
+  useEffect(() => {
+    const maxW = Math.min(screenWidth * 0.7, 360);
+    const maxH = Math.min(screenHeight * 0.5, 420);
+
+    const applySize = (w: number, h: number) => {
+      if (!w || !h) {
+        setMediaWidth(maxW);
+        setMediaHeight(maxW * 0.5625); // fall back to 16:9
+        return;
+      }
+      let targetW = w;
+      let targetH = h;
+      const ratio = w / h;
+      if (targetW > maxW) {
+        targetW = maxW;
+        targetH = targetW / ratio;
+      }
+      if (targetH > maxH) {
+        targetH = maxH;
+        targetW = targetH * ratio;
+      }
+      // Ensure not too small
+      const minW = 140;
+      if (targetW < minW) {
+        targetW = minW;
+        targetH = targetW / ratio;
+      }
+      setMediaWidth(Math.round(targetW));
+      setMediaHeight(Math.round(targetH));
+    };
+
+    if (type === 'IMAGE') {
+      Image.getSize(
+        displayUrl,
+        (w, h) => applySize(w, h),
+        () => applySize(maxW, maxW * 0.5625), // fallback
+      );
+    } else if (type === 'VIDEO') {
+      const src = videoThumbnail || displayUrl;
+      Image.getSize(
+        src,
+        (w, h) => applySize(w, h),
+        () => applySize(maxW, maxW * 0.5625),
+      );
+    } else if (type === 'FILE') {
+      // Use a compact default for files
+      applySize(maxW, 68);
+    }
+  }, [type, displayUrl, videoThumbnail]);
+
   const handleMediaPress = () => {
     if (type === 'IMAGE') {
       // Reset error state when opening fullscreen
       setImageError(false);
       setIsFullscreenVisible(true);
     } else if (type === 'VIDEO') {
-      // TODO: Implement video player
-      Alert.alert('Video Player', 'Video player will be implemented in a future update');
+      setIsVideoVisible(true);
     } else if (type === 'FILE') {
-      // TODO: Implement file download/view
-      Alert.alert('File Viewer', 'File viewer will be implemented in a future update');
+      const lower = (fileName || '').toLowerCase();
+      if (lower.endsWith('.pdf')) {
+        setIsFileVisible(true);
+      } else {
+        Alert.alert(
+          'File',
+          fileName || 'Open file',
+          [
+            { text: 'Open in Browser', onPress: () => WebBrowser.openBrowserAsync(displayUrl) },
+            { text: 'Download', onPress: () => handleDownloadAndShare() },
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        );
+      }
     }
   };
 
-  const getFileIcon = (fileName?: string) => {
-    if (!fileName) return 'document-outline';
-    
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    switch (extension) {
+  const handleDownloadAndShare = async () => {
+    try {
+      setIsDownloading(true);
+      setDownloadProgress(0);
+      const filename = fileName || `file_${Date.now()}`;
+      const localPath = `${FileSystem.documentDirectory}${filename}`;
+      const res = await FileSystem.downloadAsync(displayUrl, localPath, {
+        cache: true,
+      });
+      if (res.status !== 200) {
+        throw new Error('Download failed');
+      }
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(res.uri);
+      } else {
+        await WebBrowser.openBrowserAsync(displayUrl);
+      }
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to download');
+    } finally {
+      setIsDownloading(false);
+      setDownloadProgress(0);
+    }
+  };
+
+  const getFileIcon = (name?: string) => {
+    const n = (name || effectiveFileName || '').toLowerCase();
+    const ext = n.split('.').pop();
+    switch (ext) {
       case 'pdf':
         return 'document-text-outline';
       case 'doc':
@@ -78,9 +206,33 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
         return 'document-outline';
       case 'xls':
       case 'xlsx':
+      case 'csv':
         return 'grid-outline';
+      case 'ppt':
+      case 'pptx':
+        return 'easel-outline';
       case 'txt':
         return 'text-outline';
+      case 'zip':
+      case 'rar':
+      case '7z':
+        return 'archive-outline';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
+        return 'image-outline';
+      case 'mp3':
+      case 'wav':
+      case 'm4a':
+        return 'musical-notes-outline';
+      case 'mp4':
+      case 'mov':
+      case 'webm':
+        return 'videocam-outline';
+      case 'json':
+        return 'code-slash-outline';
       default:
         return 'document-outline';
     }
@@ -100,7 +252,7 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
       ) : (
         <Image
           source={{ uri: displayUrl }}
-          style={styles.image}
+          style={[styles.image, { width: mediaWidth, height: mediaHeight }]}
           resizeMode="cover"
           onError={(error) => {
             console.error('MessageMedia: Image load error:', error);
@@ -119,10 +271,15 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
       onPress={handleMediaPress} 
       onLongPress={onLongPress}
       style={styles.videoContainer}
+      activeOpacity={0.8}
     >
-      <View style={styles.videoThumbnail}>
-        <Ionicons name="play-circle" size={40} color="white" />
-      </View>
+      {videoThumbnail ? (
+        <Image source={{ uri: videoThumbnail }} style={[styles.videoThumbnailImage, { width: mediaWidth, height: mediaHeight }]} resizeMode="cover" />
+      ) : (
+        <View style={[styles.videoThumbnailFallback, { width: mediaWidth, height: mediaHeight }]}>
+          <Ionicons name="videocam-outline" size={40} color="#fff" />
+        </View>
+      )}
       <View style={styles.videoOverlay}>
         <Ionicons name="play" size={16} color="white" />
       </View>
@@ -136,11 +293,11 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
       style={styles.fileContainer}
     >
       <View style={styles.fileIcon}>
-        <Ionicons name={getFileIcon(fileName)} size={24} color="#007AFF" />
+        <Ionicons name={getFileIcon(effectiveFileName)} size={24} color="#007AFF" />
       </View>
       <View style={styles.fileInfo}>
         <Text style={styles.fileName} numberOfLines={1}>
-          {fileName || 'Unknown file'}
+          {effectiveFileName || 'Unknown file'}
         </Text>
         {fileSize && (
           <Text style={styles.fileSize}>
@@ -260,12 +417,92 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
     </Modal>
   );
 
+  const renderFullscreenVideo = () => (
+    <Modal
+      visible={isVideoVisible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setIsVideoVisible(false)}
+    >
+      <View style={styles.fullscreenContainer}>
+        <TouchableOpacity
+          style={styles.fullscreenCloseButton}
+          onPress={() => setIsVideoVisible(false)}
+        >
+          <Ionicons name="close" size={30} color="white" />
+        </TouchableOpacity>
+        <Video
+          source={{ uri: displayUrl }}
+          style={styles.fullscreenVideo}
+          useNativeControls
+          resizeMode={ResizeMode.CONTAIN}
+          shouldPlay
+          isLooping={false}
+        />
+      </View>
+    </Modal>
+  );
+
+  const renderFileViewer = () => (
+    <Modal
+      visible={isFileVisible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setIsFileVisible(false)}
+    >
+      <View style={styles.fullscreenContainer}>
+        <TouchableOpacity
+          style={styles.fullscreenCloseButton}
+          onPress={() => setIsFileVisible(false)}
+        >
+          <Ionicons name="close" size={30} color="white" />
+        </TouchableOpacity>
+        <View style={styles.pdfContainer}>
+          <WebView
+            source={{ uri: displayUrl }}
+            startInLoadingState
+            renderError={() => (
+              <View style={styles.fullscreenErrorContainer}>
+                <Ionicons name="document-outline" size={80} color="#999" />
+                <Text style={styles.fullscreenErrorText}>Cannot preview this file</Text>
+                <TouchableOpacity style={styles.openInBrowserButton} onPress={() => WebBrowser.openBrowserAsync(displayUrl)}>
+                  <Text style={styles.openInBrowserText}>Open in Browser</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+        </View>
+        <View style={styles.fileActionsBar}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleDownloadAndShare}>
+            <Ionicons name="download-outline" size={28} color="#007AFF" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={handleDownloadAndShare}>
+            <Ionicons name="share-outline" size={28} color="#007AFF" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => WebBrowser.openBrowserAsync(displayUrl)}>
+            <Ionicons name="open-outline" size={28} color="#007AFF" />
+          </TouchableOpacity>
+        </View>
+        {isDownloading && (
+          <View style={styles.downloadOverlay}>
+            <View style={styles.downloadBox}>
+              <Ionicons name="download-outline" size={28} color="#007AFF" />
+              <Text style={styles.downloadText}>Downloading...</Text>
+            </View>
+          </View>
+        )}
+      </View>
+    </Modal>
+  );
+
   return (
     <View style={[styles.container, isOwnMessage && styles.ownMessage]}>
       {type === 'IMAGE' && renderImage()}
       {type === 'VIDEO' && renderVideo()}
       {type === 'FILE' && renderFile()}
       {type === 'IMAGE' && renderFullscreenImage()}
+      {type === 'VIDEO' && renderFullscreenVideo()}
+      {type === 'FILE' && renderFileViewer()}
     </View>
   );
 };
@@ -283,8 +520,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   image: {
-    width: 200,
-    height: 200,
     borderRadius: 12,
   },
   errorContainer: {
@@ -305,8 +540,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   videoThumbnail: {
-    width: 200,
-    height: 200,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+  },
+  videoThumbnailImage: {
+    borderRadius: 12,
+  },
+  videoThumbnailFallback: {
     backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
@@ -363,6 +605,10 @@ const styles = StyleSheet.create({
     width: screenWidth,
     height: screenHeight,
   },
+  fullscreenVideo: {
+    width: screenWidth,
+    height: screenHeight,
+  },
   fullscreenErrorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -374,6 +620,34 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 16,
     textAlign: 'center',
+  },
+  pdfContainer: {
+    flex: 1,
+    alignSelf: 'stretch',
+    width: '100%',
+    backgroundColor: 'white',
+  },
+  openInBrowserButton: {
+    marginTop: 16,
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  openInBrowserText: {
+    color: '#111',
+    fontWeight: '600',
+  },
+  fileActionsBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingVertical: 14,
   },
   fullscreenErrorUrl: {
     color: '#999',
@@ -403,5 +677,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 50,
+  },
+  downloadOverlay: {
+    position: 'absolute',
+    bottom: 80,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  downloadBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  downloadText: {
+    color: 'white',
+    fontSize: 14,
   },
 });

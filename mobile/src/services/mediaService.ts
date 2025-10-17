@@ -47,9 +47,8 @@ export class MediaService {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8, // Start with some compression to reduce initial file size
+      allowsEditing: false, // Do not force cropping; let users send full photo
+      quality: 1,
     });
 
     
@@ -78,9 +77,8 @@ export class MediaService {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8, // Start with some compression to reduce initial file size
+      allowsEditing: false, // Capture full photo without crop UI
+      quality: 1,
     });
 
     
@@ -109,7 +107,7 @@ export class MediaService {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['videos'],
-      allowsEditing: true,
+      allowsEditing: false, // No trimming/cropping UI by default
       quality: 1,
     });
 
