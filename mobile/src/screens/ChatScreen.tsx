@@ -12,6 +12,7 @@ import {
   Alert,
   Modal,
   Image,
+  Animated,
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { chatApi, Message, Chat } from '../services/chatApi';
@@ -46,10 +47,63 @@ export default function ChatScreen() {
   const [peerUser, setPeerUser] = useState<{ id: string; username: string; avatar?: string } | null>(null);
   const [chatMeta, setChatMeta] = useState<{ type: Chat['type']; name?: string } | null>(null);
   const [participants, setParticipants] = useState<Array<{ id: string; username: string; avatar?: string }>>([]);
+  const iconsCollapse = useRef(new Animated.Value(0)).current; // 0: expanded, 1: collapsed
+  const [iconsMeasuredWidth, setIconsMeasuredWidth] = useState(0);
+  const isAnimating = useRef(false);
+  const animationTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+
+  const iconsAnimatedStyle = {
+    width: iconsMeasuredWidth === 0 ? undefined : iconsCollapse.interpolate({ inputRange: [0, 1], outputRange: [iconsMeasuredWidth, 40] }),
+    opacity: iconsCollapse.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+    transform: [
+      { scaleX: iconsCollapse.interpolate({ inputRange: [0, 1], outputRange: [1, 0.9] }) },
+      { translateX: iconsCollapse.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) },
+    ],
+  } as const;
+
+  const menuButtonStyle = {
+    opacity: iconsCollapse.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }),
+    transform: [
+      { scale: iconsCollapse.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) },
+    ],
+  } as const;
 
   const flatListRef = useRef<FlatList>(null);
   const typingNames = typingUsers.map(id => usernamesById[id] ?? id);
   const usernamesRef = useRef(usernamesById);
+
+  // Robust animation function that handles interruptions
+  const animateIcons = (toValue: number) => {
+    // Clear any existing timeout
+    if (animationTimeout.current) {
+      clearTimeout(animationTimeout.current);
+      animationTimeout.current = null;
+    }
+
+    // Stop any running animation
+    iconsCollapse.stopAnimation();
+    
+    // Reset animation flag after a short delay to prevent rapid calls
+    isAnimating.current = true;
+    animationTimeout.current = setTimeout(() => {
+      isAnimating.current = false;
+      animationTimeout.current = null;
+    }, 300);
+
+    Animated.timing(iconsCollapse, { 
+      toValue, 
+      duration: 280, 
+      useNativeDriver: false 
+    }).start(() => {
+      // Ensure animation flag is reset when animation completes
+      if (animationTimeout.current) {
+        clearTimeout(animationTimeout.current);
+        animationTimeout.current = null;
+      }
+      isAnimating.current = false;
+    });
+  };
 
 
   useEffect(() => {
@@ -339,6 +393,15 @@ export default function ChatScreen() {
 
   useEffect(() => { usernamesRef.current = usernamesById; }, [usernamesById]);
 
+  // Cleanup animation timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (animationTimeout.current) {
+        clearTimeout(animationTimeout.current);
+      }
+    };
+  }, []);
+
   // Preload usernames from chat participants
   useEffect(() => {
     chatApi.getGroupChatParticipants(chatId)
@@ -504,7 +567,15 @@ export default function ChatScreen() {
       )}
 
       <View style={styles.inputContainer}>
-        <MediaPicker
+        <Animated.View
+          style={[styles.leftActionsRow, { overflow: 'hidden' }, iconsAnimatedStyle]}
+          onLayout={(e) => {
+            if (isAnimating.current) return; // Don't update during animation
+            const w = e.nativeEvent.layout.width;
+            if (w !== iconsMeasuredWidth && w > 0) setIconsMeasuredWidth(w);
+          }}
+        >
+          <MediaPicker
           onPreviewSelected={(localUri, type) => {
             // Insert a provisional message at top (inverted list) with a temp id
             const tempId = `temp-${Date.now()}`;
@@ -532,12 +603,50 @@ export default function ChatScreen() {
             // Now send the real message once
             sendMessage(mediaUrl, type);
           }}
-        />
+          />
+          <TouchableOpacity
+            style={styles.inlineIconButton}
+            onPress={() => {
+              console.log('Camera icon pressed');
+              Alert.alert('Coming soon', 'Quick camera shortcut');
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="camera-outline" size={24} color="#007AFF" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.inlineIconButton}
+            onPress={() => {
+              console.log('Microphone icon pressed');
+              Alert.alert('Coming soon', 'Voice message shortcut');
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="mic-outline" size={24} color="#007AFF" />
+          </TouchableOpacity>
+        </Animated.View>
+        
+        {/* Three dots menu button - appears when collapsed */}
+        <Animated.View style={[styles.menuButtonContainer, menuButtonStyle]}>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => setShowMenu(!showMenu)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="ellipsis-vertical" size={24} color="#007AFF" />
+          </TouchableOpacity>
+        </Animated.View>
         <View style={styles.textInputWrapper}>
           <TextInput
             style={styles.textInput}
             value={newMessage}
             onChangeText={handleTyping}
+            onFocus={() => {
+              animateIcons(1); // Collapse icons
+            }}
+            onBlur={() => {
+              animateIcons(0); // Expand icons
+            }}
             placeholder="Type a message..."
             multiline
             maxLength={1000}
@@ -784,6 +893,55 @@ export default function ChatScreen() {
         }}
         onSelectEmoji={handleEmojiSelect}
       />
+
+      {/* Quick Actions Menu Modal */}
+      <Modal
+        visible={showMenu}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowMenu(false)}
+      >
+        <TouchableOpacity 
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMenu(false)}
+        >
+          <View style={styles.menuContainer}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => {
+                setShowMenu(false);
+                Alert.alert('Coming soon', 'Quick camera shortcut');
+              }}
+            >
+              <Ionicons name="camera-outline" size={24} color="#007AFF" />
+              <Text style={styles.menuItemText}>Camera</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => {
+                setShowMenu(false);
+                Alert.alert('Coming soon', 'Voice message shortcut');
+              }}
+            >
+              <Ionicons name="mic-outline" size={24} color="#007AFF" />
+              <Text style={styles.menuItemText}>Voice Message</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => {
+                setShowMenu(false);
+                Alert.alert('Coming soon', 'Media picker shortcut');
+              }}
+            >
+              <Ionicons name="images-outline" size={24} color="#007AFF" />
+              <Text style={styles.menuItemText}>Photos & Files</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -958,6 +1116,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     marginBottom: 16,
   },
+  leftActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
   textInput: {
     flex: 1,
     paddingHorizontal: 18,
@@ -972,7 +1135,11 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
     borderRadius: 20,
     paddingRight: 6,
-    marginRight: 8,
+    marginLeft: -8,
+  },
+  inlineIconButton: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
   },
   sendIconButton: {
     paddingLeft: 6,
@@ -1165,5 +1332,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 50,
+  },
+  menuButtonContainer: {
+    position: 'absolute',
+    left: 15,
+    top: 0,
+    bottom: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 40,
+  },
+  menuButton: {
+    padding: 4,
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuContainer: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    minWidth: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  menuItemText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
   },
 });

@@ -249,10 +249,8 @@ const styles = StyleSheet.create({
   mediaButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 20,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
     marginRight: 8,
   },
   mediaButtonText: {

@@ -80,7 +80,12 @@ export default function ChatListScreen() {
             )}
           </View>
           <Text style={styles.lastMessage} numberOfLines={1}>
-            {lastMessage?.content || 'No messages yet'}
+            {lastMessage ? (
+              lastMessage.content || 
+              (lastMessage.type === 'IMAGE' ? '📷 Photo' :
+               lastMessage.type === 'VIDEO' ? '🎥 Video' :
+               lastMessage.type === 'FILE' ? '📄 File' : 'No messages yet')
+            ) : 'No messages yet'}
           </Text>
         </View>
         <View style={styles.chatMeta}>

@@ -8,8 +8,9 @@ import {
   Alert,
   Dimensions,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
-import { ActivityIndicator } from 'react-native';
+import { Animated, PanResponder } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MediaService } from '../services/mediaService';
 import { Video, ResizeMode } from 'expo-av';
@@ -55,6 +56,62 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null);
   const [mediaWidth, setMediaWidth] = useState<number>(200);
   const [mediaHeight, setMediaHeight] = useState<number>(300);
+
+  // Swipe down to dismiss with image-only drag
+  const panY = React.useRef(new Animated.Value(0)).current;
+  const modalOpacity = React.useRef(new Animated.Value(0)).current;
+  const imageScale = panY.interpolate({
+    inputRange: [0, 200],
+    outputRange: [1, 0.8],
+    extrapolate: 'clamp',
+  });
+  
+  // Reset pan values and animate modal when it opens
+  React.useEffect(() => {
+    if (isFullscreenVisible || isVideoVisible || isFileVisible) {
+      panY.setValue(0);
+      modalOpacity.setValue(0);
+      Animated.timing(modalOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+    } else {
+      modalOpacity.setValue(0);
+    }
+  }, [isFullscreenVisible, isVideoVisible, isFileVisible, panY, modalOpacity]);
+  
+  const panResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        panY.setOffset((panY as any)._value);
+        panY.setValue(0);
+      },
+      onPanResponderMove: Animated.event([null, { dy: panY }], { useNativeDriver: false }),
+      onPanResponderRelease: (_, g) => {
+        panY.flattenOffset();
+        if (g.dy > 100 || g.vy > 0.5) {
+          // Smooth exit animation
+          Animated.parallel([
+            Animated.timing(panY, { toValue: 1000, duration: 300, useNativeDriver: false }),
+            Animated.timing(modalOpacity, { toValue: 0, duration: 300, useNativeDriver: false })
+          ]).start(() => {
+            setIsFullscreenVisible(false);
+            setIsVideoVisible(false);
+            setIsFileVisible(false);
+            // Reset after modal is closed
+            setTimeout(() => {
+              panY.setValue(0);
+            }, 100);
+          });
+        } else {
+          Animated.spring(panY, { toValue: 0, useNativeDriver: false }).start();
+        }
+      },
+    })
+  ).current;
 
   // Debug logging for image URLs and URL validation
   React.useEffect(() => {
@@ -316,38 +373,40 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
     <Modal
       visible={isFullscreenVisible}
       transparent={true}
-      animationType="fade"
+      animationType="none"
       onRequestClose={() => setIsFullscreenVisible(false)}
     >
-      <View style={styles.fullscreenContainer}>
+      <Animated.View style={[styles.fullscreenContainer, { opacity: modalOpacity }]}>
         <TouchableOpacity
           style={styles.fullscreenCloseButton}
           onPress={() => setIsFullscreenVisible(false)}
         >
           <Ionicons name="close" size={30} color="white" />
         </TouchableOpacity>
-        {imageError ? (
-          <View style={styles.fullscreenErrorContainer}>
-            <Ionicons name="image-outline" size={80} color="#999" />
-            <Text style={styles.fullscreenErrorText}>Failed to load image</Text>
-            <Text style={styles.fullscreenErrorUrl}>{displayUrl}</Text>
-          </View>
-        ) : (
-          <Image
-            source={{ uri: displayUrl }}
-            style={styles.fullscreenImage}
-            resizeMode="contain"
-            onError={(error) => {
-              console.error('MessageMedia: Fullscreen image load error:', error);
-              console.error('MessageMedia: Failed fullscreen URL:', displayUrl);
-              setImageError(true);
-            }}
-            onLoad={() => {
-              console.log('MessageMedia: Fullscreen image loaded successfully:', displayUrl);
-              setImageError(false);
-            }}
-          />
-        )}
+        <Animated.View style={{ transform: [{ translateY: panY }, { scale: imageScale }] }} {...panResponder.panHandlers}>
+          {imageError ? (
+            <View style={styles.fullscreenErrorContainer}>
+              <Ionicons name="image-outline" size={80} color="#999" />
+              <Text style={styles.fullscreenErrorText}>Failed to load image</Text>
+              <Text style={styles.fullscreenErrorUrl}>{displayUrl}</Text>
+            </View>
+          ) : (
+            <Image
+              source={{ uri: displayUrl }}
+              style={styles.fullscreenImage}
+              resizeMode="contain"
+              onError={(error) => {
+                console.error('MessageMedia: Fullscreen image load error:', error);
+                console.error('MessageMedia: Failed fullscreen URL:', displayUrl);
+                setImageError(true);
+              }}
+              onLoad={() => {
+                console.log('MessageMedia: Fullscreen image loaded successfully:', displayUrl);
+                setImageError(false);
+              }}
+            />
+          )}
+        </Animated.View>
         
         {/* Action Buttons Toolbar */}
         <View style={styles.actionButtonsContainer}>
@@ -416,7 +475,7 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
             <Ionicons name="download-outline" size={28} color="#007AFF" />
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
     </Modal>
   );
 
@@ -424,25 +483,27 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
     <Modal
       visible={isVideoVisible}
       transparent={true}
-      animationType="fade"
+      animationType="none"
       onRequestClose={() => setIsVideoVisible(false)}
     >
-      <View style={styles.fullscreenContainer}>
+      <Animated.View style={[styles.fullscreenContainer, { opacity: modalOpacity }]}>
         <TouchableOpacity
           style={styles.fullscreenCloseButton}
           onPress={() => setIsVideoVisible(false)}
         >
           <Ionicons name="close" size={30} color="white" />
         </TouchableOpacity>
-        <Video
-          source={{ uri: displayUrl }}
-          style={styles.fullscreenVideo}
-          useNativeControls
-          resizeMode={ResizeMode.CONTAIN}
-          shouldPlay
-          isLooping={false}
-        />
-      </View>
+        <Animated.View style={{ transform: [{ translateY: panY }, { scale: imageScale }] }} {...panResponder.panHandlers}>
+          <Video
+            source={{ uri: displayUrl }}
+            style={styles.fullscreenVideo}
+            useNativeControls
+            resizeMode={ResizeMode.CONTAIN}
+            shouldPlay
+            isLooping={false}
+          />
+        </Animated.View>
+      </Animated.View>
     </Modal>
   );
 
@@ -450,31 +511,33 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
     <Modal
       visible={isFileVisible}
       transparent={true}
-      animationType="slide"
+      animationType="none"
       onRequestClose={() => setIsFileVisible(false)}
     >
-      <View style={styles.fullscreenContainer}>
+      <Animated.View style={[styles.fullscreenContainer, { opacity: modalOpacity }]}>
         <TouchableOpacity
           style={styles.fullscreenCloseButton}
           onPress={() => setIsFileVisible(false)}
         >
           <Ionicons name="close" size={30} color="white" />
         </TouchableOpacity>
-        <View style={styles.pdfContainer}>
-          <WebView
-            source={{ uri: displayUrl }}
-            startInLoadingState
-            renderError={() => (
-              <View style={styles.fullscreenErrorContainer}>
-                <Ionicons name="document-outline" size={80} color="#999" />
-                <Text style={styles.fullscreenErrorText}>Cannot preview this file</Text>
-                <TouchableOpacity style={styles.openInBrowserButton} onPress={() => WebBrowser.openBrowserAsync(displayUrl)}>
-                  <Text style={styles.openInBrowserText}>Open in Browser</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          />
-        </View>
+        <Animated.View style={{ transform: [{ translateY: panY }, { scale: imageScale }] }} {...panResponder.panHandlers}>
+          <View style={styles.pdfContainer}>
+            <WebView
+              source={{ uri: displayUrl }}
+              startInLoadingState
+              renderError={() => (
+                <View style={styles.fullscreenErrorContainer}>
+                  <Ionicons name="document-outline" size={80} color="#999" />
+                  <Text style={styles.fullscreenErrorText}>Cannot preview this file</Text>
+                  <TouchableOpacity style={styles.openInBrowserButton} onPress={() => WebBrowser.openBrowserAsync(displayUrl)}>
+                    <Text style={styles.openInBrowserText}>Open in Browser</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
+          </View>
+        </Animated.View>
         <View style={styles.fileActionsBar}>
           <TouchableOpacity style={styles.actionButton} onPress={handleDownloadAndShare}>
             <Ionicons name="download-outline" size={28} color="#007AFF" />
@@ -494,7 +557,7 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
             </View>
           </View>
         )}
-      </View>
+      </Animated.View>
     </Modal>
   );
 
