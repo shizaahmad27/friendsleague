@@ -82,9 +82,9 @@ export default function ChatListScreen() {
           <Text style={styles.lastMessage} numberOfLines={1}>
             {lastMessage ? (
               lastMessage.content || 
-              (lastMessage.type === 'IMAGE' ? 'Bilde' :
-               lastMessage.type === 'VIDEO' ? 'Video' :
-               lastMessage.type === 'FILE' ? 'Fil' : 'Ingen meldinger ennå')
+              (lastMessage.type === 'IMAGE' ? '📷 Bilde' :
+               lastMessage.type === 'VIDEO' ? '🎥 Video' :
+               lastMessage.type === 'FILE' ? '📄 Fil' : 'Ingen meldinger ennå')
             ) : 'Ingen meldinger ennå'}
           </Text>
         </View>
