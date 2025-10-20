@@ -26,6 +26,7 @@ import { chatApi, Message, Chat } from '../services/chatApi';
 import socketService from '../services/socketService';
 import { useAuthStore } from '../store/authStore';
 import { MediaPicker } from '../components/MediaPicker';
+import { VoiceRecorder } from '../components/VoiceRecorder';
 import { MessageMedia } from '../components/MessageMedia';
 import { MessageReactions } from '../components/MessageReactions';
 import { ReactionPicker } from '../components/ReactionPicker';
@@ -63,7 +64,7 @@ export default function ChatScreen() {
   const [showMenu, setShowMenu] = useState(false);
 
   // Reusable media callbacks
-  const handleMediaSelected = (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE', localUri?: string) => {
+  const handleMediaSelected = (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE', localUri?: string) => {
     // Replace provisional with real message after upload
     const tempPrefix = 'temp-';
     setMessages(prev => {
@@ -77,7 +78,7 @@ export default function ChatScreen() {
     sendMessage(mediaUrl, type);
   };
 
-  const handlePreviewSelected = (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE') => {
+  const handlePreviewSelected = (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE') => {
     // Insert a provisional message at top (inverted list) with a temp id
     const tempId = `temp-${Date.now()}`;
     const provisional: Message = {
@@ -321,7 +322,7 @@ export default function ChatScreen() {
     setFullscreenMessage(null);
   };
 
-  const sendMessage = async (mediaUrl?: string, mediaType?: 'IMAGE' | 'VIDEO' | 'FILE') => {
+  const sendMessage = async (mediaUrl?: string, mediaType?: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE') => {
     if ((!newMessage.trim() && !mediaUrl) || !user?.id) return;
 
     const messageContent = newMessage.trim();
@@ -438,7 +439,7 @@ export default function ChatScreen() {
         {isMediaMessage && item.mediaUrl ? (
           <MessageMedia
             mediaUrl={item.mediaUrl}
-            type={item.type as 'IMAGE' | 'VIDEO' | 'FILE'}
+            type={item.type as 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE'}
             isOwnMessage={isOwnMessage}
             onLongPress={() => handleReactionPress(item)}
             messageId={item.id}
@@ -649,6 +650,17 @@ export default function ChatScreen() {
           <MediaPicker
             onPreviewSelected={handlePreviewSelected}
             onMediaSelected={handleMediaSelected}
+          />
+          <VoiceRecorder
+            onRecordingComplete={(mediaUrl) => {
+              sendMessage(mediaUrl, 'VOICE');
+            }}
+            onRecordingCancelled={() => {
+              console.log('Voice recording cancelled');
+            }}
+            onError={(error) => {
+              console.error('Voice recording error:', error);
+            }}
           />
           <TouchableOpacity
             style={styles.inlineIconButton}

@@ -3,9 +3,9 @@ import { Alert } from 'react-native';
 import { MediaService, MediaFile, UploadProgress } from '../services/mediaService';
 
 export interface MediaSelectionCallbacks {
-  onMediaSelected: (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE', localUri?: string) => void;
+  onMediaSelected: (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE', localUri?: string) => void;
   onUploadProgress?: (progress: UploadProgress) => void;
-  onPreviewSelected?: (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE') => void;
+  onPreviewSelected?: (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE') => void;
 }
 
 export interface MediaSelectionState {
@@ -32,7 +32,7 @@ export const useMediaSelection = (callbacks: MediaSelectionCallbacks) => {
 
   const handleMediaSelection = async (
     pickerFunction: () => Promise<MediaFile | null>, 
-    type: 'IMAGE' | 'VIDEO' | 'FILE'
+    type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE'
   ) => {
     console.log('useMediaSelection: Starting media selection for type:', type);
     

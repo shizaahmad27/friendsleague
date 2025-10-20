@@ -17,10 +17,11 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { WebView } from 'react-native-webview';
 import * as VideoThumbnails from 'expo-video-thumbnails';
+import { VoiceMessagePlayer } from './VoiceMessagePlayer';
 
 interface MessageMediaProps {
   mediaUrl: string;
-  type: 'IMAGE' | 'VIDEO' | 'FILE';
+  type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE';
   fileName?: string;
   fileSize?: number;
   isOwnMessage?: boolean;
@@ -321,14 +322,25 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
     </TouchableOpacity>
   );
 
-
-
+  const renderVoice = () => (
+    <VoiceMessagePlayer
+      audioUrl={mediaUrl}
+      isOwnMessage={isOwnMessage}
+      onPlaybackComplete={() => {
+        console.log('Voice message playback completed');
+      }}
+      onError={(error) => {
+        console.error('Voice message playback error:', error);
+      }}
+    />
+  );
 
   return (
     <View style={[styles.container, isOwnMessage && styles.ownMessage]}>
       {type === 'IMAGE' && renderImage()}
       {type === 'VIDEO' && renderVideo()}
       {type === 'FILE' && renderFile()}
+      {type === 'VOICE' && renderVoice()}
       {pending && (
         <View style={styles.sendingOverlay}>
           <ActivityIndicator size="small" color="#fff" />
