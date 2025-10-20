@@ -82,6 +82,18 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
 
   const currentMessage = galleryMessages[galleryIndex];
 
+  // Debug logging
+  console.log('MediaGalleryModal render:', {
+    visible,
+    currentMessage: currentMessage ? {
+      id: currentMessage.id,
+      type: currentMessage.type,
+      mediaUrl: currentMessage.mediaUrl,
+    } : null,
+    galleryIndex,
+    galleryMessagesLength: galleryMessages.length,
+  });
+
   return (
     <Modal
       visible={visible}
@@ -129,75 +141,79 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
           </>
         )}
         
-        <Animated.View style={{ transform: [{ translateY: panY }, { scale: imageScale }] }} {...panResponder.panHandlers}>
-          {currentMessage && currentMessage.mediaUrl && (
-            <>
-              {currentMessage.type === 'IMAGE' && (
+        {currentMessage && currentMessage.mediaUrl && (
+          <>
+            {currentMessage.type === 'IMAGE' && (
+              <Animated.View style={{ transform: [{ translateY: panY }, { scale: imageScale }] }} {...panResponder.panHandlers}>
                 <Image
                   source={{ uri: currentMessage.mediaUrl }}
                   style={styles.fullscreenImage}
                   resizeMode="contain"
                 />
-              )}
-              {currentMessage.type === 'VIDEO' && currentMessage.mediaUrl && (
+              </Animated.View>
+            )}
+            {currentMessage.type === 'VIDEO' && currentMessage.mediaUrl && (
+              <Animated.View style={{ transform: [{ translateY: panY }, { scale: imageScale }] }} {...panResponder.panHandlers}>
                 <VideoViewer
                   videoUrl={currentMessage.mediaUrl}
                   onClose={handleClose}
-                  onShare={async () => {
-                    try {
-                      const result = await MediaService.shareMedia(currentMessage.mediaUrl!);
-                      if (result.method === 'clipboard') {
-                        Alert.alert('Success', 'Video URL copied to clipboard!');
-                      }
-                    } catch (error) {
-                      console.error('Failed to share video:', error);
-                      Alert.alert('Error', 'Failed to share video');
+                onShare={async () => {
+                  try {
+                    const result = await MediaService.shareMedia(currentMessage.mediaUrl!);
+                    if (result.method === 'clipboard') {
+                      Alert.alert('Success', 'Video URL copied to clipboard!');
                     }
-                  }}
-                  onSave={async () => {
-                    try {
-                      await MediaService.saveMediaToLibrary(currentMessage.mediaUrl!);
-                      Alert.alert('Success', 'Video saved to your photo library!');
-                    } catch (error) {
-                      console.error('Failed to save video:', error);
-                      const errorMessage = error instanceof Error ? error.message : 'Failed to save video to library';
-                      if (errorMessage.includes('copied to clipboard')) {
-                        Alert.alert(
-                          'Development Mode', 
-                          'In Expo Go, videos can\'t be saved directly. This will work properly when the app is built and installed on your device! For now, the video URL has been copied to your clipboard.'
-                        );
-                      } else {
-                        Alert.alert('Error', errorMessage);
-                      }
+                  } catch (error) {
+                    console.error('Failed to share video:', error);
+                    Alert.alert('Error', 'Failed to share video');
+                  }
+                }}
+                onSave={async () => {
+                  try {
+                    await MediaService.saveMediaToLibrary(currentMessage.mediaUrl!);
+                    Alert.alert('Success', 'Video saved to your photo library!');
+                  } catch (error) {
+                    console.error('Failed to save video:', error);
+                    const errorMessage = error instanceof Error ? error.message : 'Failed to save video to library';
+                    if (errorMessage.includes('copied to clipboard')) {
+                      Alert.alert(
+                        'Development Mode', 
+                        'In Expo Go, videos can\'t be saved directly. This will work properly when the app is built and installed on your device! For now, the video URL has been copied to your clipboard.'
+                      );
+                    } else {
+                      Alert.alert('Error', errorMessage);
                     }
-                  }}
-                  onReact={onReactionPress ? () => onReactionPress(currentMessage) : undefined}
-                  onReply={onReplyPress ? () => onReplyPress(currentMessage) : undefined}
-                />
-              )}
-              {currentMessage.type === 'FILE' && currentMessage.mediaUrl && (
+                  }
+                }}
+                onReact={onReactionPress ? () => onReactionPress(currentMessage) : undefined}
+                onReply={onReplyPress ? () => onReplyPress(currentMessage) : undefined}
+              />
+              </Animated.View>
+            )}
+            {currentMessage.type === 'FILE' && currentMessage.mediaUrl && (
+              <Animated.View style={{ transform: [{ translateY: panY }, { scale: imageScale }] }} {...panResponder.panHandlers}>
                 <FileViewer
                   fileUrl={currentMessage.mediaUrl}
                   fileName={currentMessage.content || 'Unknown file'}
                   onClose={handleClose}
-                  onShare={async () => {
-                    try {
-                      const result = await MediaService.shareMedia(currentMessage.mediaUrl!);
-                      if (result.method === 'clipboard') {
-                        Alert.alert('Success', 'File URL copied to clipboard!');
-                      }
-                    } catch (error) {
-                      console.error('Failed to share file:', error);
-                      Alert.alert('Error', 'Failed to share file');
+                onShare={async () => {
+                  try {
+                    const result = await MediaService.shareMedia(currentMessage.mediaUrl!);
+                    if (result.method === 'clipboard') {
+                      Alert.alert('Success', 'File URL copied to clipboard!');
                     }
-                  }}
-                  onReact={onReactionPress ? () => onReactionPress(currentMessage) : undefined}
-                  onReply={onReplyPress ? () => onReplyPress(currentMessage) : undefined}
-                />
-              )}
-            </>
-          )}
-        </Animated.View>
+                  } catch (error) {
+                    console.error('Failed to share file:', error);
+                    Alert.alert('Error', 'Failed to share file');
+                  }
+                }}
+                onReact={onReactionPress ? () => onReactionPress(currentMessage) : undefined}
+                onReply={onReplyPress ? () => onReplyPress(currentMessage) : undefined}
+              />
+              </Animated.View>
+            )}
+          </>
+        )}
         
         {/* Action Buttons Toolbar - only for images */}
         {currentMessage && currentMessage.type === 'IMAGE' && (

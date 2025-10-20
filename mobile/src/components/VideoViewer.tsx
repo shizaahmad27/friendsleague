@@ -30,6 +30,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({
   onReply,
 }) => {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   const handleDownloadAndShare = async () => {
     try {
@@ -64,16 +65,34 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({
     }
   };
 
+  console.log('VideoViewer render:', { videoUrl, onClose: !!onClose });
+
   return (
     <View style={styles.container}>
-      <Video
-        source={{ uri: videoUrl }}
-        style={styles.video}
-        useNativeControls
-        resizeMode={ResizeMode.CONTAIN}
-        shouldPlay
-        isLooping={false}
-      />
+      {hasError ? (
+        <View style={styles.errorContainer}>
+          <Ionicons name="videocam-outline" size={80} color="#999" />
+          <Text style={styles.errorText}>Cannot load video</Text>
+          <Text style={styles.errorUrl}>{videoUrl}</Text>
+        </View>
+      ) : (
+        <Video
+          source={{ uri: videoUrl }}
+          style={styles.video}
+          useNativeControls
+          resizeMode={ResizeMode.CONTAIN}
+          shouldPlay
+          isLooping={false}
+          onError={(error) => {
+            console.error('VideoViewer video error:', error);
+            setHasError(true);
+          }}
+          onLoad={() => {
+            console.log('VideoViewer video loaded successfully');
+            setHasError(false);
+          }}
+        />
+      )}
       
       {/* Action Buttons Toolbar */}
       <View style={styles.actionButtonsContainer}>
@@ -125,7 +144,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -173,5 +192,24 @@ const styles = StyleSheet.create({
   downloadText: {
     color: 'white',
     fontSize: 14,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: 'white',
+    fontSize: 18,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  errorUrl: {
+    color: '#999',
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: 'center',
+    opacity: 0.7,
   },
 });

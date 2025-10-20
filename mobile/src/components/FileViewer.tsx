@@ -116,6 +116,8 @@ export const FileViewer: React.FC<FileViewerProps> = ({
 
   const isPdf = fileName?.toLowerCase().endsWith('.pdf');
 
+  console.log('FileViewer render:', { fileUrl, fileName, isPdf, onClose: !!onClose });
+
   return (
     <View style={styles.container}>
       {isPdf ? (
@@ -197,7 +199,7 @@ export const FileViewer: React.FC<FileViewerProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
   },
