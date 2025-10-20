@@ -28,6 +28,7 @@ import MessageReplyPreview from '../components/MessageReplyPreview';
 import { ChatSettingsModal } from '../components/ChatSettingsModal';
 import { MediaGalleryModal } from '../components/MediaGalleryModal';
 import { MediaService } from '../services/mediaService';
+import { useMediaSelection } from '../hooks/useMediaSelection';
 import { Ionicons } from '@expo/vector-icons';
 
 type ChatScreenRouteProp = RouteProp<{ Chat: { chatId: string } }, 'Chat'>;
@@ -56,6 +57,44 @@ export default function ChatScreen() {
   const isAnimating = useRef(false);
   const animationTimeout = useRef<NodeJS.Timeout | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+
+  // Reusable media callbacks
+  const handleMediaSelected = (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE', localUri?: string) => {
+    // Replace provisional with real message after upload
+    const tempPrefix = 'temp-';
+    setMessages(prev => {
+      const idx = prev.findIndex(m => m.mediaUrl === localUri && m.id.startsWith(tempPrefix));
+      if (idx === -1) return prev; // if not found, do nothing
+      const copy = [...prev];
+      copy.splice(idx, 1); // remove provisional
+      return copy;
+    });
+    // Now send the real message once
+    sendMessage(mediaUrl, type);
+  };
+
+  const handlePreviewSelected = (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE') => {
+    // Insert a provisional message at top (inverted list) with a temp id
+    const tempId = `temp-${Date.now()}`;
+    const provisional: Message = {
+      id: tempId,
+      content: '',
+      type,
+      senderId: user?.id || 'me',
+      chatId,
+      mediaUrl: localUri,
+      createdAt: new Date().toISOString(),
+    } as Message;
+    setMessages(prev => [provisional, ...prev]);
+  };
+
+  // Media selection hook for MediaPicker component
+  const mediaSelection = useMediaSelection({
+    onMediaSelected: handleMediaSelected,
+    onPreviewSelected: handlePreviewSelected,
+  });
+
+  // No need for media picker service - we'll use the hook directly
 
   const iconsAnimatedStyle = {
     width: iconsMeasuredWidth === 0 ? undefined : iconsCollapse.interpolate({ inputRange: [0, 1], outputRange: [iconsMeasuredWidth, 40] }),
@@ -590,33 +629,8 @@ export default function ChatScreen() {
           }}
         >
           <MediaPicker
-          onPreviewSelected={(localUri, type) => {
-            // Insert a provisional message at top (inverted list) with a temp id
-            const tempId = `temp-${Date.now()}`;
-            const provisional: Message = {
-              id: tempId,
-              content: '',
-              type,
-              senderId: user?.id || 'me',
-              chatId,
-              mediaUrl: localUri,
-              createdAt: new Date().toISOString(),
-            } as Message;
-            setMessages(prev => [provisional, ...prev]);
-          }}
-          onMediaSelected={(mediaUrl, type, localUri) => {
-            // Replace provisional with real message after upload
-            const tempPrefix = 'temp-';
-            setMessages(prev => {
-              const idx = prev.findIndex(m => m.mediaUrl === localUri && m.id.startsWith(tempPrefix));
-              if (idx === -1) return prev; // if not found, do nothing
-              const copy = [...prev];
-              copy.splice(idx, 1); // remove provisional
-              return copy;
-            });
-            // Now send the real message once
-            sendMessage(mediaUrl, type);
-          }}
+            onPreviewSelected={handlePreviewSelected}
+            onMediaSelected={handleMediaSelected}
           />
           <TouchableOpacity
             style={styles.inlineIconButton}
@@ -728,11 +742,44 @@ export default function ChatScreen() {
               style={styles.menuItem}
               onPress={() => {
                 setShowMenu(false);
-                Alert.alert('Coming soon', 'Quick camera shortcut');
+                mediaSelection.selectFromCamera();
               }}
             >
               <Ionicons name="camera-outline" size={24} color="#007AFF" />
               <Text style={styles.menuItemText}>Camera</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => {
+                setShowMenu(false);
+                mediaSelection.selectFromPhotos();
+              }}
+            >
+              <Ionicons name="images-outline" size={24} color="#007AFF" />
+              <Text style={styles.menuItemText}>Photos</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => {
+                setShowMenu(false);
+                mediaSelection.selectVideo();
+              }}
+            >
+              <Ionicons name="videocam-outline" size={24} color="#007AFF" />
+              <Text style={styles.menuItemText}>Video</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => {
+                setShowMenu(false);
+                mediaSelection.selectDocument();
+              }}
+            >
+              <Ionicons name="document-outline" size={24} color="#007AFF" />
+              <Text style={styles.menuItemText}>Document</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -744,17 +791,6 @@ export default function ChatScreen() {
             >
               <Ionicons name="mic-outline" size={24} color="#007AFF" />
               <Text style={styles.menuItemText}>Voice Message</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => {
-                setShowMenu(false);
-                Alert.alert('Coming soon', 'Media picker shortcut');
-              }}
-            >
-              <Ionicons name="images-outline" size={24} color="#007AFF" />
-              <Text style={styles.menuItemText}>Photos & Files</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

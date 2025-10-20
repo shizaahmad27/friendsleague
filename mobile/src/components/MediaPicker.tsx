@@ -1,57 +1,29 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   Modal,
-  Dimensions,
   Animated,
   Easing,
 } from 'react-native';
 import BlurView from 'expo-blur/build/BlurView';
 import { Ionicons } from '@expo/vector-icons';
-import { MediaService, MediaFile, UploadProgress } from '../services/mediaService';
+import { useMediaSelection, MediaSelectionCallbacks } from '../hooks/useMediaSelection';
 
-interface MediaPickerProps {
-  onMediaSelected: (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE', localUri?: string) => void;
-  onUploadProgress?: (progress: UploadProgress) => void;
-  onPreviewSelected?: (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE') => void;
-}
+interface MediaPickerProps extends MediaSelectionCallbacks {}
 
-const { width } = Dimensions.get('window');
-
-export const MediaPicker: React.FC<MediaPickerProps> = ({
-  onMediaSelected,
-  onUploadProgress,
-  onPreviewSelected,
-}) => {
+export const MediaPicker: React.FC<MediaPickerProps> = (props) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const panelAnim = useRef(new Animated.Value(0)).current; // 0 hidden, 1 visible
+  
+  // Use the media selection hook
+  const { isUploading, uploadProgress, selectFromCamera, selectFromPhotos, selectVideo, selectDocument, resetState } = useMediaSelection(props);
 
-  // Auto-reset stuck uploading state after 60 seconds
-  useEffect(() => {
-    if (isUploading) {
-      const resetTimeout = setTimeout(() => {
-        console.log('MediaPicker: Auto-resetting stuck uploading state');
-        setIsUploading(false);
-        setUploadProgress(null);
-      }, 60000); // 60 seconds
-
-      return () => clearTimeout(resetTimeout);
-    }
-  }, [isUploading]);
-
-  const handleMediaSelection = async (pickerFunction: () => Promise<MediaFile | null>, type: 'IMAGE' | 'VIDEO' | 'FILE') => {
-    console.log('MediaPicker: Starting media selection for type:', type);
-    
-    // Reset any previous state first
-    setIsUploading(false);
-    setUploadProgress(null);
+  const handleMediaSelection = async (selectionFunction: () => Promise<void>) => {
+    console.log('MediaPicker: Starting media selection');
     
     try {
       // Close modal first
@@ -62,59 +34,10 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
       // This is crucial for iOS - native pickers can't launch while modal is active
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      console.log('MediaPicker: Modal closed, calling picker function...');
-      
-      // Only set uploading to true after we actually get a file
-      const mediaFile = await pickerFunction();
-      console.log('MediaPicker: Picker function completed, mediaFile:', mediaFile);
-      
-      if (!mediaFile) {
-        // User cancelled or no file selected
-        console.log('MediaPicker: No file selected, returning');
-        return;
-      }
-
-      // Now we have a file, first emit local preview
-      try {
-        onPreviewSelected?.(mediaFile.uri, type);
-      } catch {}
-
-      // Start uploading in background (do NOT show uploading UI)
-      console.log('MediaPicker: File selected, starting upload...');
-      setIsUploading(false);
-      setUploadProgress(null);
-
-      // Add a timeout to prevent infinite uploading state
-      const uploadTimeout = setTimeout(() => {
-        console.log('MediaPicker: Upload timeout, resetting state');
-        setIsUploading(false);
-        setUploadProgress(null);
-        Alert.alert('Upload Timeout', 'Upload is taking too long. Please check your internet connection and try again.');
-      }, 120000); 
-
-      try {
-        // Upload the media
-        console.log('MediaPicker: Starting upload process...');
-        const mediaUrl = await MediaService.uploadMedia(mediaFile, (progress) => {
-          console.log('MediaPicker: Upload progress:', progress.percentage + '%');
-          setUploadProgress(progress);
-          onUploadProgress?.(progress);
-        });
-
-        clearTimeout(uploadTimeout);
-        console.log('MediaPicker: Upload completed, mediaUrl:', mediaUrl);
-        onMediaSelected(mediaUrl, type, mediaFile.uri);
-      } catch (uploadError) {
-        clearTimeout(uploadTimeout);
-        throw uploadError;
-      }
+      console.log('MediaPicker: Modal closed, calling selection function...');
+      await selectionFunction();
     } catch (error) {
-      console.error('MediaPicker: Media upload error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      Alert.alert('Upload Error', `Failed to upload media: ${errorMessage}. Please try again.`);
-    } finally {
-      console.log('MediaPicker: Background upload finished or failed');
-      setUploadProgress(null);
+      console.error('MediaPicker: Media selection error:', error);
     }
   };
 
@@ -144,10 +67,9 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
   };
 
   // Reset function to clear any stuck state
-  const resetState = () => {
-    console.log('MediaPicker: Resetting state');
-    setIsUploading(false);
-    setUploadProgress(null);
+  const resetPickerState = () => {
+    console.log('MediaPicker: Resetting picker state');
+    resetState();
     setIsModalVisible(false);
   };
 
@@ -171,7 +93,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
             </Text>
           </View>
         )}
-        <TouchableOpacity style={styles.resetButton} onPress={resetState}>
+        <TouchableOpacity style={styles.resetButton} onPress={resetPickerState}>
           <Text style={styles.resetButtonText}>Reset</Text>
         </TouchableOpacity>
       </View>
@@ -206,7 +128,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
             >
               <TouchableOpacity style={styles.menuItem} onPress={() => { 
                 console.log('MediaPicker: Camera button pressed');
-                handleMediaSelection(MediaService.takePhoto, 'IMAGE'); 
+                handleMediaSelection(selectFromCamera); 
               }}>
                 <View style={[styles.menuIcon, { backgroundColor: '#FF9F0A' }]}>
                   <Ionicons name="camera" size={16} color="#fff" />
@@ -216,7 +138,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
 
               <TouchableOpacity style={styles.menuItem} onPress={() => { 
                 console.log('MediaPicker: Photos button pressed');
-                handleMediaSelection(MediaService.pickImage, 'IMAGE'); 
+                handleMediaSelection(selectFromPhotos); 
               }}>
                 <View style={[styles.menuIcon, { backgroundColor: '#34C759' }]}>
                   <Ionicons name="images" size={16} color="#fff" />
@@ -224,14 +146,20 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
                 <Text style={styles.menuText}>Photos</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => { handleMediaSelection(MediaService.pickVideo, 'VIDEO'); }}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => { 
+                console.log('MediaPicker: Video button pressed');
+                handleMediaSelection(selectVideo); 
+              }}>
                 <View style={[styles.menuIcon, { backgroundColor: '#5856D6' }]}>
                   <Ionicons name="videocam" size={16} color="#fff" />
                 </View>
                 <Text style={styles.menuText}>Video</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => { handleMediaSelection(MediaService.pickDocument, 'FILE'); }}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => { 
+                console.log('MediaPicker: Document button pressed');
+                handleMediaSelection(selectDocument); 
+              }}>
                 <View style={[styles.menuIcon, { backgroundColor: '#0A84FF' }]}>
                   <Ionicons name="document" size={16} color="#fff" />
                 </View>
