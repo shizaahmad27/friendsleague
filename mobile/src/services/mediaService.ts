@@ -75,16 +75,12 @@ export class MediaService {
    * Take a photo with camera
    */
   static async takePhoto(): Promise<MediaFile | null> {
-    console.log('MediaService.takePhoto: Starting camera permission request...');
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    console.log('MediaService.takePhoto: Camera permission status:', status);
-    
+   
     if (status !== 'granted') {
       console.error('MediaService.takePhoto: Camera permission denied');
       throw new Error('Permission to access camera is required');
     }
-
-    console.log('MediaService.takePhoto: Launching camera...');
     
     try {
       const result = await Promise.race([
@@ -96,16 +92,6 @@ export class MediaService {
           setTimeout(() => reject(new Error('Camera launch timeout after 30 seconds')), 30000)
         )
       ]) as ImagePicker.ImagePickerResult;
-      console.log('MediaService.takePhoto: Camera result received:', result);
-      console.log('MediaService.takePhoto: Result details:', {
-        canceled: result.canceled,
-        assetsCount: result.assets?.length || 0,
-        firstAsset: result.assets?.[0] ? {
-          uri: result.assets[0].uri,
-          fileName: result.assets[0].fileName,
-          fileSize: result.assets[0].fileSize
-        } : null
-      });
       
       if (result.canceled || !result.assets[0]) {
         console.log('MediaService.takePhoto: User canceled or no assets');
@@ -113,8 +99,7 @@ export class MediaService {
       }
 
       const asset = result.assets[0];
-      console.log('MediaService.takePhoto: Processing asset:', asset);
-      
+
       return {
         uri: asset.uri,
         name: asset.fileName || `photo_${Date.now()}.jpg`,
@@ -131,21 +116,21 @@ export class MediaService {
    * Pick a video from library
    */
   static async pickVideo(): Promise<MediaFile | null> {
-    console.log('MediaService.pickVideo: Starting video library permission request...');
+   
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    console.log('MediaService.pickVideo: Video library permission status:', status);
+  
     if (status !== 'granted') {
       console.error('MediaService.pickVideo: Video library permission denied');
       throw new Error('Permission to access media library is required');
     }
 
-    console.log('MediaService.pickVideo: Launching video library...');
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['videos'],
       allowsEditing: false, // No trimming/cropping UI by default
       quality: 1,
     });
-    console.log('MediaService.pickVideo: Video library result:', result);
+   
 
     if (result.canceled || !result.assets[0]) {
       return null;
