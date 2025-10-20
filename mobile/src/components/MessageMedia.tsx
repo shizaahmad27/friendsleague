@@ -7,10 +7,8 @@ import {
   Image,
   Alert,
   Dimensions,
-  Modal,
   ActivityIndicator,
 } from 'react-native';
-import { Animated, PanResponder } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MediaService } from '../services/mediaService';
 import { Video, ResizeMode } from 'expo-av';
@@ -31,6 +29,7 @@ interface MessageMediaProps {
   onReactionPress?: () => void;
   onReplyPress?: () => void;
   pending?: boolean;
+  onMediaPress?: (message: any) => void; // New prop for handling media press
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -46,72 +45,14 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   onReactionPress,
   onReplyPress,
   pending = false,
+  onMediaPress,
 }) => {
-  const [isFullscreenVisible, setIsFullscreenVisible] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [isVideoVisible, setIsVideoVisible] = useState(false);
-  const [isFileVisible, setIsFileVisible] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null);
   const [mediaWidth, setMediaWidth] = useState<number>(200);
   const [mediaHeight, setMediaHeight] = useState<number>(300);
-
-  // Swipe down to dismiss with image-only drag
-  const panY = React.useRef(new Animated.Value(0)).current;
-  const modalOpacity = React.useRef(new Animated.Value(0)).current;
-  const imageScale = panY.interpolate({
-    inputRange: [0, 200],
-    outputRange: [1, 0.8],
-    extrapolate: 'clamp',
-  });
-  
-  // Reset pan values and animate modal when it opens
-  React.useEffect(() => {
-    if (isFullscreenVisible || isVideoVisible || isFileVisible) {
-      panY.setValue(0);
-      modalOpacity.setValue(0);
-      Animated.timing(modalOpacity, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: false,
-      }).start();
-    } else {
-      modalOpacity.setValue(0);
-    }
-  }, [isFullscreenVisible, isVideoVisible, isFileVisible, panY, modalOpacity]);
-  
-  const panResponder = React.useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        panY.setOffset((panY as any)._value);
-        panY.setValue(0);
-      },
-      onPanResponderMove: Animated.event([null, { dy: panY }], { useNativeDriver: false }),
-      onPanResponderRelease: (_, g) => {
-        panY.flattenOffset();
-        if (g.dy > 100 || g.vy > 0.5) {
-          // Smooth exit animation
-          Animated.parallel([
-            Animated.timing(panY, { toValue: 1000, duration: 300, useNativeDriver: false }),
-            Animated.timing(modalOpacity, { toValue: 0, duration: 300, useNativeDriver: false })
-          ]).start(() => {
-            setIsFullscreenVisible(false);
-            setIsVideoVisible(false);
-            setIsFileVisible(false);
-            // Reset after modal is closed
-            setTimeout(() => {
-              panY.setValue(0);
-            }, 100);
-          });
-        } else {
-          Animated.spring(panY, { toValue: 0, useNativeDriver: false }).start();
-        }
-      },
-    })
-  ).current;
 
   // Debug logging for image URLs and URL validation
   React.useEffect(() => {
@@ -206,17 +147,28 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   }, [type, displayUrl, videoThumbnail]);
 
   const handleMediaPress = () => {
-    if (type === 'IMAGE') {
-      // Reset error state when opening fullscreen
-      setImageError(false);
-      setIsFullscreenVisible(true);
-    } else if (type === 'VIDEO') {
-      setIsVideoVisible(true);
-    } else if (type === 'FILE') {
-      const lower = (fileName || '').toLowerCase();
-      if (lower.endsWith('.pdf')) {
-        setIsFileVisible(true);
-      } else {
+    console.log('MessageMedia: handleMediaPress called', {
+      type,
+      hasOnMediaPress: !!onMediaPress,
+      mediaUrl,
+      displayUrl
+    });
+    
+    if (onMediaPress) {
+      // Use the modularized gallery
+      const message = {
+        id: messageId || '',
+        mediaUrl,
+        type,
+        content: fileName || '',
+        createdAt: new Date().toISOString(),
+      };
+      console.log('MessageMedia: Calling onMediaPress with message:', message);
+      onMediaPress(message);
+    } else {
+      console.log('MessageMedia: No onMediaPress handler, using fallback');
+      // Fallback for when onMediaPress is not provided
+      if (type === 'FILE') {
         Alert.alert(
           'File',
           fileName || 'Open file',
@@ -369,206 +321,14 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
     </TouchableOpacity>
   );
 
-  const renderFullscreenImage = () => (
-    <Modal
-      visible={isFullscreenVisible}
-      transparent={true}
-      animationType="none"
-      onRequestClose={() => setIsFullscreenVisible(false)}
-    >
-      <Animated.View style={[styles.fullscreenContainer, { opacity: modalOpacity }]}>
-        <TouchableOpacity
-          style={styles.fullscreenCloseButton}
-          onPress={() => setIsFullscreenVisible(false)}
-        >
-          <Ionicons name="close" size={30} color="white" />
-        </TouchableOpacity>
-        <Animated.View style={{ transform: [{ translateY: panY }, { scale: imageScale }] }} {...panResponder.panHandlers}>
-          {imageError ? (
-            <View style={styles.fullscreenErrorContainer}>
-              <Ionicons name="image-outline" size={80} color="#999" />
-              <Text style={styles.fullscreenErrorText}>Failed to load image</Text>
-              <Text style={styles.fullscreenErrorUrl}>{displayUrl}</Text>
-            </View>
-          ) : (
-            <Image
-              source={{ uri: displayUrl }}
-              style={styles.fullscreenImage}
-              resizeMode="contain"
-              onError={(error) => {
-                console.error('MessageMedia: Fullscreen image load error:', error);
-                console.error('MessageMedia: Failed fullscreen URL:', displayUrl);
-                setImageError(true);
-              }}
-              onLoad={() => {
-                console.log('MessageMedia: Fullscreen image loaded successfully:', displayUrl);
-                setImageError(false);
-              }}
-            />
-          )}
-        </Animated.View>
-        
-        {/* Action Buttons Toolbar */}
-        <View style={styles.actionButtonsContainer}>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={async () => {
-              try {
-                console.log('Share button pressed');
-                const result = await MediaService.shareMedia(displayUrl);
-                if (result.method === 'clipboard') {
-                  Alert.alert('Success', 'Image URL copied to clipboard!');
-                }
-                // No alert needed for successful share via Web Share API
-              } catch (error) {
-                console.error('Failed to share media:', error);
-                Alert.alert('Error', 'Failed to share media');
-              }
-            }}
-          >
-            <Ionicons name="share-outline" size={28} color="#007AFF" />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => {
-              console.log('React button pressed');
-              if (onReactionPress) {
-                onReactionPress();
-              }
-            }}
-          >
-            <Ionicons name="add-circle-outline" size={28} color="#007AFF" />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => {
-              setIsFullscreenVisible(false);
-              onReplyPress?.();
-            }}
-          >
-            <Ionicons name="arrow-undo-outline" size={28} color="#007AFF" />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={async () => {
-              try {
-                console.log('Save button pressed');
-                await MediaService.saveMediaToLibrary(displayUrl);
-                Alert.alert('Success', 'Image saved to your photo library!');
-              } catch (error) {
-                console.error('Failed to save media:', error);
-                const errorMessage = error instanceof Error ? error.message : 'Failed to save image to library';
-                if (errorMessage.includes('copied to clipboard')) {
-                  Alert.alert(
-                    'Development Mode', 
-                    'In Expo Go, images can\'t be saved directly. This will work properly when the app is built and installed on your device! For now, the image URL has been copied to your clipboard.'
-                  );
-                } else {
-                  Alert.alert('Error', errorMessage);
-                }
-              }
-            }}
-          >
-            <Ionicons name="download-outline" size={28} color="#007AFF" />
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    </Modal>
-  );
 
-  const renderFullscreenVideo = () => (
-    <Modal
-      visible={isVideoVisible}
-      transparent={true}
-      animationType="none"
-      onRequestClose={() => setIsVideoVisible(false)}
-    >
-      <Animated.View style={[styles.fullscreenContainer, { opacity: modalOpacity }]}>
-        <TouchableOpacity
-          style={styles.fullscreenCloseButton}
-          onPress={() => setIsVideoVisible(false)}
-        >
-          <Ionicons name="close" size={30} color="white" />
-        </TouchableOpacity>
-        <Animated.View style={{ transform: [{ translateY: panY }, { scale: imageScale }] }} {...panResponder.panHandlers}>
-          <Video
-            source={{ uri: displayUrl }}
-            style={styles.fullscreenVideo}
-            useNativeControls
-            resizeMode={ResizeMode.CONTAIN}
-            shouldPlay
-            isLooping={false}
-          />
-        </Animated.View>
-      </Animated.View>
-    </Modal>
-  );
 
-  const renderFileViewer = () => (
-    <Modal
-      visible={isFileVisible}
-      transparent={true}
-      animationType="none"
-      onRequestClose={() => setIsFileVisible(false)}
-    >
-      <Animated.View style={[styles.fullscreenContainer, { opacity: modalOpacity }]}>
-        <TouchableOpacity
-          style={styles.fullscreenCloseButton}
-          onPress={() => setIsFileVisible(false)}
-        >
-          <Ionicons name="close" size={30} color="white" />
-        </TouchableOpacity>
-        <Animated.View style={{ transform: [{ translateY: panY }, { scale: imageScale }] }} {...panResponder.panHandlers}>
-          <View style={styles.pdfContainer}>
-            <WebView
-              source={{ uri: displayUrl }}
-              startInLoadingState
-              renderError={() => (
-                <View style={styles.fullscreenErrorContainer}>
-                  <Ionicons name="document-outline" size={80} color="#999" />
-                  <Text style={styles.fullscreenErrorText}>Cannot preview this file</Text>
-                  <TouchableOpacity style={styles.openInBrowserButton} onPress={() => WebBrowser.openBrowserAsync(displayUrl)}>
-                    <Text style={styles.openInBrowserText}>Open in Browser</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            />
-          </View>
-        </Animated.View>
-        <View style={styles.fileActionsBar}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleDownloadAndShare}>
-            <Ionicons name="download-outline" size={28} color="#007AFF" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={handleDownloadAndShare}>
-            <Ionicons name="share-outline" size={28} color="#007AFF" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={() => WebBrowser.openBrowserAsync(displayUrl)}>
-            <Ionicons name="open-outline" size={28} color="#007AFF" />
-          </TouchableOpacity>
-        </View>
-        {isDownloading && (
-          <View style={styles.downloadOverlay}>
-            <View style={styles.downloadBox}>
-              <Ionicons name="download-outline" size={28} color="#007AFF" />
-              <Text style={styles.downloadText}>Downloading...</Text>
-            </View>
-          </View>
-        )}
-      </Animated.View>
-    </Modal>
-  );
 
   return (
     <View style={[styles.container, isOwnMessage && styles.ownMessage]}>
       {type === 'IMAGE' && renderImage()}
       {type === 'VIDEO' && renderVideo()}
       {type === 'FILE' && renderFile()}
-      {type === 'IMAGE' && renderFullscreenImage()}
-      {type === 'VIDEO' && renderFullscreenVideo()}
-      {type === 'FILE' && renderFileViewer()}
       {pending && (
         <View style={styles.sendingOverlay}>
           <ActivityIndicator size="small" color="#fff" />
@@ -657,98 +417,6 @@ const styles = StyleSheet.create({
   fileSize: {
     fontSize: 12,
     color: '#666',
-  },
-  fullscreenContainer: {
-    flex: 1,
-    backgroundColor: 'black',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fullscreenCloseButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 20,
-    padding: 8,
-  },
-  fullscreenImage: {
-    width: screenWidth,
-    height: screenHeight,
-  },
-  fullscreenVideo: {
-    width: screenWidth,
-    height: screenHeight,
-  },
-  fullscreenErrorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  fullscreenErrorText: {
-    color: 'white',
-    fontSize: 18,
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  pdfContainer: {
-    flex: 1,
-    alignSelf: 'stretch',
-    width: '100%',
-    backgroundColor: 'white',
-  },
-  openInBrowserButton: {
-    marginTop: 16,
-    backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  openInBrowserText: {
-    color: '#111',
-    fontWeight: '600',
-  },
-  fileActionsBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    paddingVertical: 14,
-  },
-  fullscreenErrorUrl: {
-    color: '#999',
-    fontSize: 12,
-    marginTop: 8,
-    textAlign: 'center',
-    opacity: 0.7,
-  },
-  // Action buttons styles
-  actionButtonsContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 40, // Extra padding for home indicator
-  },
-  actionButton: {
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 50,
   },
   downloadOverlay: {
     position: 'absolute',

@@ -116,8 +116,6 @@ export const FileViewer: React.FC<FileViewerProps> = ({
 
   const isPdf = fileName?.toLowerCase().endsWith('.pdf');
 
-  console.log('FileViewer render:', { fileUrl, fileName, isPdf, onClose: !!onClose });
-
   return (
     <View style={styles.container}>
       {isPdf ? (

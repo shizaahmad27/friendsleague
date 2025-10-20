@@ -11,11 +11,10 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Video, ResizeMode } from 'expo-av';
 import { Message } from '../services/chatApi';
 import { MediaService } from '../services/mediaService';
 import { useSwipeToClose } from '../hooks/useSwipeToClose';
-import { VideoViewer } from './VideoViewer';
-import { FileViewer } from './FileViewer';
 
 interface MediaGalleryModalProps {
   visible: boolean;
@@ -46,16 +45,25 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
   // Update gallery when message changes
   React.useEffect(() => {
     if (message) {
+      console.log('MediaGalleryModal: Message changed:', {
+        id: message.id,
+        type: message.type,
+        mediaUrl: message.mediaUrl,
+        hasMediaUrl: !!message.mediaUrl
+      });
+      
       // For images, create a gallery of all images
       if (message.type === 'IMAGE') {
         const imageMessages = allMessages.filter(msg => msg.type === 'IMAGE' && msg.mediaUrl);
         const index = imageMessages.findIndex(msg => msg.id === message.id);
         setGalleryMessages(imageMessages);
         setGalleryIndex(index >= 0 ? index : 0);
+        console.log('MediaGalleryModal: Image gallery created with', imageMessages.length, 'images');
       } else {
         // For videos and files, just show the single item
         setGalleryMessages([message]);
         setGalleryIndex(0);
+        console.log('MediaGalleryModal: Single item gallery created for', message.type);
       }
     }
   }, [message, allMessages]);
@@ -81,18 +89,6 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
   };
 
   const currentMessage = galleryMessages[galleryIndex];
-
-  // Debug logging
-  console.log('MediaGalleryModal render:', {
-    visible,
-    currentMessage: currentMessage ? {
-      id: currentMessage.id,
-      type: currentMessage.type,
-      mediaUrl: currentMessage.mediaUrl,
-    } : null,
-    galleryIndex,
-    galleryMessagesLength: galleryMessages.length,
-  });
 
   return (
     <Modal
@@ -142,81 +138,53 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
         )}
         
         {currentMessage && currentMessage.mediaUrl && (
-          <>
+          <Animated.View 
+            style={[
+              styles.mediaContainer,
+              { transform: [{ translateY: panY }, { scale: imageScale }] }
+            ]} 
+            {...panResponder.panHandlers}
+          >
             {currentMessage.type === 'IMAGE' && (
-              <Animated.View style={{ transform: [{ translateY: panY }, { scale: imageScale }] }} {...panResponder.panHandlers}>
-                <Image
-                  source={{ uri: currentMessage.mediaUrl }}
-                  style={styles.fullscreenImage}
-                  resizeMode="contain"
-                />
-              </Animated.View>
+              <Image
+                source={{ uri: currentMessage.mediaUrl }}
+                style={styles.fullscreenImage}
+                resizeMode="contain"
+                onLoad={() => console.log('MediaGalleryModal: Image loaded successfully')}
+                onError={(error) => console.error('MediaGalleryModal: Image load error:', error)}
+              />
             )}
             {currentMessage.type === 'VIDEO' && currentMessage.mediaUrl && (
-              <Animated.View style={{ transform: [{ translateY: panY }, { scale: imageScale }] }} {...panResponder.panHandlers}>
-                <VideoViewer
-                  videoUrl={currentMessage.mediaUrl}
-                  onClose={handleClose}
-                onShare={async () => {
-                  try {
-                    const result = await MediaService.shareMedia(currentMessage.mediaUrl!);
-                    if (result.method === 'clipboard') {
-                      Alert.alert('Success', 'Video URL copied to clipboard!');
-                    }
-                  } catch (error) {
-                    console.error('Failed to share video:', error);
-                    Alert.alert('Error', 'Failed to share video');
-                  }
-                }}
-                onSave={async () => {
-                  try {
-                    await MediaService.saveMediaToLibrary(currentMessage.mediaUrl!);
-                    Alert.alert('Success', 'Video saved to your photo library!');
-                  } catch (error) {
-                    console.error('Failed to save video:', error);
-                    const errorMessage = error instanceof Error ? error.message : 'Failed to save video to library';
-                    if (errorMessage.includes('copied to clipboard')) {
-                      Alert.alert(
-                        'Development Mode', 
-                        'In Expo Go, videos can\'t be saved directly. This will work properly when the app is built and installed on your device! For now, the video URL has been copied to your clipboard.'
-                      );
-                    } else {
-                      Alert.alert('Error', errorMessage);
-                    }
-                  }
-                }}
-                onReact={onReactionPress ? () => onReactionPress(currentMessage) : undefined}
-                onReply={onReplyPress ? () => onReplyPress(currentMessage) : undefined}
+              <Video
+                source={{ uri: currentMessage.mediaUrl }}
+                style={styles.fullscreenVideo}
+                useNativeControls
+                resizeMode={ResizeMode.CONTAIN}
+                shouldPlay
+                isLooping={false}
+                onLoad={() => console.log('MediaGalleryModal: Video loaded successfully')}
+                onError={(error) => console.error('MediaGalleryModal: Video load error:', error)}
               />
-              </Animated.View>
             )}
             {currentMessage.type === 'FILE' && currentMessage.mediaUrl && (
-              <Animated.View style={{ transform: [{ translateY: panY }, { scale: imageScale }] }} {...panResponder.panHandlers}>
-                <FileViewer
-                  fileUrl={currentMessage.mediaUrl}
-                  fileName={currentMessage.content || 'Unknown file'}
-                  onClose={handleClose}
-                onShare={async () => {
-                  try {
-                    const result = await MediaService.shareMedia(currentMessage.mediaUrl!);
-                    if (result.method === 'clipboard') {
-                      Alert.alert('Success', 'File URL copied to clipboard!');
-                    }
-                  } catch (error) {
-                    console.error('Failed to share file:', error);
-                    Alert.alert('Error', 'Failed to share file');
-                  }
-                }}
-                onReact={onReactionPress ? () => onReactionPress(currentMessage) : undefined}
-                onReply={onReplyPress ? () => onReplyPress(currentMessage) : undefined}
-              />
-              </Animated.View>
+              <View style={styles.fileContainer}>
+                <Ionicons name="document-outline" size={80} color="#007AFF" />
+                <Text style={styles.fileName}>{currentMessage.content || 'Unknown file'}</Text>
+                <Text style={styles.fileSubtext}>Tap action buttons below to interact</Text>
+              </View>
             )}
-          </>
+          </Animated.View>
         )}
         
-        {/* Action Buttons Toolbar - only for images */}
-        {currentMessage && currentMessage.type === 'IMAGE' && (
+        {/* Debug info */}
+        {currentMessage && !currentMessage.mediaUrl && (
+          <View style={styles.debugContainer}>
+            <Text style={styles.debugText}>No media URL for message: {currentMessage.id}</Text>
+          </View>
+        )}
+        
+        {/* Action Buttons Toolbar - for all media types */}
+        {currentMessage && (
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity 
               style={styles.actionButton}
@@ -341,9 +309,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  mediaContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   fullscreenImage: {
     width: '100%',
     height: '100%',
+  },
+  fullscreenVideo: {
+    width: '100%',
+    height: '100%',
+  },
+  fileContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  fileName: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 20,
+    textAlign: 'center',
+  },
+  fileSubtext: {
+    color: '#ccc',
+    fontSize: 16,
+    marginTop: 8,
+    textAlign: 'center',
   },
   fullscreenVideoContainer: {
     flex: 1,
@@ -404,5 +402,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 50,
+  },
+  debugContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(255, 0, 0, 0.8)',
+    padding: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  debugText: {
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });

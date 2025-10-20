@@ -65,8 +65,6 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({
     }
   };
 
-  console.log('VideoViewer render:', { videoUrl, onClose: !!onClose });
-
   return (
     <View style={styles.container}>
       {hasError ? (
@@ -84,11 +82,9 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({
           shouldPlay
           isLooping={false}
           onError={(error) => {
-            console.error('VideoViewer video error:', error);
             setHasError(true);
           }}
           onLoad={() => {
-            console.log('VideoViewer video loaded successfully');
             setHasError(false);
           }}
         />

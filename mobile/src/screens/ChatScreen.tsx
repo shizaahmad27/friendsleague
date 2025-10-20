@@ -248,7 +248,6 @@ export default function ChatScreen() {
 
   // Gallery functions
   const openGallery = (message: Message) => {
-    console.log('openGallery called with message:', message.id, message.type);
     setFullscreenMessage(message);
   };
 
@@ -379,6 +378,7 @@ export default function ChatScreen() {
             messageId={item.id}
             onReactionPress={() => handleReactionPress(item)}
             onReplyPress={() => handleReplyPress(item)}
+            onMediaPress={openGallery}
           />
         ) : null}
         {item.content && (
