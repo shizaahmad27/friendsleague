@@ -83,6 +83,97 @@ friendsleague/
 - Bruk **Zustand** for global state management
 - Følg **React Navigation** best practices
 
+## 🏗️ Clean Code & Modularization Principles
+
+### 📏 File Size & Complexity Limits
+- **Screens**: Maksimalt 300-400 linjer per fil
+- **Components**: Maksimalt 200-250 linjer per fil
+- **Services**: Maksimalt 300 linjer per fil
+- **Hooks**: Maksimalt 100 linjer per fil
+- **Hvis filen blir for stor**: Del opp i mindre, fokuserte moduler
+
+### 🔧 Modularization Strategy
+- **ALDTID** tenk først: "Kan dette deles opp i mindre deler?"
+- **Identifiser gjenbrukbar logikk** og ekstraher til custom hooks
+- **Separer UI-komponenter** fra business logic
+- **Opprett spesialiserte komponenter** for spesifikke funksjoner
+- **Bruk composition** over inheritance
+
+### 🎯 Component Design Principles
+- **Single Responsibility**: Hver komponent har én klar oppgave
+- **Props Interface**: Definer tydelige, type-sikre props
+- **Default Props**: Bruk default verdier for valgfrie props
+- **Error Boundaries**: Implementer feilhåndtering på komponentnivå
+- **Memoization**: Bruk `React.memo` for performance-optimering
+
+### 🪝 Custom Hooks Guidelines
+- **Ekstraher gjenbrukbar logikk** til custom hooks
+- **Prefix med "use"** (f.eks. `useVideoThumbnail`, `useSwipeToClose`)
+- **Returner objekt** med navngitte properties
+- **Håndter loading og error states** i hooks
+- **Dokumenter hook dependencies** og side effects
+
+### 📱 Screen Architecture
+- **Container/Presentational Pattern**: Separer data-logikk fra UI
+- **Custom hooks** for kompleks state management
+- **Modular components** for UI-deler
+- **Service layer** for API-kall og business logic
+- **Error handling** på hvert nivå
+
+### 🧩 Component Composition
+- **Compound Components**: For relaterte UI-elementer
+- **Render Props**: For fleksibel data-deling
+- **Higher-Order Components**: For cross-cutting concerns
+- **Context API**: For deep prop drilling
+
+### 📋 Planning & Design Process
+1. **Analyser kravet** - Hva skal implementeres?
+2. **Identifiser komponenter** - Hvilke UI-deler trengs?
+3. **Identifiser hooks** - Hvilken logikk kan gjenbrukes?
+4. **Design interfaces** - Hvordan skal komponenter kommunisere?
+5. **Planer filstruktur** - Hvor skal hver del plasseres?
+6. **Implementer inkrementelt** - Bygg opp steg for steg
+7. **Refaktorer** - Forbedre og forenkle etter implementasjon
+
+### 🔄 Refactoring Guidelines
+- **Regelmessig refaktorering** - Ikke la kode bli rotete
+- **Identifiser code smells**: Lange funksjoner, duplisert kode, komplekse conditions
+- **Ekstraher konstanter** og magic numbers
+- **Forenkle nested conditions** med early returns
+- **Bruk descriptive names** for variabler og funksjoner
+
+### 📦 File Organization
+```
+components/
+├── ui/              # Grunnleggende UI-komponenter
+├── forms/           # Form-relaterte komponenter
+├── media/           # Media-spesifikke komponenter
+└── layout/          # Layout-komponenter
+
+hooks/
+├── api/             # API-relaterte hooks
+├── ui/              # UI-interaksjon hooks
+└── data/            # Data management hooks
+
+services/
+├── api/             # API services
+├── storage/         # Local storage services
+└── utils/           # Utility functions
+```
+
+### ⚡ Performance Considerations
+- **Lazy loading** for store komponenter
+- **Code splitting** på screen-nivå
+- **Memoization** for dyre beregninger
+- **Debouncing** for user input
+- **Virtualization** for store lister
+
+### 🧪 Testing Strategy
+- **Unit tests** for custom hooks og utility functions
+- **Component tests** for UI-komponenter
+- **Integration tests** for komplekse funksjoner
+- **Mock external dependencies** konsekvent
+
 ## 🔒 Sikkerhet
 - Valider all input med **class-validator**
 - Bruk **JWT access tokens** (kort levetid) + **refresh tokens** (lang levetid)
