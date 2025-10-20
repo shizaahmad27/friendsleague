@@ -127,11 +127,27 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = (props) => {
     }).start();
     
     // Start recording
-    await startRecording();
+    try {
+      await startRecording();
+    } catch (error) {
+      console.error('VoiceRecorder: Error starting recording:', error);
+      setIsPressed(false);
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+      }).start();
+    }
   };
 
   const handlePressOut = () => {
-    if (!isRecording) return;
+    if (!isRecording) {
+      setIsPressed(false);
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+      }).start();
+      return;
+    }
     
     setIsPressed(false);
     
@@ -143,7 +159,11 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = (props) => {
     
     // Stop recording (unless cancelled by slide)
     if (!showCancelHint) {
-      stopRecording();
+      try {
+        stopRecording();
+      } catch (error) {
+        console.error('VoiceRecorder: Error stopping recording:', error);
+      }
     }
   };
 
@@ -219,7 +239,6 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = (props) => {
         <TouchableOpacity
           style={[
             styles.recordButton,
-            { backgroundColor: getButtonColor() },
             disabled && styles.disabledButton,
           ]}
           onPressIn={handlePressIn}
@@ -230,7 +249,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = (props) => {
           <Ionicons 
             name={getButtonIcon()} 
             size={24} 
-            color="white" 
+            color={getButtonColor()} 
           />
         </TouchableOpacity>
       </Animated.View>
@@ -252,14 +271,8 @@ const styles = StyleSheet.create({
   recordButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
   disabledButton: {
     opacity: 0.5,

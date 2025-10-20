@@ -651,6 +651,16 @@ export default function ChatScreen() {
             onPreviewSelected={handlePreviewSelected}
             onMediaSelected={handleMediaSelected}
           />
+            <TouchableOpacity
+            style={styles.inlineIconButton}
+            onPress={() => {
+              console.log('Camera icon pressed');
+              Alert.alert('Coming soon', 'Quick camera shortcut');
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="camera-outline" size={24} color="#007AFF" />
+          </TouchableOpacity>
           <VoiceRecorder
             onRecordingComplete={(mediaUrl) => {
               sendMessage(mediaUrl, 'VOICE');
@@ -662,26 +672,7 @@ export default function ChatScreen() {
               console.error('Voice recording error:', error);
             }}
           />
-          <TouchableOpacity
-            style={styles.inlineIconButton}
-            onPress={() => {
-              console.log('Camera icon pressed');
-              Alert.alert('Coming soon', 'Quick camera shortcut');
-            }}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="camera-outline" size={24} color="#007AFF" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.inlineIconButton}
-            onPress={() => {
-              console.log('Microphone icon pressed');
-              Alert.alert('Coming soon', 'Voice message shortcut');
-            }}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="mic-outline" size={24} color="#007AFF" />
-          </TouchableOpacity>
+        
         </Animated.View>
         
         {/* Three dots menu button - appears when collapsed */}

@@ -37,6 +37,15 @@ export class S3Service {
     'video/x-msvideo': { extension: 'avi', category: 'videos' },
     'video/webm': { extension: 'webm', category: 'videos' },
     
+    // Audio
+    'audio/m4a': { extension: 'm4a', category: 'audio' },
+    'audio/mp3': { extension: 'mp3', category: 'audio' },
+    'audio/mpeg': { extension: 'mp3', category: 'audio' },
+    'audio/wav': { extension: 'wav', category: 'audio' },
+    'audio/aac': { extension: 'aac', category: 'audio' },
+    'audio/ogg': { extension: 'ogg', category: 'audio' },
+    'audio/webm': { extension: 'webm', category: 'audio' },
+    
     // Documents
     'application/pdf': { extension: 'pdf', category: 'documents' },
     'application/msword': { extension: 'doc', category: 'documents' },

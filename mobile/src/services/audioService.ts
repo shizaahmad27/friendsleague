@@ -56,7 +56,7 @@ export class AudioService {
 
       // Stop any existing recording
       if (this.recording) {
-        await this.stopRecording();
+        await this.cancelRecording();
       }
 
       // Configure audio mode for recording
@@ -68,14 +68,18 @@ export class AudioService {
         staysActiveInBackground: false,
       });
 
-      // Create and start recording
+      // Create and prepare recording
       this.recording = new Audio.Recording();
       await this.recording.prepareToRecordAsync(this.RECORDING_OPTIONS);
+      
+      // Start recording
       await this.recording.startAsync();
 
       console.log('AudioService: Recording started');
     } catch (error) {
       console.error('AudioService: Error starting recording:', error);
+      // Clean up on error
+      this.recording = null;
       throw error;
     }
   }
@@ -90,12 +94,19 @@ export class AudioService {
         return null;
       }
 
+      // Check if recording is actually recording
+      const status = await this.recording.getStatusAsync();
+      if (!status.isRecording) {
+        console.warn('AudioService: Recording is not active');
+        this.recording = null;
+        return null;
+      }
+
       await this.recording.stopAndUnloadAsync();
       const uri = this.recording.getURI();
-      const status = await this.recording.getStatusAsync();
 
-      if (!uri || !status.canRecord) {
-        throw new Error('Failed to get recording data');
+      if (!uri) {
+        throw new Error('Failed to get recording URI');
       }
 
       // Get file info
@@ -137,15 +148,20 @@ export class AudioService {
   static async cancelRecording(): Promise<void> {
     try {
       if (!this.recording) {
+        console.log('AudioService: No recording to cancel');
         return;
       }
 
-      await this.recording.stopAndUnloadAsync();
-      const uri = this.recording.getURI();
-      
-      if (uri) {
-        // Delete the temporary file
-        await FileSystem.deleteAsync(uri, { idempotent: true });
+      // Check if recording is actually recording
+      const status = await this.recording.getStatusAsync();
+      if (status.isRecording) {
+        await this.recording.stopAndUnloadAsync();
+        const uri = this.recording.getURI();
+        
+        if (uri) {
+          // Delete the temporary file
+          await FileSystem.deleteAsync(uri, { idempotent: true });
+        }
       }
 
       this.recording = null;
