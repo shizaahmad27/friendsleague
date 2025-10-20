@@ -13,6 +13,8 @@ import {
   Modal,
   Image,
   Animated,
+  PanResponder,
+  Dimensions,
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { chatApi, Message, Chat } from '../services/chatApi';
@@ -23,6 +25,8 @@ import { MessageMedia } from '../components/MessageMedia';
 import { MessageReactions } from '../components/MessageReactions';
 import { ReactionPicker } from '../components/ReactionPicker';
 import MessageReplyPreview from '../components/MessageReplyPreview';
+import { ChatSettingsModal } from '../components/ChatSettingsModal';
+import { MediaGalleryModal } from '../components/MediaGalleryModal';
 import { MediaService } from '../services/mediaService';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -240,6 +244,16 @@ export default function ChatScreen() {
     } catch (error) {
       console.error('Failed to load messages:', error);
     }
+  };
+
+  // Gallery functions
+  const openGallery = (message: Message) => {
+    console.log('openGallery called with message:', message.id, message.type);
+    setFullscreenMessage(message);
+  };
+
+  const closeGallery = () => {
+    setFullscreenMessage(null);
   };
 
   const sendMessage = async (mediaUrl?: string, mediaType?: 'IMAGE' | 'VIDEO' | 'FILE') => {
@@ -667,222 +681,25 @@ export default function ChatScreen() {
       </View>
 
       {/* Chat Settings Modal */}
-      <Modal
+      <ChatSettingsModal
         visible={isChatSettingsVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setIsChatSettingsVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.chatSettingsModal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chat Settings</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setIsChatSettingsVisible(false)}
-              >
-                <Ionicons name="close" size={24} color="#007AFF" />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.mediaSections}>
-              {/* Images Section */}
-              <View style={styles.mediaSection}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Images</Text>
-                  <TouchableOpacity style={styles.showMoreButton}>
-                    <Text style={styles.showMoreText}>Show more</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.mediaGrid}>
-                  {messages
-                    .filter(msg => msg.type === 'IMAGE' && msg.mediaUrl)
-                    .slice(0, 6)
-                    .map((msg, index) => (
-                      <TouchableOpacity 
-                        key={msg.id} 
-                        style={styles.mediaItem}
-                        onPress={() => setFullscreenMessage(msg)}
-                      >
-                        <Image source={{ uri: msg.mediaUrl }} style={styles.mediaThumbnail} />
-                      </TouchableOpacity>
-                    ))}
-                </View>
-              </View>
-
-              {/* Videos Section */}
-              <View style={styles.mediaSection}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Videos</Text>
-                  <TouchableOpacity style={styles.showMoreButton}>
-                    <Text style={styles.showMoreText}>Show more</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.mediaGrid}>
-                  {messages
-                    .filter(msg => msg.type === 'VIDEO' && msg.mediaUrl)
-                    .slice(0, 6)
-                    .map((msg, index) => (
-                      <TouchableOpacity 
-                        key={msg.id} 
-                        style={styles.mediaItem}
-                        onPress={() => setFullscreenMessage(msg)}
-                      >
-                        <View style={styles.videoThumbnail}>
-                          <Ionicons name="play-circle" size={30} color="white" />
-                        </View>
-                      </TouchableOpacity>
-                    ))}
-                </View>
-              </View>
-
-              {/* Files Section */}
-              <View style={styles.mediaSection}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Files</Text>
-                  <TouchableOpacity style={styles.showMoreButton}>
-                    <Text style={styles.showMoreText}>Show more</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.filesList}>
-                  {messages
-                    .filter(msg => msg.type === 'FILE' && msg.mediaUrl)
-                    .slice(0, 5)
-                    .map((msg, index) => (
-                      <TouchableOpacity 
-                        key={msg.id} 
-                        style={styles.fileItem}
-                        onPress={() => setFullscreenMessage(msg)}
-                      >
-                        <View style={styles.fileIcon}>
-                          <Ionicons name="document" size={20} color="#007AFF" />
-                        </View>
-                        <Text style={styles.fileName} numberOfLines={1}>
-                          File {index + 1}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setIsChatSettingsVisible(false)}
+        messages={messages}
+        onOpenGallery={openGallery}
+      />
 
       {/* Fullscreen Media Modal */}
-      <Modal
+      <MediaGalleryModal
         visible={fullscreenMessage !== null}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setFullscreenMessage(null)}
-      >
-        <View style={styles.fullscreenOverlay}>
-          <TouchableOpacity
-            style={styles.fullscreenCloseButton}
-            onPress={() => setFullscreenMessage(null)}
-          >
-            <Ionicons name="close" size={30} color="white" />
-          </TouchableOpacity>
-          {fullscreenMessage && fullscreenMessage.mediaUrl && (
-            <>
-              {fullscreenMessage.type === 'IMAGE' && (
-                <Image
-                  source={{ uri: fullscreenMessage.mediaUrl }}
-                  style={styles.fullscreenImage}
-                  resizeMode="contain"
-                />
-              )}
-              {fullscreenMessage.type === 'VIDEO' && (
-                <View style={styles.fullscreenVideoContainer}>
-                  <Ionicons name="play-circle" size={80} color="white" />
-                  <Text style={styles.fullscreenVideoText}>Video Preview</Text>
-                  <Text style={styles.fullscreenVideoSubtext}>Tap to play in fullscreen</Text>
-                </View>
-              )}
-              {fullscreenMessage.type === 'FILE' && (
-                <View style={styles.fullscreenFileContainer}>
-                  <Ionicons name="document" size={80} color="#007AFF" />
-                  <Text style={styles.fullscreenFileText}>File Preview</Text>
-                  <Text style={styles.fullscreenFileSubtext}>Tap to download or open</Text>
-                </View>
-              )}
-            </>
-          )}
-          
-          {/* Action Buttons Toolbar */}
-          {fullscreenMessage && (
-            <View style={styles.actionButtonsContainer}>
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={async () => {
-                  try {
-                    console.log('Share button pressed');
-                    if (fullscreenMessage?.mediaUrl) {
-                      const result = await MediaService.shareMedia(fullscreenMessage.mediaUrl);
-                      if (result.method === 'clipboard') {
-                        Alert.alert('Success', 'Image URL copied to clipboard!');
-                      }
-                      // No alert needed for successful share via Web Share API
-                    }
-                  } catch (error) {
-                    console.error('Failed to share media:', error);
-                    Alert.alert('Error', 'Failed to share media');
-                  }
-                }}
-              >
-                <Ionicons name="share-outline" size={28} color="#007AFF" />
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => {
-                  console.log('React button pressed');
-                  setSelectedMessageForReaction(fullscreenMessage);
-                  setReactionPickerVisible(true);
-                }}
-              >
-                <Ionicons name="add-circle-outline" size={28} color="#007AFF" />
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => {
-                  setFullscreenMessage(null);
-                  handleReplyPress(fullscreenMessage);
-                }}
-              >
-                <Ionicons name="arrow-undo-outline" size={28} color="#007AFF" />
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={async () => {
-                  try {
-                    console.log('Save button pressed');
-                    if (fullscreenMessage?.mediaUrl) {
-                      await MediaService.saveMediaToLibrary(fullscreenMessage.mediaUrl);
-                      Alert.alert('Success', 'Image saved to your photo library!');
-                    }
-                  } catch (error) {
-                    console.error('Failed to save media:', error);
-                    const errorMessage = error instanceof Error ? error.message : 'Failed to save image to library';
-                    if (errorMessage.includes('copied to clipboard')) {
-                      Alert.alert(
-                        'Development Mode', 
-                        'In Expo Go, images can\'t be saved directly. This will work properly when the app is built and installed on your device! For now, the image URL has been copied to your clipboard.'
-                      );
-                    } else {
-                      Alert.alert('Error', errorMessage);
-                    }
-                  }
-                }}
-              >
-                <Ionicons name="download-outline" size={28} color="#007AFF" />
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </Modal>
+        onClose={closeGallery}
+        message={fullscreenMessage}
+        allMessages={messages}
+        onReactionPress={(message) => {
+          setSelectedMessageForReaction(message);
+          setReactionPickerVisible(true);
+        }}
+        onReplyPress={handleReplyPress}
+      />
 
       {/* Reaction Picker Modal */}
       <ReactionPicker
@@ -1157,181 +974,6 @@ const styles = StyleSheet.create({
   },
   messageTextWithMedia: {
     marginTop: 8,
-  },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  chatSettingsModal: {
-    backgroundColor: '#1c1c1e',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-    minHeight: '60%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2c2c2e',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  mediaSections: {
-    flex: 1,
-    padding: 20,
-  },
-  mediaSection: {
-    marginBottom: 30,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: 'white',
-  },
-  showMoreButton: {
-    padding: 4,
-  },
-  showMoreText: {
-    color: '#007AFF',
-    fontSize: 16,
-  },
-  mediaGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  mediaItem: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  mediaThumbnail: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#2c2c2e',
-  },
-  videoThumbnail: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#2c2c2e',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  filesList: {
-    gap: 10,
-  },
-  fileItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#2c2c2e',
-    borderRadius: 8,
-  },
-  fileIcon: {
-    marginRight: 12,
-  },
-  fileName: {
-    color: 'white',
-    fontSize: 16,
-    flex: 1,
-  },
-  // Fullscreen image styles
-  fullscreenOverlay: {
-    flex: 1,
-    backgroundColor: 'black',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fullscreenCloseButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 20,
-    padding: 8,
-  },
-  fullscreenImage: {
-    width: '100%',
-    height: '100%',
-  },
-  fullscreenVideoContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    width: '100%',
-    height: '100%',
-  },
-  fullscreenVideoText: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 20,
-  },
-  fullscreenVideoSubtext: {
-    color: '#ccc',
-    fontSize: 16,
-    marginTop: 8,
-  },
-  fullscreenFileContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    width: '100%',
-    height: '100%',
-  },
-  fullscreenFileText: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 20,
-  },
-  fullscreenFileSubtext: {
-    color: '#ccc',
-    fontSize: 16,
-    marginTop: 8,
-  },
-  // Action buttons styles
-  actionButtonsContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 40, // Extra padding for home indicator
-  },
-  actionButton: {
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 50,
   },
   menuButtonContainer: {
     position: 'absolute',
