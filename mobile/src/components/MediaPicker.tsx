@@ -12,6 +12,7 @@ import {
 import BlurView from 'expo-blur/build/BlurView';
 import { Ionicons } from '@expo/vector-icons';
 import { useMediaSelection, MediaSelectionCallbacks } from '../hooks/useMediaSelection';
+import { MediaService } from '../services/mediaService';
 
 interface MediaPickerProps extends MediaSelectionCallbacks {}
 
@@ -74,12 +75,12 @@ export const MediaPicker: React.FC<MediaPickerProps> = (props) => {
               <View 
                 style={[
                   styles.progressFill, 
-                  { width: `${uploadProgress.percentage}%` }
+                  { width: `${uploadProgress?.percentage || 0}%` }
                 ]} 
               />
             </View>
             <Text style={styles.progressText}>
-              {uploadProgress.percentage}% ({MediaService.formatFileSize(uploadProgress.loaded)} / {MediaService.formatFileSize(uploadProgress.total)})
+              {uploadProgress?.percentage}% ({MediaService.formatFileSize(uploadProgress?.loaded || 0)} / {MediaService.formatFileSize(uploadProgress?.total || 0)})
             </Text>
           </View>
         )}
