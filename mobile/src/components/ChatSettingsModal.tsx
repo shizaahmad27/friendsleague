@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Message } from '../services/chatApi';
 import { MediaGalleryModal } from './MediaGalleryModal';
 import { useSwipeToClose } from '../hooks/useSwipeToClose';
+import { useVideoThumbnail } from '../hooks/useVideoThumbnail';
 
 interface ChatSettingsModalProps {
   visible: boolean;
@@ -44,6 +45,34 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
 
   const handleCloseGallery = () => {
     setFullscreenMessage(null);
+  };
+
+  // Component for video thumbnails
+  const VideoThumbnail = ({ message }: { message: Message }) => {
+    const { videoThumbnail, isLoading } = useVideoThumbnail(
+      message.mediaUrl || '', 
+      message.type as 'IMAGE' | 'VIDEO' | 'FILE'
+    );
+    
+    return (
+      <TouchableOpacity 
+        key={message.id} 
+        style={styles.mediaItem}
+        onPress={() => handleOpenGallery(message)}
+      >
+        {videoThumbnail ? (
+          <Image source={{ uri: videoThumbnail }} style={styles.mediaThumbnail} />
+        ) : (
+          <View style={styles.videoThumbnail}>
+            {isLoading ? (
+              <Ionicons name="hourglass-outline" size={20} color="white" />
+            ) : (
+              <Ionicons name="play-circle" size={30} color="white" />
+            )}
+          </View>
+        )}
+      </TouchableOpacity>
+    );
   };
 
   return (
@@ -122,15 +151,7 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
                   .filter(msg => msg.type === 'VIDEO' && msg.mediaUrl)
                   .slice(0, showAllVideos ? undefined : 6)
                   .map((msg, index) => (
-                    <TouchableOpacity 
-                      key={msg.id} 
-                      style={styles.mediaItem}
-                      onPress={() => handleOpenGallery(msg)}
-                    >
-                      <View style={styles.videoThumbnail}>
-                        <Ionicons name="play-circle" size={30} color="white" />
-                      </View>
-                    </TouchableOpacity>
+                    <VideoThumbnail key={msg.id} message={msg} />
                   ))}
               </View>
             </View>

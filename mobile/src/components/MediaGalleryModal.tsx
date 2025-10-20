@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Message } from '../services/chatApi';
 import { MediaService } from '../services/mediaService';
 import { useSwipeToClose } from '../hooks/useSwipeToClose';
+import { VideoViewer } from './VideoViewer';
+import { FileViewer } from './FileViewer';
 
 interface MediaGalleryModalProps {
   visible: boolean;
@@ -137,26 +139,68 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                   resizeMode="contain"
                 />
               )}
-              {currentMessage.type === 'VIDEO' && (
-                <View style={styles.fullscreenVideoContainer}>
-                  <Ionicons name="play-circle" size={80} color="white" />
-                  <Text style={styles.fullscreenVideoText}>Video Preview</Text>
-                  <Text style={styles.fullscreenVideoSubtext}>Tap to play in fullscreen</Text>
-                </View>
+              {currentMessage.type === 'VIDEO' && currentMessage.mediaUrl && (
+                <VideoViewer
+                  videoUrl={currentMessage.mediaUrl}
+                  onClose={handleClose}
+                  onShare={async () => {
+                    try {
+                      const result = await MediaService.shareMedia(currentMessage.mediaUrl!);
+                      if (result.method === 'clipboard') {
+                        Alert.alert('Success', 'Video URL copied to clipboard!');
+                      }
+                    } catch (error) {
+                      console.error('Failed to share video:', error);
+                      Alert.alert('Error', 'Failed to share video');
+                    }
+                  }}
+                  onSave={async () => {
+                    try {
+                      await MediaService.saveMediaToLibrary(currentMessage.mediaUrl!);
+                      Alert.alert('Success', 'Video saved to your photo library!');
+                    } catch (error) {
+                      console.error('Failed to save video:', error);
+                      const errorMessage = error instanceof Error ? error.message : 'Failed to save video to library';
+                      if (errorMessage.includes('copied to clipboard')) {
+                        Alert.alert(
+                          'Development Mode', 
+                          'In Expo Go, videos can\'t be saved directly. This will work properly when the app is built and installed on your device! For now, the video URL has been copied to your clipboard.'
+                        );
+                      } else {
+                        Alert.alert('Error', errorMessage);
+                      }
+                    }
+                  }}
+                  onReact={onReactionPress ? () => onReactionPress(currentMessage) : undefined}
+                  onReply={onReplyPress ? () => onReplyPress(currentMessage) : undefined}
+                />
               )}
-              {currentMessage.type === 'FILE' && (
-                <View style={styles.fullscreenFileContainer}>
-                  <Ionicons name="document" size={80} color="#007AFF" />
-                  <Text style={styles.fullscreenFileText}>File Preview</Text>
-                  <Text style={styles.fullscreenFileSubtext}>Tap to download or open</Text>
-                </View>
+              {currentMessage.type === 'FILE' && currentMessage.mediaUrl && (
+                <FileViewer
+                  fileUrl={currentMessage.mediaUrl}
+                  fileName={currentMessage.content || 'Unknown file'}
+                  onClose={handleClose}
+                  onShare={async () => {
+                    try {
+                      const result = await MediaService.shareMedia(currentMessage.mediaUrl!);
+                      if (result.method === 'clipboard') {
+                        Alert.alert('Success', 'File URL copied to clipboard!');
+                      }
+                    } catch (error) {
+                      console.error('Failed to share file:', error);
+                      Alert.alert('Error', 'Failed to share file');
+                    }
+                  }}
+                  onReact={onReactionPress ? () => onReactionPress(currentMessage) : undefined}
+                  onReply={onReplyPress ? () => onReplyPress(currentMessage) : undefined}
+                />
               )}
             </>
           )}
         </Animated.View>
         
-        {/* Action Buttons Toolbar */}
-        {currentMessage && (
+        {/* Action Buttons Toolbar - only for images */}
+        {currentMessage && currentMessage.type === 'IMAGE' && (
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity 
               style={styles.actionButton}
