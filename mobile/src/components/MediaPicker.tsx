@@ -19,22 +19,14 @@ export const MediaPicker: React.FC<MediaPickerProps> = (props) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const panelAnim = useRef(new Animated.Value(0)).current; // 0 hidden, 1 visible
   
-  // Use the media selection hook
   const { isUploading, uploadProgress, selectFromCamera, selectFromPhotos, selectVideo, selectDocument, resetState } = useMediaSelection(props);
 
   const handleMediaSelection = async (selectionFunction: () => Promise<void>) => {
-    console.log('MediaPicker: Starting media selection');
-    
-    try {
-      // Close modal first
+        try {
       closeMenu();
-      console.log('MediaPicker: Modal closing, waiting before launching picker...');
-      
-      // Wait for modal to fully close before launching picker
-      // This is crucial for iOS - native pickers can't launch while modal is active
+     
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      console.log('MediaPicker: Modal closed, calling selection function...');
       await selectionFunction();
     } catch (error) {
       console.error('MediaPicker: Media selection error:', error);
@@ -42,9 +34,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = (props) => {
   };
 
   const openMenu = () => {
-    console.log('MediaPicker: Opening menu, isUploading:', isUploading);
     if (isUploading) {
-      console.log('MediaPicker: Currently uploading, ignoring menu open');
       return;
     }
     setIsModalVisible(true);

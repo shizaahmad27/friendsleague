@@ -43,8 +43,8 @@ export const useMediaSelection = (callbacks: MediaSelectionCallbacks) => {
     try {
       console.log('useMediaSelection: Calling picker function...');
       
-      // Only set uploading to true after we actually get a file
       const mediaFile = await pickerFunction();
+    
       console.log('useMediaSelection: Picker function completed, mediaFile:', mediaFile);
       
       if (!mediaFile) {
@@ -90,9 +90,14 @@ export const useMediaSelection = (callbacks: MediaSelectionCallbacks) => {
         throw uploadError;
       }
     } catch (error) {
-      console.error('useMediaSelection: Media upload error:', error);
+      console.error('useMediaSelection: Media selection/upload error:', error);
+      console.error('useMediaSelection: Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      Alert.alert('Upload Error', `Failed to upload media: ${errorMessage}. Please try again.`);
+      Alert.alert('Media Error', `Failed to select/upload media: ${errorMessage}. Please try again.`);
     } finally {
       console.log('useMediaSelection: Background upload finished or failed');
       setUploadProgress(null);
@@ -106,22 +111,54 @@ export const useMediaSelection = (callbacks: MediaSelectionCallbacks) => {
     setUploadProgress(null);
   };
 
-  // Individual media selection functions
+  // Individual media selection functions (for MediaPicker component)
   const selectFromCamera = () => handleMediaSelection(MediaService.takePhoto, 'IMAGE');
   const selectFromPhotos = () => handleMediaSelection(MediaService.pickImage, 'IMAGE');
   const selectVideo = () => handleMediaSelection(MediaService.pickVideo, 'VIDEO');
   const selectDocument = () => handleMediaSelection(MediaService.pickDocument, 'FILE');
+
+  // Async versions with timing delay (for three dots menu)
+  const selectFromCameraWithDelay = async () => {
+    console.log('useMediaSelection: Camera selected, waiting for modal to close...');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await handleMediaSelection(MediaService.takePhoto, 'IMAGE');
+  };
+  
+  const selectFromPhotosWithDelay = async () => {
+    console.log('useMediaSelection: Photos selected, waiting for modal to close...');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await handleMediaSelection(MediaService.pickImage, 'IMAGE');
+  };
+  
+  const selectVideoWithDelay = async () => {
+    console.log('useMediaSelection: Video selected, waiting for modal to close...');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await handleMediaSelection(MediaService.pickVideo, 'VIDEO');
+  };
+  
+  const selectDocumentWithDelay = async () => {
+    console.log('useMediaSelection: Document selected, waiting for modal to close...');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await handleMediaSelection(MediaService.pickDocument, 'FILE');
+  };
 
   return {
     // State
     isUploading,
     uploadProgress,
     
-    // Actions
+    // Actions (for MediaPicker component)
     selectFromCamera,
     selectFromPhotos,
     selectVideo,
     selectDocument,
+    
+    // Actions with delay (for three dots menu)
+    selectFromCameraWithDelay,
+    selectFromPhotosWithDelay,
+    selectVideoWithDelay,
+    selectDocumentWithDelay,
+    
     resetState,
   };
 };

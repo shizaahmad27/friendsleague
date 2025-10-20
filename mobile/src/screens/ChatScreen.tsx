@@ -94,6 +94,23 @@ export default function ChatScreen() {
     onPreviewSelected: handlePreviewSelected,
   });
 
+  // Handle media selection for three dots menu with timing delay
+  const handleMenuMediaSelection = async (selectionFunction: () => void) => {
+    console.log('ChatScreen: Starting menu media selection');
+    
+    try {
+      // Close menu first
+      setShowMenu(false);    
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    
+      selectionFunction();
+    } catch (error) {
+      console.error('ChatScreen: Menu media selection error:', error);
+    }
+  };
+
   // No need for media picker service - we'll use the hook directly
 
   const iconsAnimatedStyle = {
@@ -741,8 +758,7 @@ export default function ChatScreen() {
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => {
-                setShowMenu(false);
-                mediaSelection.selectFromCamera();
+                handleMenuMediaSelection(mediaSelection.selectFromCamera);
               }}
             >
               <Ionicons name="camera-outline" size={24} color="#007AFF" />
@@ -752,8 +768,7 @@ export default function ChatScreen() {
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => {
-                setShowMenu(false);
-                mediaSelection.selectFromPhotos();
+                handleMenuMediaSelection(mediaSelection.selectFromPhotos);
               }}
             >
               <Ionicons name="images-outline" size={24} color="#007AFF" />
@@ -763,8 +778,7 @@ export default function ChatScreen() {
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => {
-                setShowMenu(false);
-                mediaSelection.selectVideo();
+                handleMenuMediaSelection(mediaSelection.selectVideo);
               }}
             >
               <Ionicons name="videocam-outline" size={24} color="#007AFF" />
@@ -774,8 +788,7 @@ export default function ChatScreen() {
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => {
-                setShowMenu(false);
-                mediaSelection.selectDocument();
+                handleMenuMediaSelection(mediaSelection.selectDocument);
               }}
             >
               <Ionicons name="document-outline" size={24} color="#007AFF" />

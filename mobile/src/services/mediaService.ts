@@ -39,17 +39,22 @@ export class MediaService {
    * Pick an image from camera or photo library
    */
   static async pickImage(): Promise<MediaFile | null> {
+    console.log('MediaService.pickImage: Starting photo library permission request...');
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    console.log('MediaService.pickImage: Photo library permission status:', status);
     
     if (status !== 'granted') {
+      console.error('MediaService.pickImage: Photo library permission denied');
       throw new Error('Permission to access media library is required');
     }
 
+    console.log('MediaService.pickImage: Launching image library...');
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: false, // Do not force cropping; let users send full photo
       quality: 1,
     });
+    console.log('MediaService.pickImage: Image library result:', result);
 
     
     if (result.canceled || !result.assets[0]) {
@@ -70,46 +75,77 @@ export class MediaService {
    * Take a photo with camera
    */
   static async takePhoto(): Promise<MediaFile | null> {
+    console.log('MediaService.takePhoto: Starting camera permission request...');
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    console.log('MediaService.takePhoto: Camera permission status:', status);
     
     if (status !== 'granted') {
+      console.error('MediaService.takePhoto: Camera permission denied');
       throw new Error('Permission to access camera is required');
     }
 
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: false, // Capture full photo without crop UI
-      quality: 1,
-    });
-
+    console.log('MediaService.takePhoto: Launching camera...');
     
-    if (result.canceled || !result.assets[0]) {
-      return null;
+    try {
+      const result = await Promise.race([
+        ImagePicker.launchCameraAsync({
+          allowsEditing: false,
+          quality: 1,
+        }),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Camera launch timeout after 30 seconds')), 30000)
+        )
+      ]) as ImagePicker.ImagePickerResult;
+      console.log('MediaService.takePhoto: Camera result received:', result);
+      console.log('MediaService.takePhoto: Result details:', {
+        canceled: result.canceled,
+        assetsCount: result.assets?.length || 0,
+        firstAsset: result.assets?.[0] ? {
+          uri: result.assets[0].uri,
+          fileName: result.assets[0].fileName,
+          fileSize: result.assets[0].fileSize
+        } : null
+      });
+      
+      if (result.canceled || !result.assets[0]) {
+        console.log('MediaService.takePhoto: User canceled or no assets');
+        return null;
+      }
+
+      const asset = result.assets[0];
+      console.log('MediaService.takePhoto: Processing asset:', asset);
+      
+      return {
+        uri: asset.uri,
+        name: asset.fileName || `photo_${Date.now()}.jpg`,
+        type: 'image/jpeg',
+        size: asset.fileSize || 0,
+      };
+    } catch (cameraError) {
+      console.error('MediaService.takePhoto: Camera launch error:', cameraError);
+      throw cameraError;
     }
-
-    const asset = result.assets[0];
-    
-    return {
-      uri: asset.uri,
-      name: asset.fileName || `photo_${Date.now()}.jpg`,
-      type: 'image/jpeg',
-      size: asset.fileSize || 0,
-    };
   }
 
   /**
    * Pick a video from library
    */
   static async pickVideo(): Promise<MediaFile | null> {
+    console.log('MediaService.pickVideo: Starting video library permission request...');
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    console.log('MediaService.pickVideo: Video library permission status:', status);
     if (status !== 'granted') {
+      console.error('MediaService.pickVideo: Video library permission denied');
       throw new Error('Permission to access media library is required');
     }
 
+    console.log('MediaService.pickVideo: Launching video library...');
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['videos'],
       allowsEditing: false, // No trimming/cropping UI by default
       quality: 1,
     });
+    console.log('MediaService.pickVideo: Video library result:', result);
 
     if (result.canceled || !result.assets[0]) {
       return null;
