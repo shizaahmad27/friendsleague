@@ -52,32 +52,30 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
         hasMediaUrl: !!message.mediaUrl
       });
       
-      // For images, create a gallery of all images
-      if (message.type === 'IMAGE') {
-        const imageMessages = allMessages.filter(msg => msg.type === 'IMAGE' && msg.mediaUrl);
-        const index = imageMessages.findIndex(msg => msg.id === message.id);
-        setGalleryMessages(imageMessages);
-        setGalleryIndex(index >= 0 ? index : 0);
-        console.log('MediaGalleryModal: Image gallery created with', imageMessages.length, 'images');
-      } else {
-        // For videos and files, just show the single item
-        setGalleryMessages([message]);
-        setGalleryIndex(0);
-        console.log('MediaGalleryModal: Single item gallery created for', message.type);
-      }
+      // Create a gallery of all media messages (images, videos, and files)
+      const mediaMessages = allMessages.filter(msg => 
+        (msg.type === 'IMAGE' || msg.type === 'VIDEO' || msg.type === 'FILE') && 
+        msg.mediaUrl
+      );
+      const index = mediaMessages.findIndex(msg => msg.id === message.id);
+      setGalleryMessages(mediaMessages);
+      setGalleryIndex(index >= 0 ? index : 0);
+      console.log('MediaGalleryModal: Media gallery created with', mediaMessages.length, 'items');
     }
   }, [message, allMessages]);
 
-  const goToPreviousImage = () => {
+  const goToPreviousMedia = () => {
     if (galleryIndex > 0) {
       const newIndex = galleryIndex - 1;
+      console.log('MediaGalleryModal: Going to previous media, index:', newIndex);
       setGalleryIndex(newIndex);
     }
   };
 
-  const goToNextImage = () => {
+  const goToNextMedia = () => {
     if (galleryIndex < galleryMessages.length - 1) {
       const newIndex = galleryIndex + 1;
+      console.log('MediaGalleryModal: Going to next media, index:', newIndex);
       setGalleryIndex(newIndex);
     }
   };
@@ -105,14 +103,14 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
           <Ionicons name="close" size={30} color="white" />
         </TouchableOpacity>
         
-        {/* Gallery Navigation - only show for images */}
-        {galleryMessages.length > 1 && currentMessage?.type === 'IMAGE' && (
+        {/* Gallery Navigation - show for all media types when there are multiple items */}
+        {galleryMessages.length > 1 && (
           <>
             {/* Previous Button */}
             {galleryIndex > 0 && (
               <TouchableOpacity
                 style={styles.galleryNavButton}
-                onPress={goToPreviousImage}
+                onPress={goToPreviousMedia}
               >
                 <Ionicons name="chevron-back" size={30} color="white" />
               </TouchableOpacity>
@@ -122,7 +120,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
             {galleryIndex < galleryMessages.length - 1 && (
               <TouchableOpacity
                 style={[styles.galleryNavButton, styles.galleryNavButtonRight]}
-                onPress={goToNextImage}
+                onPress={goToNextMedia}
               >
                 <Ionicons name="chevron-forward" size={30} color="white" />
               </TouchableOpacity>
@@ -133,6 +131,13 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
               <Text style={styles.galleryCounterText}>
                 {galleryIndex + 1} / {galleryMessages.length}
               </Text>
+              {currentMessage && (
+                <Text style={styles.galleryTypeText}>
+                  {currentMessage.type === 'IMAGE' ? '' : 
+                   currentMessage.type === 'VIDEO' ? '' : 
+                   currentMessage.type === 'FILE' ? '' : ''}
+                </Text>
+              )}
             </View>
           </>
         )}
@@ -308,6 +313,12 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  galleryTypeText: {
+    color: 'white',
+    fontSize: 12,
+    marginTop: 2,
+    textAlign: 'center',
   },
   mediaContainer: {
     flex: 1,
