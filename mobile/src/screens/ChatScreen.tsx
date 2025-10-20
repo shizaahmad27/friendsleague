@@ -12,10 +12,15 @@ import {
   Alert,
   Modal,
   Image,
-  Animated,
   PanResponder,
   Dimensions,
 } from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming,
+  runOnJS
+} from 'react-native-reanimated';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { chatApi, Message, Chat } from '../services/chatApi';
 import socketService from '../services/socketService';
@@ -52,10 +57,9 @@ export default function ChatScreen() {
   const [peerUser, setPeerUser] = useState<{ id: string; username: string; avatar?: string } | null>(null);
   const [chatMeta, setChatMeta] = useState<{ type: Chat['type']; name?: string } | null>(null);
   const [participants, setParticipants] = useState<Array<{ id: string; username: string; avatar?: string }>>([]);
-  const iconsCollapse = useRef(new Animated.Value(0)).current; // 0: expanded, 1: collapsed
+  // Reanimated 3 shared values - much more performant and smooth
+  const isInputFocused = useSharedValue(false);
   const [iconsMeasuredWidth, setIconsMeasuredWidth] = useState(0);
-  const isAnimating = useRef(false);
-  const animationTimeout = useRef<NodeJS.Timeout | null>(null);
   const [showMenu, setShowMenu] = useState(false);
 
   // Reusable media callbacks
@@ -113,56 +117,62 @@ export default function ChatScreen() {
 
   // No need for media picker service - we'll use the hook directly
 
-  const iconsAnimatedStyle = {
-    width: iconsMeasuredWidth === 0 ? undefined : iconsCollapse.interpolate({ inputRange: [0, 1], outputRange: [iconsMeasuredWidth, 40] }),
-    opacity: iconsCollapse.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
-    transform: [
-      { scaleX: iconsCollapse.interpolate({ inputRange: [0, 1], outputRange: [1, 0.9] }) },
-      { translateX: iconsCollapse.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) },
-    ],
-  } as const;
+  // Reanimated 3 animated styles - much smoother and more performant
+  const iconsAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      width: iconsMeasuredWidth === 0 ? undefined : withTiming(
+        isInputFocused.value ? 40 : iconsMeasuredWidth,
+        { duration: 280 }
+      ),
+      opacity: withTiming(
+        isInputFocused.value ? 0 : 1,
+        { duration: 280 }
+      ),
+      transform: [
+        { 
+          scaleX: withTiming(
+            isInputFocused.value ? 0.9 : 1,
+            { duration: 280 }
+          )
+        },
+        { 
+          translateX: withTiming(
+            isInputFocused.value ? -6 : 0,
+            { duration: 280 }
+          )
+        },
+      ],
+    };
+  });
 
-  const menuButtonStyle = {
-    opacity: iconsCollapse.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }),
-    transform: [
-      { scale: iconsCollapse.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) },
-    ],
-  } as const;
+  const menuButtonStyle = useAnimatedStyle(() => {
+    return {
+      opacity: withTiming(
+        isInputFocused.value ? 1 : 0,
+        { duration: 280 }
+      ),
+      transform: [
+        { 
+          scale: withTiming(
+            isInputFocused.value ? 1 : 0.8,
+            { duration: 280 }
+          )
+        },
+      ],
+    };
+  });
 
   const flatListRef = useRef<FlatList>(null);
   const typingNames = typingUsers.map(id => usernamesById[id] ?? id);
   const usernamesRef = useRef(usernamesById);
 
-  // Robust animation function that handles interruptions
-  const animateIcons = (toValue: number) => {
-    // Clear any existing timeout
-    if (animationTimeout.current) {
-      clearTimeout(animationTimeout.current);
-      animationTimeout.current = null;
-    }
+  // Simple focus handlers - Reanimated 3 handles all the complexity
+  const handleInputFocus = () => {
+    isInputFocused.value = true;
+  };
 
-    // Stop any running animation
-    iconsCollapse.stopAnimation();
-    
-    // Reset animation flag after a short delay to prevent rapid calls
-    isAnimating.current = true;
-    animationTimeout.current = setTimeout(() => {
-      isAnimating.current = false;
-      animationTimeout.current = null;
-    }, 300);
-
-    Animated.timing(iconsCollapse, { 
-      toValue, 
-      duration: 280, 
-      useNativeDriver: false 
-    }).start(() => {
-      // Ensure animation flag is reset when animation completes
-      if (animationTimeout.current) {
-        clearTimeout(animationTimeout.current);
-        animationTimeout.current = null;
-      }
-      isAnimating.current = false;
-    });
+  const handleInputBlur = () => {
+    isInputFocused.value = false;
   };
 
 
@@ -202,7 +212,7 @@ export default function ChatScreen() {
           const existingReactionIndex = existingReactions.findIndex(r => r.emoji === data.emoji);
           
           if (existingReactionIndex >= 0) {
-            // Update existing reaction
+            // Update existing 
             const updatedReactions = [...existingReactions];
             updatedReactions[existingReactionIndex] = {
               ...updatedReactions[existingReactionIndex],
@@ -463,14 +473,6 @@ export default function ChatScreen() {
 
   useEffect(() => { usernamesRef.current = usernamesById; }, [usernamesById]);
 
-  // Cleanup animation timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (animationTimeout.current) {
-        clearTimeout(animationTimeout.current);
-      }
-    };
-  }, []);
 
   // Preload usernames from chat participants
   useEffect(() => {
@@ -640,7 +642,6 @@ export default function ChatScreen() {
         <Animated.View
           style={[styles.leftActionsRow, { overflow: 'hidden' }, iconsAnimatedStyle]}
           onLayout={(e) => {
-            if (isAnimating.current) return; // Don't update during animation
             const w = e.nativeEvent.layout.width;
             if (w !== iconsMeasuredWidth && w > 0) setIconsMeasuredWidth(w);
           }}
@@ -686,12 +687,8 @@ export default function ChatScreen() {
             style={styles.textInput}
             value={newMessage}
             onChangeText={handleTyping}
-            onFocus={() => {
-              animateIcons(1); // Collapse icons
-            }}
-            onBlur={() => {
-              animateIcons(0); // Expand icons
-            }}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
             placeholder="Type a message..."
             multiline
             maxLength={1000}
