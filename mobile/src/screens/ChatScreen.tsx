@@ -1,5 +1,5 @@
 // mobile/src/screens/ChatScreen.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -26,7 +26,6 @@ import { chatApi, Message, Chat } from '../services/chatApi';
 import socketService from '../services/socketService';
 import { useAuthStore } from '../store/authStore';
 import { MediaPicker } from '../components/MediaPicker';
-import { VoiceRecorder } from '../components/VoiceRecorder';
 import { MessageMedia } from '../components/MessageMedia';
 import { MessageReactions } from '../components/MessageReactions';
 import { ReactionPicker } from '../components/ReactionPicker';
@@ -64,7 +63,7 @@ export default function ChatScreen() {
   const [showMenu, setShowMenu] = useState(false);
 
   // Reusable media callbacks
-  const handleMediaSelected = (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE', localUri?: string) => {
+  const handleMediaSelected = (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE', localUri?: string) => {
     // Replace provisional with real message after upload
     const tempPrefix = 'temp-';
     setMessages(prev => {
@@ -78,7 +77,7 @@ export default function ChatScreen() {
     sendMessage(mediaUrl, type);
   };
 
-  const handlePreviewSelected = (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE') => {
+  const handlePreviewSelected = (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE') => {
     // Insert a provisional message at top (inverted list) with a temp id
     const tempId = `temp-${Date.now()}`;
     const provisional: Message = {
@@ -283,7 +282,9 @@ export default function ChatScreen() {
     // Re-join on reconnect to keep room subscription
     const sock = socketService.getSocket();
     const onReconnect = () => socketService.joinChat(chatId, user.id);
-    sock?.on('connect', onReconnect);
+    if (sock) {
+      sock.on('connect', onReconnect);
+    }
 
     return () => {
       socketService.emitTyping(chatId, user.id, false);
@@ -291,7 +292,9 @@ export default function ChatScreen() {
       socketService.offUserTyping(handleUserTyping);
       socketService.offReactionAdded(handleReactionAdded);
       socketService.offReactionRemoved(handleReactionRemoved);
-      sock?.off('connect', onReconnect);
+      if (sock) {
+        sock.off('connect', onReconnect);
+      }
     };
   }, [chatId, user?.id]);
 
@@ -322,7 +325,7 @@ export default function ChatScreen() {
     setFullscreenMessage(null);
   };
 
-  const sendMessage = async (mediaUrl?: string, mediaType?: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE') => {
+  const sendMessage = async (mediaUrl?: string, mediaType?: 'IMAGE' | 'VIDEO' | 'FILE') => {
     if ((!newMessage.trim() && !mediaUrl) || !user?.id) return;
 
     const messageContent = newMessage.trim();
@@ -439,7 +442,7 @@ export default function ChatScreen() {
         {isMediaMessage && item.mediaUrl ? (
           <MessageMedia
             mediaUrl={item.mediaUrl}
-            type={item.type as 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE'}
+            type={item.type as 'IMAGE' | 'VIDEO' | 'FILE'}
             isOwnMessage={isOwnMessage}
             onLongPress={() => handleReactionPress(item)}
             messageId={item.id}
@@ -453,7 +456,7 @@ export default function ChatScreen() {
             style={[
               styles.messageText,
               isOwnMessage ? styles.ownMessageText : styles.otherMessageText,
-              isMediaMessage && styles.messageTextWithMedia,
+              isMediaMessage ? styles.messageTextWithMedia : null,
             ]}
           >
             {item.content}
@@ -598,7 +601,7 @@ export default function ChatScreen() {
       <FlatList
         ref={flatListRef}
         data={messages}
-        renderItem={({ item, index }) => {
+        renderItem={({ item, index }: { item: any; index: number }) => {
           const currentTs = new Date(item.createdAt).getTime();
           const prev = messages[index + 1]; // list is inverted
           const prevTs = prev ? new Date(prev.createdAt).getTime() : null;
@@ -617,8 +620,8 @@ export default function ChatScreen() {
             </>
           );
         }}
-        keyExtractor={(item) => item.id}
-        style={styles.messagesList}
+        keyExtractor={(item: any) => item.id}
+        contentContainerStyle={styles.messagesList}
         inverted
       />
 
@@ -642,7 +645,7 @@ export default function ChatScreen() {
       <View style={styles.inputContainer}>
         <Animated.View
           style={[styles.leftActionsRow, { overflow: 'hidden' }, iconsAnimatedStyle]}
-          onLayout={(e) => {
+          onLayout={(e: any) => {
             const w = e.nativeEvent.layout.width;
             if (w !== iconsMeasuredWidth && w > 0) setIconsMeasuredWidth(w);
           }}
@@ -661,17 +664,6 @@ export default function ChatScreen() {
           >
             <Ionicons name="camera-outline" size={24} color="#007AFF" />
           </TouchableOpacity>
-          <VoiceRecorder
-            onRecordingComplete={(mediaUrl) => {
-              sendMessage(mediaUrl, 'VOICE');
-            }}
-            onRecordingCancelled={() => {
-              console.log('Voice recording cancelled');
-            }}
-            onError={(error) => {
-              console.error('Voice recording error:', error);
-            }}
-          />
         
         </Animated.View>
         
@@ -725,7 +717,7 @@ export default function ChatScreen() {
         onClose={closeGallery}
         message={fullscreenMessage}
         allMessages={messages}
-        onReactionPress={(message) => {
+        onReactionPress={(message: Message) => {
           setSelectedMessageForReaction(message);
           setReactionPickerVisible(true);
         }}
@@ -795,16 +787,6 @@ export default function ChatScreen() {
               <Text style={styles.menuItemText}>Document</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => {
-                setShowMenu(false);
-                Alert.alert('Coming soon', 'Voice message shortcut');
-              }}
-            >
-              <Ionicons name="mic-outline" size={24} color="#007AFF" />
-              <Text style={styles.menuItemText}>Voice Message</Text>
-            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>

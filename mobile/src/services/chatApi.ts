@@ -22,7 +22,7 @@ export interface Chat {
 export interface Message {
   id: string;
   content: string;
-  type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE';
+  type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'FILE';
   senderId: string;
   chatId: string;
   mediaUrl?: string;
