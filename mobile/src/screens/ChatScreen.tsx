@@ -53,6 +53,7 @@ export default function ChatScreen() {
   const [chatMeta, setChatMeta] = useState<{ type: Chat['type']; name?: string } | null>(null);
   const [participants, setParticipants] = useState<Array<{ id: string; username: string; avatar?: string }>>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [lastTap, setLastTap] = useState<number | null>(null);
 
   // Reusable media callbacks
   const handleMediaSelected = (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE', localUri?: string) => {
@@ -352,6 +353,20 @@ export default function ChatScreen() {
     setReactionPickerVisible(true);
   };
 
+  const handleDoubleTap = (message: Message) => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300; // 300ms window for double tap
+    
+    if (lastTap && (now - lastTap) < DOUBLE_TAP_DELAY) {
+      // Double tap detected
+      handleReactionPress(message);
+      setLastTap(null); // Reset to prevent triple tap
+    } else {
+      // First tap
+      setLastTap(now);
+    }
+  };
+
   const handleEmojiSelect = async (emoji: string) => {
     if (!selectedMessageForReaction) return;
 
@@ -410,6 +425,7 @@ export default function ChatScreen() {
           isOwnMessage ? styles.ownMessage : styles.otherMessage,
           !isMediaMessage && (isOwnMessage ? styles.ownMessageBackground : styles.otherMessageBackground),
         ]}
+        onPress={() => handleDoubleTap(item)}
         onLongPress={() => handleReactionPress(item)}
         activeOpacity={0.7}
       >
