@@ -26,6 +26,7 @@ export interface Message {
   senderId: string;
   chatId: string;
   mediaUrl?: string;
+  duration?: number; 
   replyToId?: string;
   createdAt: string;
   reactions?: Array<{

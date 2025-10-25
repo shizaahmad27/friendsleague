@@ -101,7 +101,7 @@ export default function ChatScreen() {
   });
 
   // Voice message handler
-  const handleVoiceSend = (audioUrl: string, duration: number) => {
+  const handleVoiceSend = async (audioUrl: string, duration: number) => {
     // Validate inputs
     if (!audioUrl || typeof audioUrl !== 'string') {
       console.error('ChatScreen: Invalid audioUrl provided to handleVoiceSend');
@@ -113,21 +113,53 @@ export default function ChatScreen() {
       return;
     }
 
+    if (!user?.id) {
+      console.error('ChatScreen: No user ID available for voice message');
+      return;
+    }
+
     // Create provisional message for voice
     const tempId = `temp-${Date.now()}`;
     const provisional: Message = {
       id: tempId,
-      content: `Voice message (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')})`,
+      content: '', // Empty content for voice messages
       type: 'VOICE',
-      senderId: user?.id || 'me',
+      senderId: user.id,
       chatId,
       mediaUrl: audioUrl,
+      duration: duration, // Store duration in seconds
       createdAt: new Date().toISOString(),
     } as Message;
     setMessages(prev => [provisional, ...prev]);
     
-    // Send the actual message
-    sendMessage(audioUrl, 'VOICE');
+    try {
+      // Send the actual message directly without calling sendMessage to avoid duplicates
+      const message = await chatApi.sendMessage(
+        chatId, 
+        '', // Empty content for voice messages
+        'VOICE',
+        audioUrl,
+        replyingTo?.id
+      );
+
+      const messageWithSender = { ...message, senderId: user.id, duration: duration };
+
+      // Replace provisional message with real message
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempId ? messageWithSender : msg
+      ));
+
+      socketService.sendMessage(chatId, messageWithSender);
+      
+      // Clear reply state after sending
+      if (replyingTo) {
+        setReplyingTo(null);
+      }
+    } catch (error) {
+      console.error('ChatScreen: Error sending voice message:', error);
+      // Remove provisional message on error
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
+    }
   };
 
   // Handle media selection for three dots menu with timing delay
@@ -474,7 +506,8 @@ export default function ChatScreen() {
         {isMediaMessage && item.mediaUrl ? (
           <MessageMedia
             mediaUrl={item.mediaUrl}
-            type={item.type as 'IMAGE' | 'VIDEO' | 'FILE'}
+            type={item.type as 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE'}
+            duration={item.duration}
             isOwnMessage={isOwnMessage}
             onLongPress={() => handleReactionPress(item)}
             messageId={item.id}

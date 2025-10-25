@@ -20,6 +20,7 @@ export interface Message {
   senderId: string;
   chatId: string;
   mediaUrl?: string;
+  duration?: number; // Duration in seconds for voice messages
   replyToId?: string;
   createdAt: Date;
   updatedAt: Date;

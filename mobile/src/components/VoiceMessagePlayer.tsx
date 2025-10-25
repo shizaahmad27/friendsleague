@@ -43,20 +43,8 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
   } = useAudioPlayer();
 
   // Animation values
-  const progressAnimation = useRef(new Animated.Value(0)).current;
   const playButtonAnimation = useRef(new Animated.Value(1)).current;
 
-  // Update progress animation
-  useEffect(() => {
-    if (isLoaded && playbackDuration > 0) {
-      const progress = position / playbackDuration;
-      Animated.timing(progressAnimation, {
-        toValue: progress,
-        duration: 100,
-        useNativeDriver: false,
-      }).start();
-    }
-  }, [position, playbackDuration, isLoaded, progressAnimation]);
 
   // Animate play button
   useEffect(() => {
@@ -158,7 +146,7 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
                     ? (isOwnMessage ? '#007AFF' : '#34C759')
                     : isCurrent 
                     ? (isOwnMessage ? '#007AFF' : '#34C759')
-                    : '#E5E5EA',
+                    : '#8E8E93',
                   opacity: isActive ? 1 : isCurrent ? 0.7 : 0.3,
                 },
               ]}
@@ -198,7 +186,7 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
   const renderSpeedButton = (): React.ReactNode => {
     return (
       <TouchableOpacity style={styles.speedButton} onPress={handleSpeedToggle}>
-        <Text style={[styles.speedText, { color: isOwnMessage ? 'white' : '#007AFF' }]}>
+        <Text style={[styles.speedText, { color: isOwnMessage ? 'white' : '#1C1C1E' }]}>
           {speed}x
         </Text>
       </TouchableOpacity>
@@ -210,43 +198,18 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
     const currentTime = isLoaded ? position : 0;
     const totalTime = isLoaded ? playbackDuration : (duration * 1000);
     
+    // Show current time when playing/paused, otherwise show total duration
+    const displayTime = (playbackState === 'playing' || playbackState === 'paused') 
+      ? formatTime(currentTime)
+      : formatTime(totalTime);
+    
     return (
-      <Text style={[styles.timeText, { color: isOwnMessage ? 'white' : '#666' }]}>
-        {formatTime(currentTime)} / {formatTime(totalTime)}
+      <Text style={[styles.timeText, { color: isOwnMessage ? 'white' : '#1C1C1E' }]}>
+        {displayTime}
       </Text>
     );
   };
 
-  // Render progress slider
-  const renderProgressSlider = (): React.ReactNode => {
-    if (!isLoaded || playbackDuration <= 0) {
-      return <View style={styles.progressTrack} />;
-    }
-
-    const progress = position / playbackDuration;
-    
-    return (
-      <View style={styles.progressTrack}>
-        <Animated.View
-          style={[
-            styles.progressFill,
-            {
-              width: progressAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0%', '100%'],
-                extrapolate: 'clamp',
-              }),
-              backgroundColor: isOwnMessage ? 'white' : '#007AFF',
-            },
-          ]}
-        />
-        <TouchableOpacity
-          style={styles.progressThumb}
-          onPress={() => handleSeek(progress)}
-        />
-      </View>
-    );
-  };
 
   return (
     <View style={[
@@ -255,11 +218,10 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
     ]}>
       <View style={styles.content}>
         {renderPlayButton()}
-        {renderWaveform()}
-        <View style={styles.controls}>
-          {renderTimeDisplay()}
-          {renderProgressSlider()}
+        <View style={styles.waveformContainer}>
+          {renderWaveform()}
         </View>
+        {renderTimeDisplay()}
         {renderSpeedButton()}
       </View>
       {error && (
@@ -273,8 +235,8 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    maxWidth: screenWidth * 0.7,
-    minWidth: 200,
+    maxWidth: screenWidth * 0.85,
+    minWidth: 280,
   },
   ownMessage: {
     alignSelf: 'flex-end',
@@ -285,7 +247,7 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#D1D1D6',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -300,44 +262,21 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   waveformContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 8,
     height: MAX_BAR_HEIGHT,
   },
   waveformBar: {
-    width: 2,
-    marginHorizontal: 1,
-    borderRadius: 1,
-  },
-  controls: {
-    flex: 1,
-    marginRight: 8,
+    width: 3,
+    marginHorizontal: 1.5,
+    borderRadius: 1.5,
   },
   timeText: {
     fontSize: 12,
     fontWeight: '500',
-    marginBottom: 4,
-  },
-  progressTrack: {
-    height: 2,
-    backgroundColor: '#E5E5EA',
-    borderRadius: 1,
-    position: 'relative',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 1,
-  },
-  progressThumb: {
-    position: 'absolute',
-    top: -4,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#007AFF',
-    left: '50%',
-    marginLeft: -5,
+    marginRight: 8,
   },
   speedButton: {
     paddingHorizontal: 8,

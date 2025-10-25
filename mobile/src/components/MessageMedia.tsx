@@ -24,6 +24,7 @@ interface MessageMediaProps {
   type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE';
   fileName?: string;
   fileSize?: number;
+  duration?: number; // Duration in seconds for voice messages
   isOwnMessage?: boolean;
   onLongPress?: () => void;
   messageId?: string;
@@ -40,6 +41,7 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   type,
   fileName,
   fileSize,
+  duration,
   isOwnMessage = false,
   onLongPress,
   messageId,
@@ -331,6 +333,7 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
       {type === 'VOICE' && (
         <VoiceMessagePlayer
           audioUrl={mediaUrl}
+          duration={duration}
           isOwnMessage={isOwnMessage}
         />
       )}
