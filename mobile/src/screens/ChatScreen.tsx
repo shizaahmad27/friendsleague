@@ -15,12 +15,6 @@ import {
   PanResponder,
   Dimensions,
 } from 'react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming,
-  runOnJS
-} from 'react-native-reanimated';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { chatApi, Message, Chat } from '../services/chatApi';
 import socketService from '../services/socketService';
@@ -58,10 +52,6 @@ export default function ChatScreen() {
   const [peerUser, setPeerUser] = useState<{ id: string; username: string; avatar?: string } | null>(null);
   const [chatMeta, setChatMeta] = useState<{ type: Chat['type']; name?: string } | null>(null);
   const [participants, setParticipants] = useState<Array<{ id: string; username: string; avatar?: string }>>([]);
-  // Reanimated 3 shared values - much more performant and smooth
-  const isInputFocused = useSharedValue(false);
-  const [iconsMeasuredWidth, setIconsMeasuredWidth] = useState(0);
-  const [showMenu, setShowMenu] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
 
   // Reusable media callbacks
@@ -163,82 +153,15 @@ export default function ChatScreen() {
     }
   };
 
-  // Handle media selection for three dots menu with timing delay
-  const handleMenuMediaSelection = async (selectionFunction: () => void) => {
-    console.log('ChatScreen: Starting menu media selection');
-    
-    try {
-      // Close menu first
-      setShowMenu(false);    
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    
-      selectionFunction();
-    } catch (error) {
-      console.error('ChatScreen: Menu media selection error:', error);
-    }
-  };
 
   // No need for media picker service - we'll use the hook directly
 
-  // Reanimated 3 animated styles - much smoother and more performant
-  const iconsAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      width: iconsMeasuredWidth === 0 ? undefined : withTiming(
-        isInputFocused.value ? 40 : iconsMeasuredWidth,
-        { duration: 280 }
-      ),
-      opacity: withTiming(
-        isInputFocused.value ? 0 : 1,
-        { duration: 280 }
-      ),
-      transform: [
-        { 
-          scaleX: withTiming(
-            isInputFocused.value ? 0.9 : 1,
-            { duration: 280 }
-          )
-        },
-        { 
-          translateX: withTiming(
-            isInputFocused.value ? -6 : 0,
-            { duration: 280 }
-          )
-        },
-      ],
-    };
-  });
 
-  const menuButtonStyle = useAnimatedStyle(() => {
-    return {
-      opacity: withTiming(
-        isInputFocused.value ? 1 : 0,
-        { duration: 280 }
-      ),
-      transform: [
-        { 
-          scale: withTiming(
-            isInputFocused.value ? 1 : 0.8,
-            { duration: 280 }
-          )
-        },
-      ],
-    };
-  });
 
   const flatListRef = useRef<FlatList>(null);
   const typingNames = typingUsers.map(id => usernamesById[id] ?? id);
   const usernamesRef = useRef(usernamesById);
 
-  // Simple focus handlers - Reanimated 3 handles all the complexity
-  const handleInputFocus = () => {
-    isInputFocused.value = true;
-  };
-
-  const handleInputBlur = () => {
-    isInputFocused.value = false;
-  };
 
 
   useEffect(() => {
@@ -721,13 +644,7 @@ export default function ChatScreen() {
         {/* Show normal input when not recording */}
         {!isRecording && (
           <>
-            <Animated.View
-              style={[styles.leftActionsRow, { overflow: 'hidden' }, iconsAnimatedStyle]}
-              onLayout={(e: any) => {
-                const w = e.nativeEvent.layout.width;
-                if (w !== iconsMeasuredWidth && w > 0) setIconsMeasuredWidth(w);
-              }}
-            >
+            <View style={styles.leftActionsRow}>
               <MediaPicker
                 onPreviewSelected={handlePreviewSelected}
                 onMediaSelected={handleMediaSelected}
@@ -743,25 +660,12 @@ export default function ChatScreen() {
                 <Ionicons name="camera-outline" size={24} color="#007AFF" />
               </TouchableOpacity>
             
-            </Animated.View>
-            
-            {/* Three dots menu button - appears when collapsed */}
-            <Animated.View style={[styles.menuButtonContainer, menuButtonStyle]}>
-              <TouchableOpacity
-                style={styles.menuButton}
-                onPress={() => setShowMenu(!showMenu)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="ellipsis-vertical" size={24} color="#007AFF" />
-              </TouchableOpacity>
-            </Animated.View>
+            </View>
             <View style={styles.textInputWrapper}>
               <TextInput
                 style={styles.textInput}
                 value={newMessage}
                 onChangeText={handleTyping}
-                onFocus={handleInputFocus}
-                onBlur={handleInputBlur}
                 placeholder="Type a message..."
                 multiline
                 maxLength={1000}
@@ -814,62 +718,6 @@ export default function ChatScreen() {
         onSelectEmoji={handleEmojiSelect}
       />
 
-      {/* Quick Actions Menu Modal */}
-      <Modal
-        visible={showMenu}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowMenu(false)}
-      >
-        <TouchableOpacity 
-          style={styles.menuOverlay}
-          activeOpacity={1}
-          onPress={() => setShowMenu(false)}
-        >
-          <View style={styles.menuContainer}>
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => {
-                handleMenuMediaSelection(mediaSelection.selectFromCamera);
-              }}
-            >
-              <Ionicons name="camera-outline" size={24} color="#007AFF" />
-              <Text style={styles.menuItemText}>Camera</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => {
-                handleMenuMediaSelection(mediaSelection.selectFromPhotos);
-              }}
-            >
-              <Ionicons name="images-outline" size={24} color="#007AFF" />
-              <Text style={styles.menuItemText}>Photos</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => {
-                handleMenuMediaSelection(mediaSelection.selectVideo);
-              }}
-            >
-              <Ionicons name="videocam-outline" size={24} color="#007AFF" />
-              <Text style={styles.menuItemText}>Video</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => {
-                handleMenuMediaSelection(mediaSelection.selectDocument);
-              }}
-            >
-              <Ionicons name="document-outline" size={24} color="#007AFF" />
-              <Text style={styles.menuItemText}>Document</Text>
-            </TouchableOpacity>
-            
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </KeyboardAvoidingView>
   );
 }
