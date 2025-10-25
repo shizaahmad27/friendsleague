@@ -15,6 +15,7 @@ export interface AudioPlaybackState {
   position: number;
   duration: number;
   speed: number;
+  currentUri: string | null;
 }
 
 class AudioService {
@@ -26,6 +27,7 @@ class AudioService {
     position: 0,
     duration: 0,
     speed: 1.0,
+    currentUri: null,
   };
   private playbackStateListeners: Set<(state: AudioPlaybackState) => void> = new Set();
 
@@ -289,6 +291,7 @@ class AudioService {
             position: status.positionMillis || 0,
             duration: status.durationMillis || 0,
             speed: status.rate || 1.0,
+            currentUri: uri,
           };
           
           this.currentPlaybackState = newState;
@@ -355,6 +358,7 @@ class AudioService {
           position: 0,
           duration: 0,
           speed: 1.0,
+          currentUri: null,
         };
         this.notifyPlaybackStateListeners(this.currentPlaybackState);
         

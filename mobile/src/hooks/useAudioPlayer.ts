@@ -36,21 +36,29 @@ export const useAudioPlayer = (): AudioPlayerState & AudioPlayerActions => {
 
   // Handle playback state updates from audioService
   const handlePlaybackStateUpdate = useCallback((state: AudioPlaybackState) => {
-    setIsLoaded(state.isLoaded);
-    setPosition(state.position);
-    setDuration(state.duration);
-    setSpeed(state.speed as SpeedOption);
-    
-    if (state.isLoaded) {
-      if (state.isPlaying) {
-        setPlaybackState('playing');
+    // Only update state if this component is managing the currently playing audio
+    if (currentUri && state.currentUri === currentUri) {
+      setIsLoaded(state.isLoaded);
+      setPosition(state.position);
+      setDuration(state.duration);
+      setSpeed(state.speed as SpeedOption);
+      
+      if (state.isLoaded) {
+        if (state.isPlaying) {
+          setPlaybackState('playing');
+        } else {
+          setPlaybackState('paused');
+        }
       } else {
-        setPlaybackState('paused');
+        setPlaybackState('idle');
       }
-    } else {
+    } else if (!state.currentUri) {
+      // If no audio is playing, reset to idle
       setPlaybackState('idle');
+      setPosition(0);
+      setIsLoaded(false);
     }
-  }, []);
+  }, [currentUri]);
 
   // Add listener on mount, remove on unmount
   useEffect(() => {
