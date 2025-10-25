@@ -22,10 +22,12 @@ export interface Chat {
 export interface Message {
   id: string;
   content: string;
-  type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'FILE';
+  type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE';
   senderId: string;
   chatId: string;
   mediaUrl?: string;
+  duration?: number; 
+  waveformData?: number[]; // Array of bar heights for voice messages
   replyToId?: string;
   createdAt: string;
   reactions?: Array<{

@@ -34,6 +34,7 @@ import { ChatSettingsModal } from '../components/ChatSettingsModal';
 import { MediaGalleryModal } from '../components/MediaGalleryModal';
 import { MediaService } from '../services/mediaService';
 import { useMediaSelection } from '../hooks/useMediaSelection';
+import { VoiceRecorder } from '../components/VoiceRecorder';
 import { Ionicons } from '@expo/vector-icons';
 
 type ChatScreenRouteProp = RouteProp<{ Chat: { chatId: string } }, 'Chat'>;
@@ -61,9 +62,10 @@ export default function ChatScreen() {
   const isInputFocused = useSharedValue(false);
   const [iconsMeasuredWidth, setIconsMeasuredWidth] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   // Reusable media callbacks
-  const handleMediaSelected = (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE', localUri?: string) => {
+  const handleMediaSelected = (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE', localUri?: string) => {
     // Replace provisional with real message after upload
     const tempPrefix = 'temp-';
     setMessages(prev => {
@@ -77,7 +79,7 @@ export default function ChatScreen() {
     sendMessage(mediaUrl, type);
   };
 
-  const handlePreviewSelected = (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE') => {
+  const handlePreviewSelected = (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE') => {
     // Insert a provisional message at top (inverted list) with a temp id
     const tempId = `temp-${Date.now()}`;
     const provisional: Message = {
@@ -97,6 +99,69 @@ export default function ChatScreen() {
     onMediaSelected: handleMediaSelected,
     onPreviewSelected: handlePreviewSelected,
   });
+
+  // Voice message handler
+  const handleVoiceSend = async (audioUrl: string, duration: number, waveformData?: number[]) => {
+    // Validate inputs
+    if (!audioUrl || typeof audioUrl !== 'string') {
+      console.error('ChatScreen: Invalid audioUrl provided to handleVoiceSend');
+      return;
+    }
+    
+    if (typeof duration !== 'number' || duration < 0) {
+      console.error('ChatScreen: Invalid duration provided to handleVoiceSend');
+      return;
+    }
+
+    if (!user?.id) {
+      console.error('ChatScreen: No user ID available for voice message');
+      return;
+    }
+
+    // Create provisional message for voice
+    const tempId = `temp-${Date.now()}`;
+    const provisional: Message = {
+      id: tempId,
+      content: '', // Empty content for voice messages
+      type: 'VOICE',
+      senderId: user.id,
+      chatId,
+      mediaUrl: audioUrl,
+      duration: duration, // Store duration in seconds
+      waveformData: waveformData, // Store waveform data
+      createdAt: new Date().toISOString(),
+    } as Message;
+    setMessages(prev => [provisional, ...prev]);
+    
+    try {
+      // Send the actual message directly without calling sendMessage to avoid duplicates
+      const message = await chatApi.sendMessage(
+        chatId, 
+        '', // Empty content for voice messages
+        'VOICE',
+        audioUrl,
+        replyingTo?.id
+      );
+
+      const messageWithSender = { ...message, senderId: user.id, duration: duration, waveformData: waveformData };
+
+      // Replace provisional message with real message
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempId ? messageWithSender : msg
+      ));
+
+      socketService.sendMessage(chatId, messageWithSender);
+      
+      // Clear reply state after sending
+      if (replyingTo) {
+        setReplyingTo(null);
+      }
+    } catch (error) {
+      console.error('ChatScreen: Error sending voice message:', error);
+      // Remove provisional message on error
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
+    }
+  };
 
   // Handle media selection for three dots menu with timing delay
   const handleMenuMediaSelection = async (selectionFunction: () => void) => {
@@ -325,7 +390,7 @@ export default function ChatScreen() {
     setFullscreenMessage(null);
   };
 
-  const sendMessage = async (mediaUrl?: string, mediaType?: 'IMAGE' | 'VIDEO' | 'FILE') => {
+  const sendMessage = async (mediaUrl?: string, mediaType?: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE') => {
     if ((!newMessage.trim() && !mediaUrl) || !user?.id) return;
 
     const messageContent = newMessage.trim();
@@ -442,7 +507,9 @@ export default function ChatScreen() {
         {isMediaMessage && item.mediaUrl ? (
           <MessageMedia
             mediaUrl={item.mediaUrl}
-            type={item.type as 'IMAGE' | 'VIDEO' | 'FILE'}
+            type={item.type as 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE'}
+            duration={item.duration}
+            waveformData={item.waveformData}
             isOwnMessage={isOwnMessage}
             onLongPress={() => handleReactionPress(item)}
             messageId={item.id}
@@ -643,64 +710,77 @@ export default function ChatScreen() {
       )}
 
       <View style={styles.inputContainer}>
-        <Animated.View
-          style={[styles.leftActionsRow, { overflow: 'hidden' }, iconsAnimatedStyle]}
-          onLayout={(e: any) => {
-            const w = e.nativeEvent.layout.width;
-            if (w !== iconsMeasuredWidth && w > 0) setIconsMeasuredWidth(w);
-          }}
-        >
-          <MediaPicker
-            onPreviewSelected={handlePreviewSelected}
-            onMediaSelected={handleMediaSelected}
-          />
-            <TouchableOpacity
-            style={styles.inlineIconButton}
-            onPress={() => {
-              console.log('Camera icon pressed');
-              Alert.alert('Coming soon', 'Quick camera shortcut');
-            }}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="camera-outline" size={24} color="#007AFF" />
-          </TouchableOpacity>
+        {/* Always render VoiceRecorder, but conditionally show full-width or inline */}
+        <VoiceRecorder
+          onVoiceSend={handleVoiceSend}
+          disabled={false}
+          onRecordingStateChange={setIsRecording}
+          isFullWidth={isRecording}
+        />
         
-        </Animated.View>
-        
-        {/* Three dots menu button - appears when collapsed */}
-        <Animated.View style={[styles.menuButtonContainer, menuButtonStyle]}>
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={() => setShowMenu(!showMenu)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="ellipsis-vertical" size={24} color="#007AFF" />
-          </TouchableOpacity>
-        </Animated.View>
-        <View style={styles.textInputWrapper}>
-          <TextInput
-            style={styles.textInput}
-            value={newMessage}
-            onChangeText={handleTyping}
-            onFocus={handleInputFocus}
-            onBlur={handleInputBlur}
-            placeholder="Type a message..."
-            multiline
-            maxLength={1000}
-          />
-          <TouchableOpacity
-            style={styles.sendIconButton}
-            onPress={() => sendMessage()}
-            disabled={!newMessage.trim()}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons
-              name="arrow-up-circle"
-              size={28}
-              color={newMessage.trim() ? '#007AFF' : '#ccc'}
-            />
-          </TouchableOpacity>
-        </View>
+        {/* Show normal input when not recording */}
+        {!isRecording && (
+          <>
+            <Animated.View
+              style={[styles.leftActionsRow, { overflow: 'hidden' }, iconsAnimatedStyle]}
+              onLayout={(e: any) => {
+                const w = e.nativeEvent.layout.width;
+                if (w !== iconsMeasuredWidth && w > 0) setIconsMeasuredWidth(w);
+              }}
+            >
+              <MediaPicker
+                onPreviewSelected={handlePreviewSelected}
+                onMediaSelected={handleMediaSelected}
+              />
+              <TouchableOpacity
+                style={styles.inlineIconButton}
+                onPress={() => {
+                  console.log('Camera icon pressed');
+                  Alert.alert('Coming soon', 'Quick camera shortcut');
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="camera-outline" size={24} color="#007AFF" />
+              </TouchableOpacity>
+            
+            </Animated.View>
+            
+            {/* Three dots menu button - appears when collapsed */}
+            <Animated.View style={[styles.menuButtonContainer, menuButtonStyle]}>
+              <TouchableOpacity
+                style={styles.menuButton}
+                onPress={() => setShowMenu(!showMenu)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="ellipsis-vertical" size={24} color="#007AFF" />
+              </TouchableOpacity>
+            </Animated.View>
+            <View style={styles.textInputWrapper}>
+              <TextInput
+                style={styles.textInput}
+                value={newMessage}
+                onChangeText={handleTyping}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
+                placeholder="Type a message..."
+                multiline
+                maxLength={1000}
+              />
+              <TouchableOpacity
+                style={styles.sendIconButton}
+                onPress={() => sendMessage()}
+                disabled={!newMessage.trim()}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons
+                  name="arrow-up-circle"
+                  size={28}
+                  color={newMessage.trim() ? '#007AFF' : '#ccc'}
+                />
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </View>
 
       {/* Chat Settings Modal */}

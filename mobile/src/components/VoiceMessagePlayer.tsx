@@ -1,0 +1,325 @@
+import React, { useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  Dimensions,
+  ActivityIndicator,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useAudioPlayer } from '../hooks/useAudioPlayer';
+
+interface VoiceMessagePlayerProps {
+  audioUrl: string;
+  duration?: number;
+  waveformData?: number[];
+  isOwnMessage?: boolean;
+}
+
+const { width: screenWidth } = Dimensions.get('window');
+const WAVEFORM_BARS = 12;
+const MAX_BAR_HEIGHT = 30;
+const MIN_BAR_HEIGHT = 4;
+
+export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
+  audioUrl,
+  duration = 0,
+  waveformData,
+  isOwnMessage = false,
+}) => {
+  const {
+    playbackState,
+    position,
+    duration: playbackDuration,
+    speed,
+    isLoaded,
+    error,
+    play,
+    pause,
+    resume,
+    stop,
+    toggleSpeed,
+    seek,
+  } = useAudioPlayer();
+
+  // Animation values
+  const playButtonAnimation = useRef(new Animated.Value(1)).current;
+
+
+  // Animate play button
+  useEffect(() => {
+    if (playbackState === 'playing') {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(playButtonAnimation, {
+            toValue: 1.1,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(playButtonAnimation, {
+            toValue: 1,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      playButtonAnimation.setValue(1);
+    }
+  }, [playbackState, playButtonAnimation]);
+
+  // Format time as MM:SS
+  const formatTime = (milliseconds: number): string => {
+    const seconds = Math.floor(milliseconds / 1000);
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Handle play/pause
+  const handlePlayPause = async (): Promise<void> => {
+    try {
+      if (playbackState === 'playing') {
+        await pause();
+      } else if (playbackState === 'paused') {
+        await resume();
+      } else {
+        await play(audioUrl);
+      }
+    } catch (error) {
+      console.error('VoiceMessagePlayer: Error toggling playback:', error);
+    }
+  };
+
+  // Handle speed toggle
+  const handleSpeedToggle = async (): Promise<void> => {
+    try {
+      await toggleSpeed();
+    } catch (error) {
+      console.error('VoiceMessagePlayer: Error toggling speed:', error);
+    }
+  };
+
+  // Handle seek
+  const handleSeek = async (progress: number): Promise<void> => {
+    try {
+      // Validate progress value
+      const clampedProgress = Math.max(0, Math.min(1, progress));
+      const seekPosition = clampedProgress * playbackDuration;
+      await seek(seekPosition);
+    } catch (error) {
+      console.error('VoiceMessagePlayer: Error seeking:', error);
+    }
+  };
+
+  // Generate waveform bars from real data or fallback to static pattern
+  const generateWaveformBars = (): number[] => {
+    if (waveformData && waveformData.length > 0) {
+      // Use real waveform data, scale to fit our bar count
+      const scaledBars: number[] = [];
+      const dataLength = waveformData.length;
+      const targetLength = WAVEFORM_BARS;
+      
+      for (let i = 0; i < targetLength; i++) {
+        // Map target index to data index
+        const dataIndex = Math.floor((i / targetLength) * dataLength);
+        const height = waveformData[dataIndex];
+        
+        // Scale height to our range (0-1 to MIN_BAR_HEIGHT-MAX_BAR_HEIGHT)
+        const scaledHeight = MIN_BAR_HEIGHT + height * (MAX_BAR_HEIGHT - MIN_BAR_HEIGHT);
+        scaledBars.push(scaledHeight);
+      }
+      
+      return scaledBars;
+    } else {
+      // Fallback to static pattern if no waveform data
+      const bars: number[] = [];
+      for (let i = 0; i < WAVEFORM_BARS; i++) {
+        const baseHeight = MIN_BAR_HEIGHT + (Math.sin(i * 0.5) * 0.5 + 0.5) * (MAX_BAR_HEIGHT - MIN_BAR_HEIGHT);
+        bars.push(baseHeight);
+      }
+      return bars;
+    }
+  };
+
+  // Render waveform
+  const renderWaveform = (): React.ReactNode => {
+    const bars = generateWaveformBars();
+    const progress = isLoaded && playbackDuration > 0 ? position / playbackDuration : 0;
+    const activeBars = Math.floor(progress * WAVEFORM_BARS);
+
+    return (
+      <View style={styles.waveformContainer}>
+        <View style={styles.waveformBarsWrapper}>
+          {bars.map((height, index) => {
+            const isActive = index < activeBars;
+            const isCurrent = index === activeBars;
+            
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.waveformBar,
+                  {
+                    height,
+                    backgroundColor: isActive 
+                      ? (isOwnMessage ? '#007AFF' : '#34C759')
+                      : isCurrent 
+                      ? (isOwnMessage ? '#007AFF' : '#34C759')
+                      : '#8E8E93',
+                    opacity: isActive ? 1 : isCurrent ? 0.7 : 0.3,
+                  },
+                ]}
+              />
+            );
+          })}
+        </View>
+      </View>
+    );
+  };
+
+  // Render play/pause button
+  const renderPlayButton = (): React.ReactNode => {
+    if (playbackState === 'loading') {
+      return (
+        <View style={styles.playButton}>
+          <ActivityIndicator size="small" color={isOwnMessage ? 'white' : '#007AFF'} />
+        </View>
+      );
+    }
+
+    const iconName = playbackState === 'playing' ? 'pause' : 'play';
+    
+    return (
+      <Animated.View style={{ transform: [{ scale: playButtonAnimation }] }}>
+        <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
+          <Ionicons 
+            name={iconName} 
+            size={20} 
+            color={isOwnMessage ? 'white' : '#007AFF'} 
+          />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
+  // Render speed button
+  const renderSpeedButton = (): React.ReactNode => {
+    return (
+      <TouchableOpacity style={styles.speedButton} onPress={handleSpeedToggle}>
+        <Text style={[styles.speedText, { color: isOwnMessage ? 'white' : '#1C1C1E' }]}>
+          {speed}x
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  // Render time display
+  const renderTimeDisplay = (): React.ReactNode => {
+    const currentTime = isLoaded ? position : 0;
+    const totalTime = isLoaded ? playbackDuration : (duration * 1000);
+    
+    // Show current time when playing/paused, otherwise show total duration
+    const displayTime = (playbackState === 'playing' || playbackState === 'paused') 
+      ? formatTime(currentTime)
+      : formatTime(totalTime);
+    
+    return (
+      <Text style={[styles.timeText, { color: isOwnMessage ? 'white' : '#1C1C1E' }]}>
+        {displayTime}
+      </Text>
+    );
+  };
+
+
+  return (
+    <View style={[
+      styles.container,
+      isOwnMessage ? styles.ownMessage : styles.otherMessage
+    ]}>
+      <View style={styles.content}>
+        {renderPlayButton()}
+        <View style={styles.waveformContainer}>
+          {renderWaveform()}
+        </View>
+        {renderTimeDisplay()}
+        {renderSpeedButton()}
+      </View>
+      {error && (
+        <Text style={[styles.errorText, { color: isOwnMessage ? '#FFB3B3' : '#FF3B30' }]}>
+          {error}
+        </Text>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    maxWidth: screenWidth * 0.85,
+    minWidth: 280,
+  },
+  ownMessage: {
+    alignSelf: 'flex-end',
+  },
+  otherMessage: {
+    alignSelf: 'flex-start',
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#C1C1C6',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  playButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  waveformContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 4,
+    height: MAX_BAR_HEIGHT,
+  },
+  waveformBarsWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '90%',
+    paddingHorizontal: 8,
+  },
+  waveformBar: {
+    width: 3,
+    borderRadius: 0.5,
+  },
+  timeText: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginRight: 8,
+  },
+  speedButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: 'rgba(13, 28, 44, 0.87)',
+  },
+  speedText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  errorText: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+});

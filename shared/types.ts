@@ -16,10 +16,12 @@ export interface User {
 export interface Message {
   id: string;
   content: string;
-  type: 'text' | 'image' | 'video' | 'file';
+  type: 'text' | 'image' | 'video' | 'file' | 'voice';
   senderId: string;
   chatId: string;
   mediaUrl?: string;
+  duration?: number; // Duration in seconds for voice messages
+  waveformData?: number[]; // Array of bar heights for voice messages
   replyToId?: string;
   createdAt: Date;
   updatedAt: Date;

@@ -84,7 +84,8 @@ export default function ChatListScreen() {
               lastMessage.content || 
               (lastMessage.type === 'IMAGE' ? '📷 Bilde' :
                lastMessage.type === 'VIDEO' ? '🎥 Video' :
-               lastMessage.type === 'FILE' ? '📄 Fil' : 'Ingen meldinger ennå')
+               lastMessage.type === 'FILE' ? '📄 Fil' :
+               lastMessage.type === 'VOICE' ? '🎤 Lydmelding' : 'Ingen meldinger ennå')
             ) : 'Ingen meldinger ennå'}
           </Text>
         </View>

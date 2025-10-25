@@ -17,12 +17,15 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { WebView } from 'react-native-webview';
 import * as VideoThumbnails from 'expo-video-thumbnails';
+import { VoiceMessagePlayer } from './VoiceMessagePlayer';
 
 interface MessageMediaProps {
   mediaUrl: string;
-  type: 'IMAGE' | 'VIDEO' | 'FILE';
+  type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE';
   fileName?: string;
   fileSize?: number;
+  duration?: number; // Duration in seconds for voice messages
+  waveformData?: number[]; // Waveform data for voice messages
   isOwnMessage?: boolean;
   onLongPress?: () => void;
   messageId?: string;
@@ -39,6 +42,8 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   type,
   fileName,
   fileSize,
+  duration,
+  waveformData,
   isOwnMessage = false,
   onLongPress,
   messageId,
@@ -327,6 +332,14 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
       {type === 'IMAGE' && renderImage()}
       {type === 'VIDEO' && renderVideo()}
       {type === 'FILE' && renderFile()}
+      {type === 'VOICE' && (
+        <VoiceMessagePlayer
+          audioUrl={mediaUrl}
+          duration={duration}
+          waveformData={waveformData}
+          isOwnMessage={isOwnMessage}
+        />
+      )}
       {pending && (
         <View style={styles.sendingOverlay}>
           <ActivityIndicator size="small" color="#fff" />
