@@ -21,6 +21,7 @@ export interface Message {
   chatId: string;
   mediaUrl?: string;
   duration?: number; // Duration in seconds for voice messages
+  waveformData?: number[]; // Array of bar heights for voice messages
   replyToId?: string;
   createdAt: Date;
   updatedAt: Date;

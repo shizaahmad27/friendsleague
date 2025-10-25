@@ -14,6 +14,7 @@ import { useAudioPlayer } from '../hooks/useAudioPlayer';
 interface VoiceMessagePlayerProps {
   audioUrl: string;
   duration?: number;
+  waveformData?: number[];
   isOwnMessage?: boolean;
 }
 
@@ -25,6 +26,7 @@ const MIN_BAR_HEIGHT = 4;
 export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
   audioUrl,
   duration = 0,
+  waveformData,
   isOwnMessage = false,
 }) => {
   const {
@@ -112,15 +114,34 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
     }
   };
 
-  // Generate static waveform bars based on duration
+  // Generate waveform bars from real data or fallback to static pattern
   const generateWaveformBars = (): number[] => {
-    const bars: number[] = [];
-    for (let i = 0; i < WAVEFORM_BARS; i++) {
-      // Create a simple pattern based on duration and position
-      const baseHeight = MIN_BAR_HEIGHT + (Math.sin(i * 0.5) * 0.5 + 0.5) * (MAX_BAR_HEIGHT - MIN_BAR_HEIGHT);
-      bars.push(baseHeight);
+    if (waveformData && waveformData.length > 0) {
+      // Use real waveform data, scale to fit our bar count
+      const scaledBars: number[] = [];
+      const dataLength = waveformData.length;
+      const targetLength = WAVEFORM_BARS;
+      
+      for (let i = 0; i < targetLength; i++) {
+        // Map target index to data index
+        const dataIndex = Math.floor((i / targetLength) * dataLength);
+        const height = waveformData[dataIndex];
+        
+        // Scale height to our range (0-1 to MIN_BAR_HEIGHT-MAX_BAR_HEIGHT)
+        const scaledHeight = MIN_BAR_HEIGHT + height * (MAX_BAR_HEIGHT - MIN_BAR_HEIGHT);
+        scaledBars.push(scaledHeight);
+      }
+      
+      return scaledBars;
+    } else {
+      // Fallback to static pattern if no waveform data
+      const bars: number[] = [];
+      for (let i = 0; i < WAVEFORM_BARS; i++) {
+        const baseHeight = MIN_BAR_HEIGHT + (Math.sin(i * 0.5) * 0.5 + 0.5) * (MAX_BAR_HEIGHT - MIN_BAR_HEIGHT);
+        bars.push(baseHeight);
+      }
+      return bars;
     }
-    return bars;
   };
 
   // Render waveform

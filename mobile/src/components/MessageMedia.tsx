@@ -25,6 +25,7 @@ interface MessageMediaProps {
   fileName?: string;
   fileSize?: number;
   duration?: number; // Duration in seconds for voice messages
+  waveformData?: number[]; // Waveform data for voice messages
   isOwnMessage?: boolean;
   onLongPress?: () => void;
   messageId?: string;
@@ -42,6 +43,7 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
   fileName,
   fileSize,
   duration,
+  waveformData,
   isOwnMessage = false,
   onLongPress,
   messageId,
@@ -334,6 +336,7 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({
         <VoiceMessagePlayer
           audioUrl={mediaUrl}
           duration={duration}
+          waveformData={waveformData}
           isOwnMessage={isOwnMessage}
         />
       )}

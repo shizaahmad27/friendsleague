@@ -101,7 +101,7 @@ export default function ChatScreen() {
   });
 
   // Voice message handler
-  const handleVoiceSend = async (audioUrl: string, duration: number) => {
+  const handleVoiceSend = async (audioUrl: string, duration: number, waveformData?: number[]) => {
     // Validate inputs
     if (!audioUrl || typeof audioUrl !== 'string') {
       console.error('ChatScreen: Invalid audioUrl provided to handleVoiceSend');
@@ -128,6 +128,7 @@ export default function ChatScreen() {
       chatId,
       mediaUrl: audioUrl,
       duration: duration, // Store duration in seconds
+      waveformData: waveformData, // Store waveform data
       createdAt: new Date().toISOString(),
     } as Message;
     setMessages(prev => [provisional, ...prev]);
@@ -142,7 +143,7 @@ export default function ChatScreen() {
         replyingTo?.id
       );
 
-      const messageWithSender = { ...message, senderId: user.id, duration: duration };
+      const messageWithSender = { ...message, senderId: user.id, duration: duration, waveformData: waveformData };
 
       // Replace provisional message with real message
       setMessages(prev => prev.map(msg => 
@@ -508,6 +509,7 @@ export default function ChatScreen() {
             mediaUrl={item.mediaUrl}
             type={item.type as 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE'}
             duration={item.duration}
+            waveformData={item.waveformData}
             isOwnMessage={isOwnMessage}
             onLongPress={() => handleReactionPress(item)}
             messageId={item.id}

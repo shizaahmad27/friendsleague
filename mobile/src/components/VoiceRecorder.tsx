@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 
 interface VoiceRecorderProps {
-  onVoiceSend: (audioUrl: string, duration: number) => void;
+  onVoiceSend: (audioUrl: string, duration: number, waveformData?: number[]) => void;
   disabled?: boolean;
   onRecordingStateChange?: (isRecording: boolean) => void;
   isFullWidth?: boolean; // New prop to indicate if this should render full-width UI
@@ -139,8 +139,8 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   // Handle send
   const handleSend = async (): Promise<void> => {
     try {
-      const audioUrl = await uploadRecording();
-      onVoiceSend(audioUrl, duration);
+      const { audioUrl, waveformData } = await uploadRecording();
+      onVoiceSend(audioUrl, duration, waveformData);
       reset();
     } catch (error) {
       console.error('VoiceRecorder: Error sending voice message:', error);

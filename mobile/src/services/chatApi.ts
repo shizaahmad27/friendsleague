@@ -27,6 +27,7 @@ export interface Message {
   chatId: string;
   mediaUrl?: string;
   duration?: number; 
+  waveformData?: number[]; // Array of bar heights for voice messages
   replyToId?: string;
   createdAt: string;
   reactions?: Array<{

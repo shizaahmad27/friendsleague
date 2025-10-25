@@ -1,12 +1,14 @@
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system/legacy';
 import { MediaService } from './mediaService';
+import { generateWaveformForAudio } from '../utils/waveformGenerator';
 
 export interface AudioFile {
   uri: string;
   duration: number;
   size: number;
   name: string;
+  waveformData?: number[];
 }
 
 export interface AudioPlaybackState {
@@ -153,7 +155,7 @@ class AudioService {
         return null;
       }
 
-      console.log('AudioService.stopRecording: Stopping recording...');
+    
       await this.recording.stopAndUnloadAsync();
       const uri = this.recording.getURI();
       
@@ -163,20 +165,22 @@ class AudioService {
         return null;
       }
 
-      console.log('AudioService.stopRecording: Getting file info...');
+    
       // Get file info
       const fileInfo = await FileSystem.getInfoAsync(uri);
       const duration = await this.getAudioDuration(uri);
+      
+      // Generate waveform data for the audio
+      console.log('AudioService.stopRecording: Generating waveform data...');
+      const waveformData = generateWaveformForAudio(uri, duration).bars;
       
       const audioFile: AudioFile = {
         uri,
         duration,
         size: (fileInfo as any).size || 0,
         name: `voice_${Date.now()}.m4a`,
-      };
-
-      console.log('AudioService.stopRecording: Recording stopped, duration:', duration);
-      
+        waveformData,
+      };      
       // Clean up
       this.recording = null;
       
@@ -199,7 +203,6 @@ class AudioService {
         return;
       }
 
-      console.log('AudioService.cancelRecording: Canceling recording...');
       await this.recording.stopAndUnloadAsync();
       const uri = this.recording.getURI();
       if (uri) {
@@ -207,7 +210,6 @@ class AudioService {
         await FileSystem.deleteAsync(uri, { idempotent: true });
       }
       this.recording = null;
-      console.log('AudioService.cancelRecording: Recording canceled');
     } catch (error) {
       console.error('AudioService.cancelRecording: Error canceling recording:', error);
       // Clean up on error
@@ -249,7 +251,6 @@ class AudioService {
       };
 
       const audioUrl = await MediaService.uploadMedia(mediaFile, onProgress);
-      console.log('AudioService.uploadAudio: Upload completed, URL:', audioUrl);
       
       return audioUrl;
     } catch (error) {

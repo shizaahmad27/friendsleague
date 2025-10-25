@@ -15,7 +15,7 @@ export interface VoiceRecorderState {
 export interface VoiceRecorderActions {
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<void>;
-  uploadRecording: () => Promise<string>;
+  uploadRecording: () => Promise<{ audioUrl: string; waveformData: number[] }>;
   cancelRecording: () => Promise<void>;
   reset: () => void;
 }
@@ -160,7 +160,7 @@ export const useVoiceRecorder = (): VoiceRecorderState & VoiceRecorderActions =>
   }, [recordingState, stopDurationTracking]);
 
   // Upload recording
-  const uploadRecording = useCallback(async (): Promise<string> => {
+  const uploadRecording = useCallback(async (): Promise<{ audioUrl: string; waveformData: number[] }> => {
     if (!audioFile) {
       throw new Error('No audio file to upload');
     }
@@ -175,7 +175,10 @@ export const useVoiceRecorder = (): VoiceRecorderState & VoiceRecorderActions =>
       });
 
       console.log('useVoiceRecorder: Upload completed, URL:', audioUrl);
-      return audioUrl;
+      return {
+        audioUrl,
+        waveformData: audioFile.waveformData || []
+      };
     } catch (error) {
       console.error('useVoiceRecorder: Error uploading recording:', error);
       setError('Failed to upload voice message');
