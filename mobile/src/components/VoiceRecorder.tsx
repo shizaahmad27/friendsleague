@@ -14,6 +14,8 @@ import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 interface VoiceRecorderProps {
   onVoiceSend: (audioUrl: string, duration: number) => void;
   disabled?: boolean;
+  onRecordingStateChange?: (isRecording: boolean) => void;
+  isFullWidth?: boolean; // New prop to indicate if this should render full-width UI
 }
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -24,6 +26,8 @@ const MIN_BAR_HEIGHT = 8;
 export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   onVoiceSend,
   disabled = false,
+  onRecordingStateChange,
+  isFullWidth = false,
 }) => {
   const {
     recordingState,
@@ -44,6 +48,12 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   ).current;
   const pulseAnimation = useRef(new Animated.Value(1)).current;
   const recordingOpacity = useRef(new Animated.Value(0)).current;
+
+  // Notify parent when recording state changes
+  useEffect(() => {
+    console.log('VoiceRecorder: Recording state changed to:', recordingState);
+    onRecordingStateChange?.(recordingState !== 'idle');
+  }, [recordingState, onRecordingStateChange]);
 
   // Start waveform animation when recording
   useEffect(() => {
@@ -162,96 +172,90 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     );
   };
 
-  // Render recording UI
-  const renderRecordingUI = (): React.ReactNode => {
-    if (recordingState === 'idle') {
-      return (
-        <TouchableOpacity
-          style={[styles.voiceButton, disabled && styles.voiceButtonDisabled]}
-          onPress={startRecording}
-          disabled={disabled}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="mic-outline" size={24} color={disabled ? '#999' : '#007AFF'} />
-        </TouchableOpacity>
-      );
-    }
+  // If this is full-width mode, always show the recording interface
+  if (isFullWidth) {
+    return (
+      <View style={styles.fullWidthContainer}>
+        {/* Recording UI */}
+        {recordingState === 'recording' && (
+          <View style={styles.recordingRow}>
+            {/* Delete button */}
+            <TouchableOpacity style={styles.deleteButton} onPress={handleCancel}>
+              <Ionicons name="trash-outline" size={24} color="#FF3B30" />
+            </TouchableOpacity>
 
-    if (recordingState === 'recording') {
-      return (
-        <Animated.View style={[styles.recordingContainer, { opacity: recordingOpacity }]}>
-          <View style={styles.recordingContent}>
-            {renderWaveform()}
-            <Text style={styles.durationText}>{formatDuration(duration)}</Text>
-            <TouchableOpacity style={styles.stopButton} onPress={stopRecording}>
-              <Ionicons name="stop" size={20} color="white" />
+            {/* Waveform and timer */}
+            <View style={styles.centerContent}>
+              {renderWaveform()}
+              <Text style={styles.timerText}>{formatDuration(duration)}</Text>
+            </View>
+
+            {/* Stop button */}
+            <TouchableOpacity style={styles.stopButtonCircle} onPress={stopRecording}>
+              <View style={styles.stopSquare} />
             </TouchableOpacity>
           </View>
-        </Animated.View>
-      );
-    }
+        )}
 
-    if (recordingState === 'stopped') {
-      return (
-        <View style={styles.stoppedContainer}>
-          <View style={styles.stoppedContent}>
-            {renderWaveform()}
-            <Text style={styles.durationText}>{formatDuration(duration)}</Text>
-            <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-                <Ionicons name="close" size={20} color="#FF3B30" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-                <Ionicons name="send" size={20} color="white" />
-              </TouchableOpacity>
+        {/* Stopped UI (ready to send) */}
+        {recordingState === 'stopped' && (
+          <View style={styles.recordingRow}>
+            {/* Delete button */}
+            <TouchableOpacity style={styles.deleteButton} onPress={handleCancel}>
+              <Ionicons name="trash-outline" size={24} color="#FF3B30" />
+            </TouchableOpacity>
+
+            {/* Waveform and duration */}
+            <View style={styles.centerContent}>
+              {renderWaveform()}
+              <Text style={styles.timerText}>{formatDuration(duration)}</Text>
             </View>
+
+            {/* Send button */}
+            <TouchableOpacity style={styles.sendButtonCircle} onPress={handleSend}>
+              <Ionicons name="send" size={20} color="white" />
+            </TouchableOpacity>
           </View>
-        </View>
-      );
-    }
+        )}
 
-    if (recordingState === 'uploading') {
-      return (
-        <View style={styles.uploadingContainer}>
-          <ActivityIndicator size="small" color="#007AFF" />
-          <Text style={styles.uploadingText}>
-            Uploading... {Math.round(uploadProgress)}%
-          </Text>
-        </View>
-      );
-    }
+        {/* Uploading UI */}
+        {recordingState === 'uploading' && (
+          <View style={styles.recordingRow}>
+            <ActivityIndicator size="small" color="#007AFF" />
+            <Text style={styles.uploadingText}>
+              Uploading... {Math.round(uploadProgress)}%
+            </Text>
+          </View>
+        )}
 
-    return null;
-  };
-
-  // When recording, show full UI, otherwise just the inline button
-  if (recordingState === 'idle') {
-    return (
-      <>
-        {renderRecordingUI()}
+        {/* Error message */}
         {error && (
           <Text style={styles.errorText}>{error}</Text>
         )}
-      </>
+      </View>
     );
   }
 
-  return (
-    <View style={styles.container}>
-      {renderRecordingUI()}
-      {error && (
-        <Text style={styles.errorText}>{error}</Text>
-      )}
-    </View>
-  );
+  // Render idle state (just the mic button) - for inline mode
+  if (recordingState === 'idle') {
+    return (
+      <TouchableOpacity
+        style={[styles.voiceButton, disabled && styles.voiceButtonDisabled]}
+        onPress={startRecording}
+        disabled={disabled}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Ionicons name="mic-outline" size={24} color={disabled ? '#999' : '#007AFF'} />
+      </TouchableOpacity>
+    );
+  }
+
+  // This should never happen in inline mode, but just in case
+  return null;
 };
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 60,
-  },
+  // Idle state button (inline with other icons)
   voiceButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -262,91 +266,97 @@ const styles = StyleSheet.create({
   voiceButtonDisabled: {
     opacity: 0.5,
   },
-  recordingContainer: {
-    width: screenWidth * 0.8,
-    maxWidth: 300,
+
+  // Full-width recording container (replaces input field)
+  fullWidthContainer: {
+    width: '100%',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 44,
+    justifyContent: 'center',
   },
-  recordingContent: {
+
+  // Recording row layout (Messenger style)
+  recordingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 25,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    justifyContent: 'space-between',
   },
-  stoppedContainer: {
-    width: screenWidth * 0.8,
-    maxWidth: 300,
+
+  // Delete button (left side)
+  deleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  stoppedContent: {
+
+  // Center content (waveform + timer)
+  centerContent: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 25,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    justifyContent: 'center',
+    marginHorizontal: 12,
   },
+
+  // Waveform
   waveformContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 8,
   },
   waveformBar: {
     width: 3,
-    marginHorizontal: 1,
+    marginHorizontal: 1.5,
     borderRadius: 1.5,
   },
-  durationText: {
-    fontSize: 16,
-    fontWeight: '600',
+
+  // Timer text
+  timerText: {
+    fontSize: 15,
+    fontWeight: '500',
     color: '#000',
-    marginRight: 12,
-    minWidth: 50,
+    minWidth: 45,
   },
-  stopButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+
+  // Stop button (right side when recording)
+  stopButtonCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#FF3B30',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  stopSquare: {
+    width: 14,
+    height: 14,
+    backgroundColor: 'white',
+    borderRadius: 2,
   },
-  cancelButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#F2F2F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#FF3B30',
-  },
-  sendButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+
+  // Send button (right side when stopped)
+  sendButtonCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  uploadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 25,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
+
+  // Uploading text
   uploadingText: {
     fontSize: 14,
     color: '#666',
     marginLeft: 8,
   },
+
+  // Error text
   errorText: {
     fontSize: 12,
     color: '#FF3B30',

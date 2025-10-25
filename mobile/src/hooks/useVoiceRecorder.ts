@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 import { audioService, AudioFile } from '../services/audioService';
 
 export type RecordingState = 'idle' | 'recording' | 'stopped' | 'uploading';
@@ -36,6 +36,7 @@ export const useVoiceRecorder = (): VoiceRecorderState & VoiceRecorderActions =>
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      console.log('useVoiceRecorder: Component unmounting, cleaning up...');
       if (durationIntervalRef.current) {
         clearInterval(durationIntervalRef.current);
       }
@@ -75,25 +76,45 @@ export const useVoiceRecorder = (): VoiceRecorderState & VoiceRecorderActions =>
       
       // Prevent multiple simultaneous recordings
       if (recordingState !== 'idle') {
-        console.warn('useVoiceRecorder: Attempted to start recording while not idle');
+        console.warn('useVoiceRecorder: Attempted to start recording while not idle, current state:', recordingState);
         return;
       }
       
       // Check permissions
+      console.log('useVoiceRecorder: Checking microphone permissions...');
       const hasPermission = await audioService.requestPermissions();
+      console.log('useVoiceRecorder: Permission result:', hasPermission);
+      
       if (!hasPermission) {
         setError('Microphone permission is required to record voice messages');
         Alert.alert(
-          'Permission Required',
-          'Please allow microphone access to record voice messages.',
-          [{ text: 'OK' }]
+          'Microphone Permission Required',
+          'This app needs access to your microphone to record voice messages. Please enable microphone access in your device settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => {
+              console.log('useVoiceRecorder: Opening device settings...');
+              if (Platform.OS === 'ios') {
+                Linking.openURL('app-settings:');
+              } else {
+                Linking.openSettings();
+              }
+            }}
+          ]
         );
         return;
       }
 
       setRecordingState('recording');
-      await audioService.startRecording();
-      startDurationTracking();
+      try {
+        await audioService.startRecording();
+        startDurationTracking();
+      } catch (error) {
+        console.error('useVoiceRecorder: Error in startRecording:', error);
+        setRecordingState('idle');
+        setError('Failed to start recording. Please try again.');
+        return;
+      }
       
       console.log('useVoiceRecorder: Recording started');
     } catch (error) {
@@ -107,20 +128,36 @@ export const useVoiceRecorder = (): VoiceRecorderState & VoiceRecorderActions =>
   // Stop recording
   const stopRecording = useCallback(async (): Promise<void> => {
     try {
+      if (recordingState !== 'recording') {
+        console.warn('useVoiceRecorder: Attempted to stop recording while not recording');
+        return;
+      }
+
+      console.log('useVoiceRecorder: Stopping recording...');
       stopDurationTracking();
       setRecordingState('stopped');
       
-      const file = await audioService.stopRecording();
-      setAudioFile(file);
-      
-      console.log('useVoiceRecorder: Recording stopped, duration:', duration);
+      try {
+        const file = await audioService.stopRecording();
+        if (file) {
+          setAudioFile(file);
+          console.log('useVoiceRecorder: Recording stopped, duration:', file.duration);
+        } else {
+          setError('Failed to stop recording');
+          setRecordingState('idle');
+        }
+      } catch (error) {
+        console.error('useVoiceRecorder: Error in stopRecording:', error);
+        setError('Failed to stop recording');
+        setRecordingState('idle');
+      }
     } catch (error) {
       console.error('useVoiceRecorder: Error stopping recording:', error);
       setError('Failed to stop recording');
       setRecordingState('idle');
       Alert.alert('Recording Error', 'Failed to stop recording. Please try again.');
     }
-  }, [duration, stopDurationTracking]);
+  }, [recordingState, stopDurationTracking]);
 
   // Upload recording
   const uploadRecording = useCallback(async (): Promise<string> => {

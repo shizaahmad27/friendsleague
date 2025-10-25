@@ -1,5 +1,5 @@
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { MediaService } from './mediaService';
 
 export interface AudioFile {
@@ -34,8 +34,34 @@ class AudioService {
    */
   async requestPermissions(): Promise<boolean> {
     try {
+      console.log('AudioService.requestPermissions: Requesting microphone permissions...');
+      
+      // First check current status
+      const { status: currentStatus } = await Audio.getPermissionsAsync();
+      console.log('AudioService.requestPermissions: Current permission status:', currentStatus);
+      
+      if (currentStatus === 'granted') {
+        console.log('AudioService.requestPermissions: Permissions already granted');
+        return true;
+      }
+      
+      // Request permissions
       const { status } = await Audio.requestPermissionsAsync();
-      return status === 'granted';
+      console.log('AudioService.requestPermissions: Permission request result:', status);
+      
+      if (status === 'granted') {
+        console.log('AudioService.requestPermissions: Permissions granted');
+        return true;
+      } else if (status === 'denied') {
+        console.log('AudioService.requestPermissions: Permissions denied by user');
+        return false;
+      } else if (status === 'undetermined') {
+        console.log('AudioService.requestPermissions: Permissions undetermined - this should not happen after request');
+        return false;
+      }
+      
+      console.log('AudioService.requestPermissions: Unknown permission status:', status);
+      return false;
     } catch (error) {
       console.error('AudioService.requestPermissions: Error requesting permissions:', error);
       return false;
@@ -47,15 +73,26 @@ class AudioService {
    */
   async startRecording(): Promise<void> {
     try {
+      console.log('AudioService.startRecording: Starting recording process...');
+      
       // Stop any existing recording
       if (this.recording) {
-        await this.stopRecording();
+        console.log('AudioService.startRecording: Stopping existing recording...');
+        try {
+          await this.recording.stopAndUnloadAsync();
+          this.recording = null;
+        } catch (error) {
+          console.warn('AudioService.startRecording: Error stopping existing recording:', error);
+          this.recording = null;
+        }
       }
 
       // Stop any playing audio to avoid conflicts
+      console.log('AudioService.startRecording: Stopping any playing audio...');
       await this.stopAllAudio();
 
       // Configure audio mode for recording
+      console.log('AudioService.startRecording: Setting audio mode...');
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
@@ -65,7 +102,10 @@ class AudioService {
       });
 
       // Create and prepare recording
+      console.log('AudioService.startRecording: Creating new recording instance...');
       this.recording = new Audio.Recording();
+      
+      console.log('AudioService.startRecording: Preparing recording with config...');
       await this.recording.prepareToRecordAsync({
         android: {
           extension: '.m4a',
@@ -111,14 +151,17 @@ class AudioService {
         return null;
       }
 
+      console.log('AudioService.stopRecording: Stopping recording...');
       await this.recording.stopAndUnloadAsync();
       const uri = this.recording.getURI();
       
       if (!uri) {
         console.error('AudioService.stopRecording: No recording URI');
+        this.recording = null;
         return null;
       }
 
+      console.log('AudioService.stopRecording: Getting file info...');
       // Get file info
       const fileInfo = await FileSystem.getInfoAsync(uri);
       const duration = await this.getAudioDuration(uri);
@@ -138,6 +181,8 @@ class AudioService {
       return audioFile;
     } catch (error) {
       console.error('AudioService.stopRecording: Error stopping recording:', error);
+      // Clean up on error
+      this.recording = null;
       throw new Error('Failed to stop recording');
     }
   }
@@ -147,16 +192,24 @@ class AudioService {
    */
   async cancelRecording(): Promise<void> {
     try {
-      if (this.recording) {
-        await this.recording.stopAndUnloadAsync();
-        const uri = this.recording.getURI();
-        if (uri) {
-          await FileSystem.deleteAsync(uri, { idempotent: true });
-        }
-        this.recording = null;
+      if (!this.recording) {
+        console.log('AudioService.cancelRecording: No active recording to cancel');
+        return;
       }
+
+      console.log('AudioService.cancelRecording: Canceling recording...');
+      await this.recording.stopAndUnloadAsync();
+      const uri = this.recording.getURI();
+      if (uri) {
+        console.log('AudioService.cancelRecording: Deleting temp file...');
+        await FileSystem.deleteAsync(uri, { idempotent: true });
+      }
+      this.recording = null;
+      console.log('AudioService.cancelRecording: Recording canceled');
     } catch (error) {
       console.error('AudioService.cancelRecording: Error canceling recording:', error);
+      // Clean up on error
+      this.recording = null;
     }
   }
 
