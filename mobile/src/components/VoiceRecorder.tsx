@@ -167,11 +167,12 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     if (recordingState === 'idle') {
       return (
         <TouchableOpacity
-          style={[styles.micButton, disabled && styles.micButtonDisabled]}
+          style={[styles.voiceButton, disabled && styles.voiceButtonDisabled]}
           onPress={startRecording}
           disabled={disabled}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="mic" size={24} color={disabled ? '#999' : '#007AFF'} />
+          <Ionicons name="mic-outline" size={24} color={disabled ? '#999' : '#007AFF'} />
         </TouchableOpacity>
       );
     }
@@ -223,6 +224,18 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     return null;
   };
 
+  // When recording, show full UI, otherwise just the inline button
+  if (recordingState === 'idle') {
+    return (
+      <>
+        {renderRecordingUI()}
+        {error && (
+          <Text style={styles.errorText}>{error}</Text>
+        )}
+      </>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {renderRecordingUI()}
@@ -239,19 +252,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 60,
   },
-  micButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#F2F2F7',
+  voiceButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#007AFF',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    marginRight: 8,
   },
-  micButtonDisabled: {
-    borderColor: '#999',
-    backgroundColor: '#F5F5F5',
+  voiceButtonDisabled: {
+    opacity: 0.5,
   },
   recordingContainer: {
     width: screenWidth * 0.8,
