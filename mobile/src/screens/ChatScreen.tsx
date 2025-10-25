@@ -34,6 +34,7 @@ import { ChatSettingsModal } from '../components/ChatSettingsModal';
 import { MediaGalleryModal } from '../components/MediaGalleryModal';
 import { MediaService } from '../services/mediaService';
 import { useMediaSelection } from '../hooks/useMediaSelection';
+import { VoiceRecorder } from '../components/VoiceRecorder';
 import { Ionicons } from '@expo/vector-icons';
 
 type ChatScreenRouteProp = RouteProp<{ Chat: { chatId: string } }, 'Chat'>;
@@ -63,7 +64,7 @@ export default function ChatScreen() {
   const [showMenu, setShowMenu] = useState(false);
 
   // Reusable media callbacks
-  const handleMediaSelected = (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE', localUri?: string) => {
+  const handleMediaSelected = (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE', localUri?: string) => {
     // Replace provisional with real message after upload
     const tempPrefix = 'temp-';
     setMessages(prev => {
@@ -77,7 +78,7 @@ export default function ChatScreen() {
     sendMessage(mediaUrl, type);
   };
 
-  const handlePreviewSelected = (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE') => {
+  const handlePreviewSelected = (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE') => {
     // Insert a provisional message at top (inverted list) with a temp id
     const tempId = `temp-${Date.now()}`;
     const provisional: Message = {
@@ -97,6 +98,36 @@ export default function ChatScreen() {
     onMediaSelected: handleMediaSelected,
     onPreviewSelected: handlePreviewSelected,
   });
+
+  // Voice message handler
+  const handleVoiceSend = (audioUrl: string, duration: number) => {
+    // Validate inputs
+    if (!audioUrl || typeof audioUrl !== 'string') {
+      console.error('ChatScreen: Invalid audioUrl provided to handleVoiceSend');
+      return;
+    }
+    
+    if (typeof duration !== 'number' || duration < 0) {
+      console.error('ChatScreen: Invalid duration provided to handleVoiceSend');
+      return;
+    }
+
+    // Create provisional message for voice
+    const tempId = `temp-${Date.now()}`;
+    const provisional: Message = {
+      id: tempId,
+      content: `Voice message (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')})`,
+      type: 'VOICE',
+      senderId: user?.id || 'me',
+      chatId,
+      mediaUrl: audioUrl,
+      createdAt: new Date().toISOString(),
+    } as Message;
+    setMessages(prev => [provisional, ...prev]);
+    
+    // Send the actual message
+    sendMessage(audioUrl, 'VOICE');
+  };
 
   // Handle media selection for three dots menu with timing delay
   const handleMenuMediaSelection = async (selectionFunction: () => void) => {
@@ -325,7 +356,7 @@ export default function ChatScreen() {
     setFullscreenMessage(null);
   };
 
-  const sendMessage = async (mediaUrl?: string, mediaType?: 'IMAGE' | 'VIDEO' | 'FILE') => {
+  const sendMessage = async (mediaUrl?: string, mediaType?: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE') => {
     if ((!newMessage.trim() && !mediaUrl) || !user?.id) return;
 
     const messageContent = newMessage.trim();
@@ -653,6 +684,10 @@ export default function ChatScreen() {
           <MediaPicker
             onPreviewSelected={handlePreviewSelected}
             onMediaSelected={handleMediaSelected}
+          />
+          <VoiceRecorder
+            onVoiceSend={handleVoiceSend}
+            disabled={false}
           />
             <TouchableOpacity
             style={styles.inlineIconButton}

@@ -16,7 +16,7 @@ export interface User {
 export interface Message {
   id: string;
   content: string;
-  type: 'text' | 'image' | 'video' | 'file';
+  type: 'text' | 'image' | 'video' | 'file' | 'voice';
   senderId: string;
   chatId: string;
   mediaUrl?: string;
