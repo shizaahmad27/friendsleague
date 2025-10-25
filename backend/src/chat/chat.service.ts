@@ -133,7 +133,7 @@ const chat = await this.prisma.chat.create({
     async getChatMessages(chatId: string, page = 1, limit = 50) {
         const skip = (page - 1) * limit;
         
-        return this.prisma.message.findMany({
+        const messages = await this.prisma.message.findMany({
             where: {
             chatId: chatId,
             },
@@ -156,6 +156,20 @@ const chat = await this.prisma.chat.create({
                     },
                 },
             },
+            reactions: {
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            username: true,
+                            avatar: true,
+                        },
+                    },
+                },
+                orderBy: {
+                    createdAt: 'asc',
+                },
+            },
             },
             orderBy: {
             createdAt: 'desc',
@@ -163,6 +177,12 @@ const chat = await this.prisma.chat.create({
             skip,
             take: limit,
         });
+
+        // Transform reactions to match frontend format
+        return messages.map(message => ({
+            ...message,
+            reactions: this.groupReactions(message.reactions),
+        }));
         }
     
         async sendMessage(chatId: string, senderId: string, content: string, type: MessageType = MessageType.TEXT, mediaUrl?: string, replyToId?: string) {
@@ -532,4 +552,30 @@ const chat = await this.prisma.chat.create({
 
         return Object.values(groupedReactions);
     }
+
+    // Helper method to group reactions by emoji
+    private groupReactions(reactions: any[]) {
+        if (!reactions || reactions.length === 0) {
+            return [];
+        }
+
+        const groupedReactions = reactions.reduce((acc, reaction) => {
+            if (!acc[reaction.emoji]) {
+                acc[reaction.emoji] = {
+                    emoji: reaction.emoji,
+                    count: 0,
+                    users: [],
+                };
+            }
+            acc[reaction.emoji].count++;
+            acc[reaction.emoji].users.push({
+                id: reaction.user.id,
+                username: reaction.user.username,
+                avatar: reaction.user.avatar,
+            });
+            return acc;
+        }, {});
+
+        return Object.values(groupedReactions);
     }
+}

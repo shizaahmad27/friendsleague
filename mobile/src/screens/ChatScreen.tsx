@@ -53,6 +53,7 @@ export default function ChatScreen() {
   const [chatMeta, setChatMeta] = useState<{ type: Chat['type']; name?: string } | null>(null);
   const [participants, setParticipants] = useState<Array<{ id: string; username: string; avatar?: string }>>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [lastTap, setLastTap] = useState<number | null>(null);
 
   // Reusable media callbacks
   const handleMediaSelected = (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE', localUri?: string) => {
@@ -352,6 +353,20 @@ export default function ChatScreen() {
     setReactionPickerVisible(true);
   };
 
+  const handleDoubleTap = (message: Message) => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300; // 300ms window for double tap
+    
+    if (lastTap && (now - lastTap) < DOUBLE_TAP_DELAY) {
+      // Double tap detected
+      handleReactionPress(message);
+      setLastTap(null); // Reset to prevent triple tap
+    } else {
+      // First tap
+      setLastTap(now);
+    }
+  };
+
   const handleEmojiSelect = async (emoji: string) => {
     if (!selectedMessageForReaction) return;
 
@@ -404,56 +419,62 @@ export default function ChatScreen() {
     const isMediaMessage = item.mediaUrl && item.type !== 'TEXT';
 
     return (
-      <TouchableOpacity
-        style={[
-          isMediaMessage ? styles.mediaMessageContainer : styles.messageContainer,
-          isOwnMessage ? styles.ownMessage : styles.otherMessage,
-          !isMediaMessage && (isOwnMessage ? styles.ownMessageBackground : styles.otherMessageBackground),
-        ]}
-        onLongPress={() => handleReactionPress(item)}
-        activeOpacity={0.7}
-      >
-        {/* Reply Preview */}
-        {item.replyTo && (
-          <MessageReplyPreview 
-            replyTo={item.replyTo} 
-            onPress={() => {
-              // Scroll to the replied message
-              const replyIndex = messages.findIndex(msg => msg.id === item.replyTo?.id);
-              if (replyIndex !== -1) {
-                flatListRef.current?.scrollToIndex({ index: replyIndex, animated: true });
-              }
-            }}
-          />
-        )}
+      <View style={[
+        styles.messageWrapper,
+        isOwnMessage ? styles.ownMessageWrapper : styles.otherMessageWrapper,
+      ]}>
+        <TouchableOpacity
+          style={[
+            isMediaMessage ? styles.mediaMessageContainer : styles.messageContainer,
+            isOwnMessage ? styles.ownMessage : styles.otherMessage,
+            !isMediaMessage && (isOwnMessage ? styles.ownMessageBackground : styles.otherMessageBackground),
+          ]}
+          onPress={() => handleDoubleTap(item)}
+          onLongPress={() => handleReactionPress(item)}
+          activeOpacity={0.7}
+        >
+          {/* Reply Preview */}
+          {item.replyTo && (
+            <MessageReplyPreview 
+              replyTo={item.replyTo} 
+              onPress={() => {
+                // Scroll to the replied message
+                const replyIndex = messages.findIndex(msg => msg.id === item.replyTo?.id);
+                if (replyIndex !== -1) {
+                  flatListRef.current?.scrollToIndex({ index: replyIndex, animated: true });
+                }
+              }}
+            />
+          )}
+          
+          {isMediaMessage && item.mediaUrl ? (
+            <MessageMedia
+              mediaUrl={item.mediaUrl}
+              type={item.type as 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE'}
+              duration={item.duration}
+              waveformData={item.waveformData}
+              isOwnMessage={isOwnMessage}
+              onLongPress={() => handleReactionPress(item)}
+              messageId={item.id}
+              onReactionPress={() => handleReactionPress(item)}
+              onReplyPress={() => handleReplyPress(item)}
+              onMediaPress={openGallery}
+            />
+          ) : null}
+          {item.content && (
+            <Text
+              style={[
+                styles.messageText,
+                isOwnMessage ? styles.ownMessageText : styles.otherMessageText,
+                isMediaMessage ? styles.messageTextWithMedia : null,
+              ]}
+            >
+              {item.content}
+            </Text>
+          )}
+        </TouchableOpacity>
         
-        {isMediaMessage && item.mediaUrl ? (
-          <MessageMedia
-            mediaUrl={item.mediaUrl}
-            type={item.type as 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE'}
-            duration={item.duration}
-            waveformData={item.waveformData}
-            isOwnMessage={isOwnMessage}
-            onLongPress={() => handleReactionPress(item)}
-            messageId={item.id}
-            onReactionPress={() => handleReactionPress(item)}
-            onReplyPress={() => handleReplyPress(item)}
-            onMediaPress={openGallery}
-          />
-        ) : null}
-        {item.content && (
-          <Text
-            style={[
-              styles.messageText,
-              isOwnMessage ? styles.ownMessageText : styles.otherMessageText,
-              isMediaMessage ? styles.messageTextWithMedia : null,
-            ]}
-          >
-            {item.content}
-          </Text>
-        )}
-        
-        {/* Message Reactions */}
+        {/* Message Reactions - Now outside the bubble */}
         {item.reactions && item.reactions.length > 0 && (
           <MessageReactions
             reactions={item.reactions}
@@ -461,7 +482,7 @@ export default function ChatScreen() {
             messageId={item.id}
           />
         )}
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -819,9 +840,17 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
+  messageWrapper: {
+    marginVertical: 4,
+  },
+  ownMessageWrapper: {
+    alignItems: 'flex-end',
+  },
+  otherMessageWrapper: {
+    alignItems: 'flex-start',
+  },
   messageContainer: {
     maxWidth: '80%',
-    marginVertical: 4,
     padding: 12,
     borderRadius: 16,
   },
@@ -831,10 +860,10 @@ const styles = StyleSheet.create({
     // No padding, background, or border radius for media messages
   },
   ownMessage: {
-    alignSelf: 'flex-end',
+    // Alignment now handled by messageWrapper
   },
   otherMessage: {
-    alignSelf: 'flex-start',
+    // Alignment now handled by messageWrapper
   },
   ownMessageBackground: {
     backgroundColor: '#007AFF',
