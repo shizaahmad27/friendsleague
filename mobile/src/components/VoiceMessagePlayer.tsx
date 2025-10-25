@@ -152,28 +152,30 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
 
     return (
       <View style={styles.waveformContainer}>
-        {bars.map((height, index) => {
-          const isActive = index < activeBars;
-          const isCurrent = index === activeBars;
-          
-          return (
-            <View
-              key={index}
-              style={[
-                styles.waveformBar,
-                {
-                  height,
-                  backgroundColor: isActive 
-                    ? (isOwnMessage ? '#007AFF' : '#34C759')
-                    : isCurrent 
-                    ? (isOwnMessage ? '#007AFF' : '#34C759')
-                    : '#8E8E93',
-                  opacity: isActive ? 1 : isCurrent ? 0.7 : 0.3,
-                },
-              ]}
-            />
-          );
-        })}
+        <View style={styles.waveformBarsWrapper}>
+          {bars.map((height, index) => {
+            const isActive = index < activeBars;
+            const isCurrent = index === activeBars;
+            
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.waveformBar,
+                  {
+                    height,
+                    backgroundColor: isActive 
+                      ? (isOwnMessage ? '#007AFF' : '#34C759')
+                      : isCurrent 
+                      ? (isOwnMessage ? '#007AFF' : '#34C759')
+                      : '#8E8E93',
+                    opacity: isActive ? 1 : isCurrent ? 0.7 : 0.3,
+                  },
+                ]}
+              />
+            );
+          })}
+        </View>
       </View>
     );
   };
@@ -286,13 +288,19 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: 4,
     height: MAX_BAR_HEIGHT,
+  },
+  waveformBarsWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '90%',
+    paddingHorizontal: 8,
   },
   waveformBar: {
     width: 3,
-    marginHorizontal: 1.5,
-    borderRadius: 1.5,
+    borderRadius: 0.5,
   },
   timeText: {
     fontSize: 12,
@@ -303,7 +311,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    backgroundColor: 'rgba(13, 28, 44, 0.87)',
   },
   speedText: {
     fontSize: 12,
