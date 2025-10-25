@@ -367,21 +367,22 @@ export default function ChatScreen() {
     }
   };
 
-  const handleEmojiSelect = async (emoji: string) => {
-    if (!selectedMessageForReaction) return;
+  const handleEmojiSelect = async (emoji: string, message?: Message) => {
+    const targetMessage = message || selectedMessageForReaction;
+    if (!targetMessage) return;
 
     try {
       // Check if user already reacted with this emoji
-      const existingReaction = selectedMessageForReaction.reactions?.find(
+      const existingReaction = targetMessage.reactions?.find(
         r => r.users.some(u => u.id === user?.id) && r.emoji === emoji
       );
 
       if (existingReaction) {
         // Remove reaction
-        await chatApi.removeReaction(selectedMessageForReaction.id, emoji);
+        await chatApi.removeReaction(targetMessage.id, emoji);
       } else {
         // Add reaction
-        await chatApi.addReaction(selectedMessageForReaction.id, emoji);
+        await chatApi.addReaction(targetMessage.id, emoji);
       }
 
       // Real-time updates will handle the UI updates via socket events
@@ -391,9 +392,23 @@ export default function ChatScreen() {
     }
   };
 
-  const handleReactionButtonPress = (emoji: string) => {
-    if (!selectedMessageForReaction) return;
-    handleEmojiSelect(emoji);
+  const handleReactionButtonPress = (emoji: string, messageId: string) => {
+    // Find the message that has this reaction
+    const message = messages.find(m => m.id === messageId);
+    if (!message) return;
+
+    // Check if user already reacted with this emoji
+    const existingReaction = message.reactions?.find(
+      r => r.users.some(u => u.id === user?.id) && r.emoji === emoji
+    );
+
+    if (existingReaction) {
+      // Remove reaction
+      handleEmojiSelect(emoji, message);
+    } else {
+      // Add reaction (this shouldn't happen from tapping existing reactions, but just in case)
+      handleEmojiSelect(emoji, message);
+    }
   };
 
   const handleReplyPress = (message: Message) => {
@@ -478,7 +493,7 @@ export default function ChatScreen() {
         {item.reactions && item.reactions.length > 0 && (
           <MessageReactions
             reactions={item.reactions}
-            onReactionPress={handleReactionButtonPress}
+            onReactionPress={(emoji) => handleReactionButtonPress(emoji, item.id)}
             messageId={item.id}
           />
         )}

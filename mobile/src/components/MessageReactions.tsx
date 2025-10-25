@@ -19,7 +19,7 @@ interface Reaction {
 
 interface MessageReactionsProps {
   reactions: Reaction[];
-  onReactionPress: (emoji: string) => void;
+  onReactionPress: (emoji: string, messageId: string) => void;
   messageId: string;
 }
 
@@ -44,7 +44,7 @@ export const MessageReactions: React.FC<MessageReactionsProps> = ({
           styles.reactionButton,
           hasUserReacted && styles.reactionButtonActive,
         ]}
-        onPress={() => onReactionPress(reaction.emoji)}
+        onPress={() => onReactionPress(reaction.emoji, messageId)}
         activeOpacity={0.7}
       >
         <Text style={styles.emojiText}>{reaction.emoji}</Text>
