@@ -293,17 +293,37 @@ export default function ChatScreen() {
   }, []);
 
   const handleEphemeralViewed = useCallback((data: { messageId: string; viewedBy: string; viewedAt: string }) => {
-    console.log('Ephemeral message viewed:', data);
-    setMessages(prev => prev.map(msg => 
-      msg.id === data.messageId 
-        ? { 
-            ...msg, 
-            ephemeralViewedAt: data.viewedAt,
-            ephemeralViewedBy: data.viewedBy
-          }
-        : msg
-    ));
-  }, []);
+    console.log('🔍 EphemeralViewed event received:', {
+      messageId: data.messageId,
+      viewedBy: data.viewedBy,
+      viewedAt: data.viewedAt,
+      currentUserId: user?.id,
+      chatId: chatId
+    });
+    
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === data.messageId) {
+        console.log('📝 Updating message:', msg.id, 'from', msg.ephemeralViewedAt, 'to', data.viewedAt);
+        return { 
+          ...msg, 
+          ephemeralViewedAt: data.viewedAt,
+          ephemeralViewedBy: data.viewedBy
+        };
+      }
+      return msg;
+    }));
+  }, [user?.id, chatId]);
+
+  // Debug: Track message state changes
+  useEffect(() => {
+    console.log('📊 Current messages state:', messages.map(m => ({
+      id: m.id,
+      isEphemeral: m.isEphemeral,
+      ephemeralViewedAt: m.ephemeralViewedAt,
+      ephemeralViewedBy: m.ephemeralViewedBy,
+      senderId: m.senderId
+    })));
+  }, [messages]);
 
   // Use custom hooks
   useEffect(() => {

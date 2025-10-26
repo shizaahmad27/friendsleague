@@ -217,6 +217,19 @@ class SocketService {
   getSocket() {
     return this.socket;
   }
+
+  getConnectionStatus() {
+    return {
+      connected: this.socket?.connected,
+      id: this.socket?.id,
+      // Note: Socket.io client doesn't expose rooms directly
+      // Rooms are managed server-side
+    };
+  }
+
+  logRoomMembership() {
+    console.log('🔌 Socket status:', this.getConnectionStatus());
+  }
 }
 
 export default new SocketService();

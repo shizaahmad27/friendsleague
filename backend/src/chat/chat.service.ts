@@ -340,6 +340,7 @@ const chat = await this.prisma.chat.create({
         });
 
         // Emit socket event to notify all participants about the viewed status
+        console.log(`📡 Emitting ephemeralViewed to chat room: ${message.chatId}`);
         this.chatGateway.server.to(message.chatId).emit('ephemeralViewed', {
             messageId,
             viewedBy: userId,
@@ -347,6 +348,7 @@ const chat = await this.prisma.chat.create({
         });
         
         // Also emit to sender's personal room for immediate notification
+        console.log(`📡 Emitting ephemeralViewed to sender room: ${message.senderId}`);
         this.chatGateway.server.to(message.senderId).emit('ephemeralViewed', {
             messageId,
             viewedBy: userId,

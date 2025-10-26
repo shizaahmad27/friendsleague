@@ -48,7 +48,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ) {
         client.join(data.chatId);
         this.connectedUsers.set(client.id, data.userId);
-        console.log(`User ${data.userId} joined chat ${data.chatId}`);
+        console.log(`🏠 User ${data.userId} joined chat ${data.chatId}`);
     }
 
     @SubscribeMessage('sendMessage')
@@ -125,7 +125,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             timestamp: new Date().toISOString()
         });
         
-        console.log(`User ${data.userId} joined their personal room and is now online`);
+        console.log(`👤 User ${data.userId} joined their personal room and is now online`);
     }
 
     @SubscribeMessage('leaveUser')

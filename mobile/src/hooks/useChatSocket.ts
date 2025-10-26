@@ -24,7 +24,15 @@ export const useChatSocket = ({
   useEffect(() => {
     socketService.connect();
     socketService.joinChat(chatId, userId);
+    socketService.joinUser(userId); // Join user's personal room for ephemeralViewed events
 
+    console.log(`🔌 User ${userId} joined chat ${chatId} and personal room ${userId}`);
+    
+    // Log socket connection status for debugging
+    setTimeout(() => {
+      socketService.logRoomMembership();
+    }, 1000);
+    
     socketService.onNewMessage(onNewMessage);
     socketService.onUserTyping(onUserTyping);
     socketService.onReactionAdded(onReactionAdded);
@@ -32,7 +40,11 @@ export const useChatSocket = ({
     socketService.onEphemeralViewed(onEphemeralViewed);
 
     const sock = socketService.getSocket();
-    const onReconnect = () => socketService.joinChat(chatId, userId);
+    const onReconnect = () => {
+      console.log(`🔄 Reconnecting: User ${userId} rejoining chat ${chatId} and personal room ${userId}`);
+      socketService.joinChat(chatId, userId);
+      socketService.joinUser(userId); // Rejoin user room on reconnect
+    };
     if (sock) {
       sock.on('connect', onReconnect);
     }
