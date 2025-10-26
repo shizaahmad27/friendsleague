@@ -196,7 +196,7 @@ services/
 - Bruk **pagination** for store datamengder
 - Optimiser **database queries** med Prisma
 - Implementer **lazy loading** i React Native
-- Komprimer bilder før opplasting
+- Komprimer bilder før opplasting. 
 
 ## 🧪 Testing
 - **Unit tests** for alle services
