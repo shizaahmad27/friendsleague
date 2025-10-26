@@ -151,6 +151,7 @@ export class UsersService {
         avatar: true,
         isOnline: true,
         lastSeen: true,
+        showOnlineStatus: true,
         createdAt: true,
         updatedAt: true,
         // Exclude password field
@@ -181,6 +182,7 @@ export class UsersService {
             avatar: true,
             isOnline: true,
             lastSeen: true,
+            showOnlineStatus: true,
             createdAt: true,
             updatedAt: true,
             // Exclude password field
