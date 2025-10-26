@@ -33,6 +33,7 @@ import LeagueLeaderboardScreen from '../screens/LeagueLeaderboardScreen';
 import LeagueRulesReadScreen from '../screens/LeagueRulesReadScreen';
 import LeagueAssignPointsScreen from '../screens/LeagueAssignPointsScreen';
 import PrivacySettingsScreen from '../screens/PrivacySettingsScreen';
+import StartDirectChatScreen from '../screens/StartDirectChatScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -85,6 +86,7 @@ export default function AppNavigator() {
             <Stack.Screen name="LeagueLeaderboard" component={LeagueLeaderboardScreen} />
             <Stack.Screen name="LeagueAssignPoints" component={LeagueAssignPointsScreen} />
             <Stack.Screen name="PrivacySettings" component={PrivacySettingsScreen} />
+            <Stack.Screen name="StartDirectChat" component={StartDirectChatScreen} />
           </>
         ) : (
           <>

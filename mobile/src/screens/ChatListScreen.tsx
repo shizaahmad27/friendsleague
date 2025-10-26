@@ -136,12 +136,20 @@ export default function ChatListScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Chats</Text>
-        <TouchableOpacity
-          style={styles.createGroupButton}
-          onPress={() => (navigation as any).navigate('CreateGroupChat')}
-        >
-          <Text style={styles.createGroupButtonText}>+ Group</Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={styles.createDirectButton}
+            onPress={() => (navigation as any).navigate('StartDirectChat')}
+          >
+            <Text style={styles.createDirectButtonText}>+ Chat</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.createGroupButton}
+            onPress={() => (navigation as any).navigate('CreateGroupChat')}
+          >
+            <Text style={styles.createGroupButtonText}>+ Group</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       
       <FlatList
@@ -182,6 +190,21 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  createDirectButton: {
+    backgroundColor: '#34C759',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  createDirectButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
   createGroupButton: {
     backgroundColor: '#007AFF',
