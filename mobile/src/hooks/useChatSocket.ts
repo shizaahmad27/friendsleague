@@ -9,6 +9,7 @@ interface UseChatSocketProps {
   onUserTyping: (data: { userId: string; isTyping: boolean }) => void;
   onReactionAdded: (data: any) => void;
   onReactionRemoved: (data: any) => void;
+  onEphemeralViewed: (data: { messageId: string; viewedBy: string; viewedAt: string }) => void;
 }
 
 export const useChatSocket = ({
@@ -18,6 +19,7 @@ export const useChatSocket = ({
   onUserTyping,
   onReactionAdded,
   onReactionRemoved,
+  onEphemeralViewed,
 }: UseChatSocketProps) => {
   useEffect(() => {
     socketService.connect();
@@ -27,6 +29,7 @@ export const useChatSocket = ({
     socketService.onUserTyping(onUserTyping);
     socketService.onReactionAdded(onReactionAdded);
     socketService.onReactionRemoved(onReactionRemoved);
+    socketService.onEphemeralViewed(onEphemeralViewed);
 
     const sock = socketService.getSocket();
     const onReconnect = () => socketService.joinChat(chatId, userId);
@@ -40,9 +43,10 @@ export const useChatSocket = ({
       socketService.offUserTyping(onUserTyping);
       socketService.offReactionAdded(onReactionAdded);
       socketService.offReactionRemoved(onReactionRemoved);
+      socketService.offEphemeralViewed(onEphemeralViewed);
       if (sock) {
         sock.off('connect', onReconnect);
       }
     };
-  }, [chatId, userId, onNewMessage, onUserTyping, onReactionAdded, onReactionRemoved]);
+  }, [chatId, userId, onNewMessage, onUserTyping, onReactionAdded, onReactionRemoved, onEphemeralViewed]);
 };

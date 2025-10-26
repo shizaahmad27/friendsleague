@@ -281,6 +281,19 @@ export default function ChatScreen() {
     }));
   }, []);
 
+  const handleEphemeralViewed = useCallback((data: { messageId: string; viewedBy: string; viewedAt: string }) => {
+    console.log('Ephemeral message viewed:', data);
+    setMessages(prev => prev.map(msg => 
+      msg.id === data.messageId 
+        ? { 
+            ...msg, 
+            ephemeralViewedAt: data.viewedAt,
+            ephemeralViewedBy: data.viewedBy
+          }
+        : msg
+    ));
+  }, []);
+
   // Use custom hooks
   useEffect(() => {
     loadMessages();
@@ -293,6 +306,7 @@ export default function ChatScreen() {
     onUserTyping: handleUserTyping,
     onReactionAdded: handleReactionAdded,
     onReactionRemoved: handleReactionRemoved,
+    onEphemeralViewed: handleEphemeralViewed,
   });
 
   // Socket connection and user room joining is handled globally by useOnlineStatus hook
@@ -393,8 +407,11 @@ export default function ChatScreen() {
 
       const messageWithSender = { ...message, senderId: user.id };
 
-      // Don't add to local state - socket event will handle it to avoid duplicates
-      // Note: No need to emit via socket - backend already emits 'newMessage' after creating the message
+      // Add to local state immediately for ephemeral messages to ensure sender sees it
+      if (isEphemeral) {
+        setMessages(prev => [messageWithSender, ...prev]);
+      }
+      // For non-ephemeral messages, socket event will handle it to avoid duplicates
 
       socketService.emitTyping(chatId, user.id, false);
       setIsTyping(false);

@@ -63,6 +63,18 @@ class SocketService {
     }
   }
 
+  onEphemeralViewed(callback: (data: { messageId: string; viewedBy: string; viewedAt: string }) => void) {
+    if (this.socket) {
+      this.socket.on('ephemeralViewed', callback);
+    }
+  }
+
+  offEphemeralViewed(callback: (data: { messageId: string; viewedBy: string; viewedAt: string }) => void) {
+    if (this.socket) {
+      this.socket.off('ephemeralViewed', callback);
+    }
+  }
+
   onUserTyping(callback: (data: { userId: string; isTyping: boolean }) => void) {
     if (this.socket) {
       this.socket.on('user:typing', callback);

@@ -76,8 +76,8 @@ export const useQuickCamera = (callbacks: QuickCameraCallbacks) => {
       // Determine media type based on asset properties
       let mediaType: 'IMAGE' | 'VIDEO';
 
-      // Check if it's a video by looking at duration or type
-      if (asset.type === 'video' || asset.duration !== undefined) {
+      // Check if it's a video by looking at type and duration
+      if (asset.type === 'video' || (asset.duration !== undefined && asset.duration !== null && asset.duration > 0)) {
         mediaType = 'VIDEO';
       } else {
         mediaType = 'IMAGE';
