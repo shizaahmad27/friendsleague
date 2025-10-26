@@ -1,5 +1,5 @@
 // mobile/src/screens/ChatScreen.tsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -77,8 +77,8 @@ export default function ChatScreen() {
       copy.splice(idx, 1); // remove provisional
       return copy;
     });
-    // Now send the real message once - but don't add it to local state since socket will handle it
-    sendMessage(mediaUrl, type, isEphemeral, ephemeralViewDuration, false); // Add skipLocalAdd parameter
+    // Now send the real message once - socket will handle adding it to local state
+    sendMessage(mediaUrl, type, isEphemeral, ephemeralViewDuration);
   };
 
   const handlePreviewSelected = (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE') => {
@@ -170,12 +170,8 @@ export default function ChatScreen() {
 
       const messageWithSender = { ...message, senderId: user.id, duration: duration, waveformData: waveformData };
 
-      // Replace provisional message with real message
-      setMessages(prev => prev.map(msg => 
-        msg.id === tempId ? messageWithSender : msg
-      ));
-
-      socketService.sendMessage(chatId, messageWithSender);
+      // Remove provisional message - socket event will add the real message
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
       
       // Clear reply state after sending
       if (replyingTo) {
@@ -198,24 +194,24 @@ export default function ChatScreen() {
   const usernamesRef = useRef(usernamesById);
 
   // Socket event handlers
-  const handleNewMessage = (message: Message) => {
+  const handleNewMessage = useCallback((message: Message) => {
     if (message.chatId === chatId) {
       setMessages(prev => {
         const exists = prev.some(m => m.id === message.id);
         return exists ? prev : [message, ...prev];
       });
     }
-  };
+  }, [chatId]);
 
-  const handleUserTyping = (data: { userId: string; isTyping: boolean }) => {
+  const handleUserTyping = useCallback((data: { userId: string; isTyping: boolean }) => {
     if (data.isTyping) {
       setTypingUsers(prev => [...prev.filter(id => id !== data.userId), data.userId]);
     } else {
       setTypingUsers(prev => prev.filter(id => id !== data.userId));
     }
-  };
+  }, []);
 
-  const handleReactionAdded = (data: { messageId: string; userId: string; emoji: string; reaction: any }) => {
+  const handleReactionAdded = useCallback((data: { messageId: string; userId: string; emoji: string; reaction: any }) => {
     setMessages(prev => prev.map(message => {
       if (message.id === data.messageId) {
         // Update reactions for this message
@@ -256,9 +252,9 @@ export default function ChatScreen() {
       }
       return message;
     }));
-  };
+  }, []);
 
-  const handleReactionRemoved = (data: { messageId: string; userId: string; emoji: string }) => {
+  const handleReactionRemoved = useCallback((data: { messageId: string; userId: string; emoji: string }) => {
     setMessages(prev => prev.map(message => {
       if (message.id === data.messageId) {
         const existingReactions = message.reactions || [];
@@ -283,7 +279,7 @@ export default function ChatScreen() {
       }
       return message;
     }));
-  };
+  }, []);
 
   // Use custom hooks
   useEffect(() => {
@@ -311,21 +307,15 @@ export default function ChatScreen() {
   // Online status hook
   const { isUserOnline, getLastSeenTime } = useUserOnlineStatus();
 
-  // Helper function to determine if a message is the last in a consecutive series
-  const isLastMessageInSeries = (currentMessage: Message, currentIndex: number): boolean => {
-    // Since messages are in reverse chronological order (newest first), 
-    // we need to check the PREVIOUS message (lower index) to see if it's from a different sender
-    const previousMessage = messages[currentIndex - 1];
+  // Helper function to determine if a message is the absolute latest message sent by the current user
+  const isLatestMessageFromUser = (currentMessage: Message): boolean => {
+    if (!user?.id || currentMessage.senderId !== user.id) return false;
     
-    // If this is the first message (highest index), it's the last in series
-    if (!previousMessage) return true;
+    // Find the most recent message sent by the current user
+    const latestUserMessage = messages.find(msg => msg.senderId === user.id);
     
-    // Different sender = end of series
-    if (previousMessage.senderId !== currentMessage.senderId) return true;
-    
-    // Time gap > 5 minutes = end of series
-    const timeDiff = new Date(currentMessage.createdAt).getTime() - new Date(previousMessage.createdAt).getTime();
-    return timeDiff > 300000; // 5 minutes
+    // If this is the latest message from the user, show status
+    return latestUserMessage?.id === currentMessage.id;
   };
 
   const loadMessages = async () => {
@@ -384,7 +374,7 @@ export default function ChatScreen() {
     });
   };
 
-  const sendMessage = async (mediaUrl?: string, mediaType?: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE', isEphemeral?: boolean, ephemeralViewDuration?: number | null, skipLocalAdd?: boolean) => {
+  const sendMessage = async (mediaUrl?: string, mediaType?: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE', isEphemeral?: boolean, ephemeralViewDuration?: number | null) => {
     if ((!newMessage.trim() && !mediaUrl) || !user?.id) return;
 
     const messageContent = newMessage.trim();
@@ -403,12 +393,8 @@ export default function ChatScreen() {
 
       const messageWithSender = { ...message, senderId: user.id };
 
-      // Only add to local state if not skipping (for media messages, socket will handle it)
-      if (!skipLocalAdd) {
-        setMessages(prev => [messageWithSender, ...prev]);
-      }
-
-      socketService.sendMessage(chatId, messageWithSender);
+      // Don't add to local state - socket event will handle it to avoid duplicates
+      // Note: No need to emit via socket - backend already emits 'newMessage' after creating the message
 
       socketService.emitTyping(chatId, user.id, false);
       setIsTyping(false);
@@ -629,23 +615,20 @@ export default function ChatScreen() {
           />
         )}
 
-        {/* Message Status - Only for own messages and only on the last message in a series */}
-        {isOwnMessage && (() => {
-          const currentIndex = messages.findIndex(msg => msg.id === item.id);
-          return isLastMessageInSeries(item, currentIndex) ? (
-            <MessageStatus
-              message={item}
-              status={getMessageStatus(item)}
-              isGroupChat={chatMeta?.type === 'GROUP'}
-              readByCount={chatMeta?.type === 'GROUP' ? getReadByCount(item, participants.length + 1) : undefined}
-              readByUsers={chatMeta?.type === 'GROUP' ? getReadByUsers(item) : undefined}
-              onPress={() => {
-                setSelectedMessageForReceipts(item);
-                setReadReceiptsModalVisible(true);
-              }}
-            />
-          ) : null;
-        })()}
+        {/* Message Status - Only for own messages and only on the absolute latest message */}
+        {isOwnMessage && isLatestMessageFromUser(item) && (
+          <MessageStatus
+            message={item}
+            status={getMessageStatus(item)}
+            isGroupChat={chatMeta?.type === 'GROUP'}
+            readByCount={chatMeta?.type === 'GROUP' ? getReadByCount(item, participants.length + 1) : undefined}
+            readByUsers={chatMeta?.type === 'GROUP' ? getReadByUsers(item) : undefined}
+            onPress={() => {
+              setSelectedMessageForReceipts(item);
+              setReadReceiptsModalVisible(true);
+            }}
+          />
+        )}
       </View>
     );
   };

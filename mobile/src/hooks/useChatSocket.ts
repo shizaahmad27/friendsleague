@@ -44,5 +44,5 @@ export const useChatSocket = ({
         sock.off('connect', onReconnect);
       }
     };
-  }, [chatId, userId]);
+  }, [chatId, userId, onNewMessage, onUserTyping, onReactionAdded, onReactionRemoved]);
 };
