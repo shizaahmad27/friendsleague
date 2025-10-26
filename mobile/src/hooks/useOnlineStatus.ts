@@ -69,8 +69,6 @@ export const useOnlineStatus = () => {
         socketService.leaveUser(user.id);
         socketService.disconnect();
       }
-      
-      console.log(`Online status updated: ${isOnline ? 'online' : 'offline'}`);
     } catch (error) {
       console.error('Failed to update online status:', error);
     }

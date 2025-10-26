@@ -155,7 +155,11 @@ class SocketService {
 
   onUserOnline(callback: (data: { userId: string; timestamp: string }) => void) {
     if (this.socket) {
-      this.socket.on('user:online', callback);
+    
+      this.socket.on('user:online', (data) => {
+      
+        callback(data);
+      });
     }
   }
 
