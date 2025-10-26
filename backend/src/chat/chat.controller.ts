@@ -30,21 +30,6 @@ export class ChatController {
       return this.chatService.getChatMessages(chatId, parseInt(page), parseInt(limit));
     }
 
-    @Post(':chatId/messages')
-    async sendMessage(
-        @Param('chatId') chatId: string,
-        @Request() req: any,
-        @Body() body: { content: string; type?: string; mediaUrl?: string },
-    ) {
-        return this.chatService.sendMessage(
-            chatId,
-            req.user.id,
-            body.content,
-            (body.type as MessageType) || MessageType.TEXT,
-            body.mediaUrl,
-          );
-        }
-
     // Group Chat Endpoints
     @Post('group')
     async createGroupChat(
@@ -95,6 +80,44 @@ export class ChatController {
   ) {
     return this.chatService.markChatRead(chatId, req.user.id);
   }
+
+  @Post(':chatId/messages/read')
+  async markMessagesAsRead(
+    @Param('chatId') chatId: string,
+    @Request() req: any,
+    @Body() body: { messageIds: string[] },
+  ) {
+    return this.chatService.markMessagesAsRead(chatId, req.user.id, body.messageIds);
+  }
+
+  @Get('messages/:messageId/read-receipts')
+  async getMessageReadReceipts(@Param('messageId') messageId: string) {
+    return this.chatService.getMessageReadReceipts(messageId);
+  }
+
+  @Put(':chatId/read-receipts-settings')
+  async toggleReadReceipts(
+    @Param('chatId') chatId: string,
+    @Request() req: any,
+    @Body() body: { enabled: boolean },
+  ) {
+    return this.chatService.toggleReadReceipts(chatId, req.user.id, body.enabled);
+  }
+
+  @Post(':chatId/messages')
+  async sendMessage(
+      @Param('chatId') chatId: string,
+      @Request() req: any,
+      @Body() body: { content: string; type?: string; mediaUrl?: string },
+  ) {
+      return this.chatService.sendMessage(
+          chatId,
+          req.user.id,
+          body.content,
+          (body.type as MessageType) || MessageType.TEXT,
+          body.mediaUrl,
+        );
+      }
 
   // Message Reaction Endpoints
   @Post('messages/:messageId/reactions')

@@ -1,5 +1,5 @@
 // mobile/src/components/ChatSettingsModal.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,10 @@ import {
   Modal,
   Image,
   Animated,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Message } from '../services/chatApi';
+import { Message, chatApi } from '../services/chatApi';
 import { MediaGalleryModal } from './MediaGalleryModal';
 import { useSwipeToClose } from '../hooks/useSwipeToClose';
 import { useVideoThumbnail } from '../hooks/useVideoThumbnail';
@@ -20,6 +21,7 @@ interface ChatSettingsModalProps {
   onClose: () => void;
   messages: Message[];
   onOpenGallery: (message: Message) => void;
+  chatId: string;
 }
 
 export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
@@ -27,17 +29,35 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
   onClose,
   messages,
   onOpenGallery,
+  chatId,
 }) => {
   const [showAllImages, setShowAllImages] = useState(false);
   const [showAllVideos, setShowAllVideos] = useState(false);
   const [showAllFiles, setShowAllFiles] = useState(false);
   const [fullscreenMessage, setFullscreenMessage] = useState<Message | null>(null);
+  const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
 
   // Swipe to close functionality for the main modal
   const { panY, modalOpacity, imageScale, panResponder } = useSwipeToClose({
     onClose,
     enabled: visible,
   });
+
+  // Load current read receipts setting
+  useEffect(() => {
+    // For now, we'll assume it's enabled by default
+    // In a real implementation, you'd fetch this from the API
+    setReadReceiptsEnabled(true);
+  }, [chatId]);
+
+  const handleToggleReadReceipts = async () => {
+    try {
+      await chatApi.toggleReadReceipts(chatId, !readReceiptsEnabled);
+      setReadReceiptsEnabled(!readReceiptsEnabled);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update read receipts setting');
+    }
+  };
 
   const handleOpenGallery = (message: Message) => {
     setFullscreenMessage(message);
@@ -100,6 +120,21 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
               onPress={onClose}
             >
               <Ionicons name="close" size={24} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Read Receipts Toggle */}
+          <View style={styles.settingsSection}>
+            <TouchableOpacity style={styles.settingItem} onPress={handleToggleReadReceipts}>
+              <Ionicons name="eye-outline" size={24} color="#007AFF" />
+              <Text style={styles.settingText}>
+                Read Receipts: {readReceiptsEnabled ? 'On' : 'Off'}
+              </Text>
+              <Ionicons 
+                name={readReceiptsEnabled ? "toggle" : "toggle-outline"} 
+                size={24} 
+                color={readReceiptsEnabled ? "#007AFF" : "#666"} 
+              />
             </TouchableOpacity>
           </View>
           
@@ -232,6 +267,27 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 4,
+  },
+  settingsSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2c2c2e',
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#2c2c2e',
+  },
+  settingText: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '500',
   },
   mediaSections: {
     padding: 20,

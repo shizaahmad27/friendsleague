@@ -105,6 +105,18 @@ class SocketService {
     }
   }
 
+  onMessagesRead(callback: (data: { userId: string; messageIds: string[]; readAt: string }) => void) {
+    if (this.socket) {
+      this.socket.on('messagesRead', callback);
+    }
+  }
+
+  offMessagesRead(callback: (data: { userId: string; messageIds: string[]; readAt: string }) => void) {
+    if (this.socket) {
+      this.socket.off('messagesRead', callback);
+    }
+  }
+
   getSocket() {
     return this.socket;
   }

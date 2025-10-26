@@ -91,5 +91,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             emoji: data.emoji,
         });
     }
+
+    @SubscribeMessage('messagesRead')
+    handleMessagesRead(
+        @MessageBody() data: { chatId: string; userId: string; messageIds: string[] },
+        @ConnectedSocket() client: Socket,
+    ) {
+        // Broadcast read receipts to all users in the chat
+        client.to(data.chatId).emit('messagesRead', {
+            userId: data.userId,
+            messageIds: data.messageIds,
+            readAt: new Date(),
+        });
+    }
 }
 

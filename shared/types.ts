@@ -131,6 +131,7 @@ export interface SocketEvents {
   'user:typing': (payload: { userId: string; isTyping: boolean }) => void;
   'user:online': (userId: string) => void;
   'user:offline': (userId: string) => void;
+  'messagesRead': (data: { userId: string; messageIds: string[]; readAt: string }) => void;
   
   // League events
   'league:points:update': (leagueId: string, memberId: string, points: number) => void;

@@ -12,12 +12,25 @@ export declare class ChatController {
         type: import(".prisma/client").$Enums.ChatType;
     }>;
     getUserChats(req: any): Promise<any[]>;
-    getChatMessages(chatId: string, page?: string, limit?: string): Promise<({
+    getChatMessages(chatId: string, page?: string, limit?: string): Promise<{
+        reactions: unknown[];
         sender: {
             username: string;
             id: string;
             avatar: string;
         };
+        readReceipts: ({
+            user: {
+                username: string;
+                id: string;
+                avatar: string;
+            };
+        } & {
+            id: string;
+            userId: string;
+            messageId: string;
+            readAt: Date;
+        })[];
         replyTo: {
             sender: {
                 username: string;
@@ -35,7 +48,6 @@ export declare class ChatController {
             senderId: string;
             replyToId: string | null;
         };
-    } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -45,7 +57,131 @@ export declare class ChatController {
         content: string;
         senderId: string;
         replyToId: string | null;
+    }[]>;
+    createGroupChat(req: any, body: {
+        name: string;
+        description: string;
+        participantIds: string[];
+    }): Promise<{
+        participants: ({
+            user: {
+                username: string;
+                id: string;
+                avatar: string;
+                isOnline: boolean;
+            };
+        } & {
+            id: string;
+            userId: string;
+            joinedAt: Date;
+            lastReadAt: Date;
+            readReceiptsEnabled: boolean;
+            chatId: string;
+        })[];
+    } & {
+        name: string | null;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        type: import(".prisma/client").$Enums.ChatType;
+    }>;
+    getGroupChatParticipants(chatId: string): Promise<({
+        user: {
+            username: string;
+            id: string;
+            avatar: string;
+            isOnline: boolean;
+        };
+    } & {
+        id: string;
+        userId: string;
+        joinedAt: Date;
+        lastReadAt: Date;
+        readReceiptsEnabled: boolean;
+        chatId: string;
     })[]>;
+    addParticipantsToGroup(chatId: string, body: {
+        participantIds: string[];
+    }): Promise<{
+        id: string;
+        userId: string;
+        joinedAt: Date;
+        lastReadAt: Date;
+        readReceiptsEnabled: boolean;
+        chatId: string;
+    }[]>;
+    removeParticipantFromGroup(chatId: string, userId: string): Promise<{
+        success: boolean;
+    }>;
+    updateGroupChat(chatId: string, body: {
+        name?: string;
+        description?: string;
+    }): Promise<{
+        participants: ({
+            user: {
+                username: string;
+                id: string;
+                avatar: string;
+                isOnline: boolean;
+            };
+        } & {
+            id: string;
+            userId: string;
+            joinedAt: Date;
+            lastReadAt: Date;
+            readReceiptsEnabled: boolean;
+            chatId: string;
+        })[];
+    } & {
+        name: string | null;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        type: import(".prisma/client").$Enums.ChatType;
+    }>;
+    markChatRead(chatId: string, req: any): Promise<{
+        success: boolean;
+    }>;
+    markMessagesAsRead(chatId: string, req: any, body: {
+        messageIds: string[];
+    }): Promise<{
+        success: boolean;
+        readReceiptsDisabled: boolean;
+        readReceipts?: undefined;
+    } | {
+        success: boolean;
+        readReceipts: ({
+            user: {
+                username: string;
+                id: string;
+                avatar: string;
+            };
+        } & {
+            id: string;
+            userId: string;
+            messageId: string;
+            readAt: Date;
+        })[];
+        readReceiptsDisabled?: undefined;
+    }>;
+    getMessageReadReceipts(messageId: string): Promise<({
+        user: {
+            username: string;
+            id: string;
+            avatar: string;
+        };
+    } & {
+        id: string;
+        userId: string;
+        messageId: string;
+        readAt: Date;
+    })[]>;
+    toggleReadReceipts(chatId: string, req: any, body: {
+        enabled: boolean;
+    }): Promise<{
+        success: boolean;
+        enabled: boolean;
+    }>;
     sendMessage(chatId: string, req: any, body: {
         content: string;
         type?: string;
@@ -83,86 +219,6 @@ export declare class ChatController {
         content: string;
         senderId: string;
         replyToId: string | null;
-    }>;
-    createGroupChat(req: any, body: {
-        name: string;
-        description: string;
-        participantIds: string[];
-    }): Promise<{
-        participants: ({
-            user: {
-                username: string;
-                id: string;
-                avatar: string;
-                isOnline: boolean;
-            };
-        } & {
-            id: string;
-            userId: string;
-            joinedAt: Date;
-            lastReadAt: Date;
-            chatId: string;
-        })[];
-    } & {
-        name: string | null;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        type: import(".prisma/client").$Enums.ChatType;
-    }>;
-    getGroupChatParticipants(chatId: string): Promise<({
-        user: {
-            username: string;
-            id: string;
-            avatar: string;
-            isOnline: boolean;
-        };
-    } & {
-        id: string;
-        userId: string;
-        joinedAt: Date;
-        lastReadAt: Date;
-        chatId: string;
-    })[]>;
-    addParticipantsToGroup(chatId: string, body: {
-        participantIds: string[];
-    }): Promise<{
-        id: string;
-        userId: string;
-        joinedAt: Date;
-        lastReadAt: Date;
-        chatId: string;
-    }[]>;
-    removeParticipantFromGroup(chatId: string, userId: string): Promise<{
-        success: boolean;
-    }>;
-    updateGroupChat(chatId: string, body: {
-        name?: string;
-        description?: string;
-    }): Promise<{
-        participants: ({
-            user: {
-                username: string;
-                id: string;
-                avatar: string;
-                isOnline: boolean;
-            };
-        } & {
-            id: string;
-            userId: string;
-            joinedAt: Date;
-            lastReadAt: Date;
-            chatId: string;
-        })[];
-    } & {
-        name: string | null;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        type: import(".prisma/client").$Enums.ChatType;
-    }>;
-    markChatRead(chatId: string, req: any): Promise<{
-        success: boolean;
     }>;
     addReaction(messageId: string, req: any, body: {
         emoji: string;

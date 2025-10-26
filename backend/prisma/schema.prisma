@@ -35,6 +35,7 @@ model User {
   sentInvitations Invitation[]  @relation("Inviter")
   receivedInvitations Invitation[]  @relation("Invitee")
   messageReactions MessageReaction[]
+  messageReadReceipts MessageReadReceipt[]
 
   @@map("users")
 }
@@ -74,6 +75,7 @@ model ChatParticipant {
   userId  String
   joinedAt DateTime @default(now())
   lastReadAt DateTime @default(now())
+  readReceiptsEnabled Boolean @default(true)
 
   // Relations
   chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
@@ -98,6 +100,7 @@ model Message {
   sender   User            @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
   chat     Chat            @relation(fields: [chatId], references: [id], onDelete: Cascade)
   reactions MessageReaction[]
+  readReceipts MessageReadReceipt[]
   replyTo  Message?        @relation("MessageReplies", fields: [replyToId], references: [id])
   replies  Message[]       @relation("MessageReplies")
 
@@ -117,6 +120,20 @@ model MessageReaction {
 
   @@unique([messageId, userId, emoji])
   @@map("message_reactions")
+}
+
+model MessageReadReceipt {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+  
+  // Relations
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, userId])
+  @@map("message_read_receipts")
 }
 
 model League {

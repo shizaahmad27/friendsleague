@@ -31,4 +31,9 @@ export declare class ChatGateway implements OnGatewayConnection, OnGatewayDiscon
         userId: string;
         emoji: string;
     }, client: Socket): void;
+    handleMessagesRead(data: {
+        chatId: string;
+        userId: string;
+        messageIds: string[];
+    }, client: Socket): void;
 }

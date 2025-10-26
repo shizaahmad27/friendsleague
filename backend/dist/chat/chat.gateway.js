@@ -59,6 +59,13 @@ let ChatGateway = class ChatGateway {
             emoji: data.emoji,
         });
     }
+    handleMessagesRead(data, client) {
+        client.to(data.chatId).emit('messagesRead', {
+            userId: data.userId,
+            messageIds: data.messageIds,
+            readAt: new Date(),
+        });
+    }
 };
 exports.ChatGateway = ChatGateway;
 __decorate([
@@ -105,6 +112,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
     __metadata("design:returntype", void 0)
 ], ChatGateway.prototype, "handleReactionRemoved", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('messagesRead'),
+    __param(0, (0, websockets_1.MessageBody)()),
+    __param(1, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], ChatGateway.prototype, "handleMessagesRead", null);
 exports.ChatGateway = ChatGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {
