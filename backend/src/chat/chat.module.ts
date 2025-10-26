@@ -8,6 +8,6 @@ import { S3Service } from '../common/s3.service';
 @Module({
     controllers: [ChatController],
     providers: [ChatService, ChatGateway, PrismaService, S3Service],
-    exports: [ChatService],
+    exports: [ChatService, ChatGateway],
 })
 export class ChatModule {}
