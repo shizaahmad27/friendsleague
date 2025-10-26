@@ -24,16 +24,45 @@ export default function ChatListScreen() {
     loadChats();
     socketService.connect();
 
+    // Join user to their personal room for receiving updates
+    if (user?.id) {
+      socketService.joinUser(user.id);
+    }
+
     // Listen for new messages
     socketService.onNewMessage((message) => {
       // Update chat list when new message arrives
       loadChats();
     });
 
+    // Listen for new chats
+    socketService.onNewChat((newChat) => {
+      setChats(prevChats => {
+        // Check if chat already exists
+        const existingChat = prevChats.find(chat => chat.id === newChat.id);
+        if (existingChat) {
+          return prevChats;
+        }
+        // Add new chat to the beginning of the list
+        return [newChat, ...prevChats];
+      });
+    });
+
+    // Listen for unread count updates
+    socketService.onUnreadCountUpdate((data) => {
+      if (data.userId === user?.id) {
+        // Update unread count in chat list
+        loadChats(); // Refresh to get updated counts
+      }
+    });
+
     return () => {
+      if (user?.id) {
+        socketService.leaveUser(user.id);
+      }
       socketService.disconnect();
     };
-  }, []);
+  }, [user?.id]);
 
   const loadChats = async () => {
     try {

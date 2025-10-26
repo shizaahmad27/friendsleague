@@ -104,5 +104,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             readAt: new Date(),
         });
     }
+
+    @SubscribeMessage('joinUser')
+    handleJoinUser(@MessageBody() data: { userId: string }, @ConnectedSocket() client: Socket) {
+        // Join user to their personal room for receiving updates
+        client.join(data.userId);
+        console.log(`User ${data.userId} joined their personal room`);
+    }
+
+    @SubscribeMessage('leaveUser')
+    handleLeaveUser(@MessageBody() data: { userId: string }, @ConnectedSocket() client: Socket) {
+        // Leave user from their personal room
+        client.leave(data.userId);
+        console.log(`User ${data.userId} left their personal room`);
+    }
 }
 

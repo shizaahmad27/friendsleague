@@ -60,6 +60,10 @@ const chat = await this.prisma.chat.create({
     },
     });
 
+    // Emit socket event to both users about new chat
+    this.chatGateway.server.to(userId1).emit('newChat', chat);
+    this.chatGateway.server.to(userId2).emit('newChat', chat);
+
     return chat;
 }
 
@@ -252,6 +256,25 @@ const chat = await this.prisma.chat.create({
               data: { updatedAt: new Date() },
             });
             // Do not update readers here; they will mark read on open
+
+            // Emit socket event for new message
+            this.chatGateway.server.to(chatId).emit('newMessage', message);
+
+            // Emit unread count updates to all participants except sender
+            const participants = await this.prisma.chatParticipant.findMany({
+                where: { chatId },
+                select: { userId: true },
+            });
+
+            for (const participant of participants) {
+                if (participant.userId !== senderId) {
+                    const unreadCount = await this.getUnreadCount(participant.userId);
+                    this.chatGateway.server.to(participant.userId).emit('unreadCountUpdate', {
+                        userId: participant.userId,
+                        unreadCount,
+                    });
+                }
+            }
         
             return message;
           }
@@ -645,5 +668,28 @@ const chat = await this.prisma.chat.create({
         }, {});
 
         return Object.values(groupedReactions);
+    }
+
+    async getUnreadCount(userId: string): Promise<number> {
+        // Get all chats where user is a participant
+        const userChats = await this.prisma.chatParticipant.findMany({
+            where: { userId },
+            select: { chatId: true, lastReadAt: true },
+        });
+
+        let totalUnread = 0;
+
+        for (const chatParticipant of userChats) {
+            const unreadInChat = await this.prisma.message.count({
+                where: {
+                    chatId: chatParticipant.chatId,
+                    senderId: { not: userId },
+                    createdAt: { gt: chatParticipant.lastReadAt },
+                },
+            });
+            totalUnread += unreadInChat;
+        }
+
+        return totalUnread;
     }
 }

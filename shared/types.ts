@@ -132,6 +132,10 @@ export interface SocketEvents {
   'user:online': (userId: string) => void;
   'user:offline': (userId: string) => void;
   'messagesRead': (data: { userId: string; messageIds: string[]; readAt: string }) => void;
+  'newChat': (chat: any) => void;
+  'unreadCountUpdate': (data: { userId: string; unreadCount: number }) => void;
+  'joinUser': (data: { userId: string }) => void;
+  'leaveUser': (data: { userId: string }) => void;
   
   // League events
   'league:points:update': (leagueId: string, memberId: string, points: number) => void;

@@ -271,6 +271,18 @@ export default function ChatScreen() {
     onReactionRemoved: handleReactionRemoved,
   });
 
+  // Join user to their personal room for receiving updates
+  useEffect(() => {
+    if (user?.id) {
+      socketService.joinUser(user.id);
+    }
+    return () => {
+      if (user?.id) {
+        socketService.leaveUser(user.id);
+      }
+    };
+  }, [user?.id]);
+
   const { getMessageStatus, getReadByCount, getReadByUsers } = useReadReceipts({
     chatId,
     messages,

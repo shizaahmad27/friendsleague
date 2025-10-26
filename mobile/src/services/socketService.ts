@@ -117,6 +117,42 @@ class SocketService {
     }
   }
 
+  onNewChat(callback: (chat: any) => void) {
+    if (this.socket) {
+      this.socket.on('newChat', callback);
+    }
+  }
+
+  offNewChat(callback: (chat: any) => void) {
+    if (this.socket) {
+      this.socket.off('newChat', callback);
+    }
+  }
+
+  onUnreadCountUpdate(callback: (data: { userId: string; unreadCount: number }) => void) {
+    if (this.socket) {
+      this.socket.on('unreadCountUpdate', callback);
+    }
+  }
+
+  offUnreadCountUpdate(callback: (data: { userId: string; unreadCount: number }) => void) {
+    if (this.socket) {
+      this.socket.off('unreadCountUpdate', callback);
+    }
+  }
+
+  joinUser(userId: string) {
+    if (this.socket) {
+      this.socket.emit('joinUser', { userId });
+    }
+  }
+
+  leaveUser(userId: string) {
+    if (this.socket) {
+      this.socket.emit('leaveUser', { userId });
+    }
+  }
+
   getSocket() {
     return this.socket;
   }
