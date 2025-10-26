@@ -9,6 +9,7 @@ export interface User {
   avatar?: string;
   isOnline: boolean;
   lastSeen: Date;
+  showOnlineStatus?: boolean;  // Global setting for online status visibility
   createdAt: Date;
   updatedAt: Date;
 }
@@ -121,6 +122,21 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+// Privacy Settings Types
+export interface UserPrivacySettings {
+  id: string;
+  userId: string;
+  targetUserId: string;
+  hideOnlineStatus: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PrivacySettingsResponse {
+  global: { showOnlineStatus: boolean };
+  friends: Array<{ friendId: string; hideOnlineStatus: boolean }>;
+}
+
 // Socket.io event types
 export interface SocketEvents {
   // Chat events
@@ -129,8 +145,8 @@ export interface SocketEvents {
   'sendMessage': (payload: { chatId: string; message: Message }) => void;
   'newMessage': (message: Message) => void;
   'user:typing': (payload: { userId: string; isTyping: boolean }) => void;
-  'user:online': (userId: string) => void;
-  'user:offline': (userId: string) => void;
+  'user:online': (data: { userId: string; timestamp: string }) => void;
+  'user:offline': (data: { userId: string; timestamp: string }) => void;
   'messagesRead': (data: { userId: string; messageIds: string[]; readAt: string }) => void;
   'newChat': (chat: any) => void;
   'unreadCountUpdate': (data: { userId: string; unreadCount: number }) => void;

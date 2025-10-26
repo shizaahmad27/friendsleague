@@ -63,6 +63,7 @@ export type RootStackParamList = {
   LeagueRulesRead: { leagueId: string };
   LeagueLeaderboard: { leagueId: string };
   LeagueAssignPoints: { leagueId: string };
+  PrivacySettings: undefined;
   // Events
   EventCreate: { leagueId?: string } | undefined;
   EventDetails: { eventId: string };

@@ -153,6 +153,30 @@ class SocketService {
     }
   }
 
+  onUserOnline(callback: (data: { userId: string; timestamp: string }) => void) {
+    if (this.socket) {
+      this.socket.on('user:online', callback);
+    }
+  }
+
+  offUserOnline(callback: (data: { userId: string; timestamp: string }) => void) {
+    if (this.socket) {
+      this.socket.off('user:online', callback);
+    }
+  }
+
+  onUserOffline(callback: (data: { userId: string; timestamp: string }) => void) {
+    if (this.socket) {
+      this.socket.on('user:offline', callback);
+    }
+  }
+
+  offUserOffline(callback: (data: { userId: string; timestamp: string }) => void) {
+    if (this.socket) {
+      this.socket.off('user:offline', callback);
+    }
+  }
+
   getSocket() {
     return this.socket;
   }

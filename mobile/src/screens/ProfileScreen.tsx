@@ -163,7 +163,10 @@ export default function ProfileScreen() {
             <Text style={styles.actionButtonText}>Notifications</Text>
             <Text style={styles.actionButtonArrow}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('PrivacySettings' as never)}
+          >
             <Text style={styles.actionButtonText}>Privacy</Text>
             <Text style={styles.actionButtonArrow}>›</Text>
           </TouchableOpacity>

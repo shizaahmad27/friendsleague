@@ -15,6 +15,10 @@ import { Message, chatApi } from '../services/chatApi';
 import { MediaGalleryModal } from './MediaGalleryModal';
 import { useSwipeToClose } from '../hooks/useSwipeToClose';
 import { useVideoThumbnail } from '../hooks/useVideoThumbnail';
+import { OnlineStatusIndicator } from './OnlineStatusIndicator';
+import { useUserOnlineStatus } from '../hooks/useUserOnlineStatus';
+import { privacyApi } from '../services/privacyApi';
+import { useAuthStore } from '../store/authStore';
 
 interface ChatSettingsModalProps {
   visible: boolean;
@@ -31,11 +35,18 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
   onOpenGallery,
   chatId,
 }) => {
+  const { user } = useAuthStore();
   const [showAllImages, setShowAllImages] = useState(false);
   const [showAllVideos, setShowAllVideos] = useState(false);
   const [showAllFiles, setShowAllFiles] = useState(false);
   const [fullscreenMessage, setFullscreenMessage] = useState<Message | null>(null);
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
+  const [peerUser, setPeerUser] = useState<{ id: string; username: string; avatar?: string; lastSeen?: string } | null>(null);
+  const [hideOnlineStatusFromPeer, setHideOnlineStatusFromPeer] = useState(false);
+  const [isLoadingPrivacy, setIsLoadingPrivacy] = useState(false);
+
+  // Online status hook
+  const { isUserOnline, getLastSeenTime } = useUserOnlineStatus();
 
   // Swipe to close functionality for the main modal
   const { panY, modalOpacity, imageScale, panResponder } = useSwipeToClose({
@@ -50,12 +61,62 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
     setReadReceiptsEnabled(true);
   }, [chatId]);
 
+  // Load peer user info and privacy settings
+  useEffect(() => {
+    if (!visible || !user) return;
+
+    const loadPeerUserAndPrivacy = async () => {
+      try {
+        // Get chat participants to find the peer user
+        const participants = await chatApi.getGroupChatParticipants(chatId);
+        const peer = participants.find(p => p.user.id !== user.id)?.user;
+        
+        if (peer) {
+          setPeerUser({
+            id: peer.id,
+            username: peer.username,
+            avatar: peer.avatar,
+            lastSeen: peer.lastSeen,
+          });
+
+          // Load privacy setting for this peer
+          setIsLoadingPrivacy(true);
+          const privacySetting = await privacyApi.getFriendOnlineStatusVisibility(peer.id);
+          setHideOnlineStatusFromPeer(privacySetting.hideOnlineStatus);
+        }
+      } catch (error) {
+        console.error('Failed to load peer user info:', error);
+      } finally {
+        setIsLoadingPrivacy(false);
+      }
+    };
+
+    loadPeerUserAndPrivacy();
+  }, [visible, chatId, user]);
+
   const handleToggleReadReceipts = async () => {
     try {
       await chatApi.toggleReadReceipts(chatId, !readReceiptsEnabled);
       setReadReceiptsEnabled(!readReceiptsEnabled);
     } catch (error) {
       Alert.alert('Error', 'Failed to update read receipts setting');
+    }
+  };
+
+  const handleTogglePrivacySetting = async () => {
+    if (!peerUser) return;
+
+    try {
+      setIsLoadingPrivacy(true);
+      await privacyApi.updateFriendOnlineStatusVisibility(
+        peerUser.id, 
+        !hideOnlineStatusFromPeer
+      );
+      setHideOnlineStatusFromPeer(!hideOnlineStatusFromPeer);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update privacy setting');
+    } finally {
+      setIsLoadingPrivacy(false);
     }
   };
 
@@ -122,6 +183,45 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
               <Ionicons name="close" size={24} color="#007AFF" />
             </TouchableOpacity>
           </View>
+          
+          {/* User Info Section */}
+          {peerUser && (
+            <View style={styles.userInfoSection}>
+              <View style={styles.userInfoHeader}>
+                <View style={styles.userAvatarContainer}>
+                  <Image
+                    source={{ uri: peerUser.avatar || 'https://via.placeholder.com/50' }}
+                    style={styles.userAvatar}
+                  />
+                </View>
+                <View style={styles.userInfoText}>
+                  <Text style={styles.userName}>{peerUser.username}</Text>
+                  <OnlineStatusIndicator
+                    isOnline={isUserOnline(peerUser.id)}
+                    lastSeen={peerUser.lastSeen}
+                    showLastSeen={true}
+                  />
+                </View>
+              </View>
+              
+              {/* Privacy Toggle */}
+              <TouchableOpacity 
+                style={styles.settingItem} 
+                onPress={handleTogglePrivacySetting}
+                disabled={isLoadingPrivacy}
+              >
+                <Ionicons name="eye-outline" size={24} color="#007AFF" />
+                <Text style={styles.settingText}>
+                  Show my online status to {peerUser.username}
+                </Text>
+                <Ionicons 
+                  name={hideOnlineStatusFromPeer ? "toggle-outline" : "toggle"} 
+                  size={24} 
+                  color={hideOnlineStatusFromPeer ? "#666" : "#007AFF"} 
+                />
+              </TouchableOpacity>
+            </View>
+          )}
           
           {/* Read Receipts Toggle */}
           <View style={styles.settingsSection}>
@@ -354,5 +454,34 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     flex: 1,
+  },
+  userInfoSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2c2c2e',
+  },
+  userInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  userAvatarContainer: {
+    marginRight: 12,
+  },
+  userAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#2c2c2e',
+  },
+  userInfoText: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 4,
   },
 });
