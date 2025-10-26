@@ -16,6 +16,7 @@ export interface QuickCameraState {
   capturedMedia: {
     uri: string;
     type: 'IMAGE' | 'VIDEO';
+    size: number;
   } | null;
 }
 
@@ -23,7 +24,7 @@ export const useQuickCamera = (callbacks: QuickCameraCallbacks) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<any | null>(null);
   const [showEphemeralPreview, setShowEphemeralPreview] = useState(false);
-  const [capturedMedia, setCapturedMedia] = useState<{ uri: string; type: 'IMAGE' | 'VIDEO' } | null>(null);
+  const [capturedMedia, setCapturedMedia] = useState<{ uri: string; type: 'IMAGE' | 'VIDEO'; size: number } | null>(null);
 
   /**
    * Launch camera with support for both photos and videos
@@ -88,6 +89,7 @@ export const useQuickCamera = (callbacks: QuickCameraCallbacks) => {
       setCapturedMedia({
         uri: asset.uri,
         type: mediaType,
+        size: asset.fileSize || 0, // Store the actual file size
       });
       setShowEphemeralPreview(true);
 
@@ -121,7 +123,7 @@ export const useQuickCamera = (callbacks: QuickCameraCallbacks) => {
         uri: capturedMedia.uri,
         name: capturedMedia.type === 'VIDEO' ? `video_${Date.now()}.mp4` : `photo_${Date.now()}.jpg`,
         type: capturedMedia.type === 'VIDEO' ? 'video/mp4' : 'image/jpeg',
-        size: 0, // Will be set during upload
+        size: capturedMedia.size || 1, // Use actual file size, fallback to 1 if 0
       };
 
       // Emit local preview first
