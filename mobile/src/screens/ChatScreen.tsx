@@ -906,7 +906,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   messagesList: {
-    flex: 1,
+    flexGrow: 1,
     padding: 16,
   },
   messageWrapper: {
