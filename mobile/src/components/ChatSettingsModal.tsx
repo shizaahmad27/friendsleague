@@ -184,27 +184,9 @@ export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
             </TouchableOpacity>
           </View>
           
-          {/* User Info Section */}
+          {/* Privacy Toggle Section */}
           {peerUser && (
-            <View style={styles.userInfoSection}>
-              <View style={styles.userInfoHeader}>
-                <View style={styles.userAvatarContainer}>
-                  <Image
-                    source={{ uri: peerUser.avatar || 'https://via.placeholder.com/50' }}
-                    style={styles.userAvatar}
-                  />
-                </View>
-                <View style={styles.userInfoText}>
-                  <Text style={styles.userName}>{peerUser.username}</Text>
-                  <OnlineStatusIndicator
-                    isOnline={isUserOnline(peerUser.id)}
-                    lastSeen={peerUser.lastSeen}
-                    showLastSeen={true}
-                  />
-                </View>
-              </View>
-              
-              {/* Privacy Toggle */}
+            <View style={styles.settingsSection}>
               <TouchableOpacity 
                 style={styles.settingItem} 
                 onPress={handleTogglePrivacySetting}

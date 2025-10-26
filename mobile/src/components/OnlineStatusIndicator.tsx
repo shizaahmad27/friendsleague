@@ -8,6 +8,7 @@ interface OnlineStatusIndicatorProps {
   lastSeen?: string;
   showLastSeen?: boolean;
   style?: any;
+  size?: 'small' | 'normal';
 }
 
 export const OnlineStatusIndicator: React.FC<OnlineStatusIndicatorProps> = ({
@@ -15,6 +16,7 @@ export const OnlineStatusIndicator: React.FC<OnlineStatusIndicatorProps> = ({
   lastSeen,
   showLastSeen = true,
   style,
+  size = 'normal',
 }) => {
   const formatLastSeen = (timestamp: string): string => {
     const now = new Date();
@@ -40,8 +42,8 @@ export const OnlineStatusIndicator: React.FC<OnlineStatusIndicatorProps> = ({
   if (isOnline) {
     return (
       <View style={[styles.container, style]}>
-        <View style={styles.onlineDot} />
-        <Text style={styles.onlineText}>Active now</Text>
+        <View style={[styles.onlineDot, size === 'small' && styles.smallDot]} />
+        <Text style={[styles.onlineText, size === 'small' && styles.smallText]}>Active now</Text>
       </View>
     );
   }
@@ -49,7 +51,7 @@ export const OnlineStatusIndicator: React.FC<OnlineStatusIndicatorProps> = ({
   if (showLastSeen && lastSeen) {
     return (
       <View style={[styles.container, style]}>
-        <Text style={styles.lastSeenText}>
+        <Text style={[styles.lastSeenText, size === 'small' && styles.smallText]}>
           Last seen {formatLastSeen(lastSeen)}
         </Text>
       </View>
@@ -81,5 +83,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     fontStyle: 'italic',
+  },
+  smallDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 4,
+  },
+  smallText: {
+    fontSize: 12,
   },
 });

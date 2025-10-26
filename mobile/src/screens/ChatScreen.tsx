@@ -34,6 +34,8 @@ import { useReadReceipts } from '../hooks/useReadReceipts';
 import { useChatSocket } from '../hooks/useChatSocket';
 import { MessageStatus } from '../components/MessageStatus';
 import { ReadReceiptsModal } from '../components/ReadReceiptsModal';
+import { OnlineStatusIndicator } from '../components/OnlineStatusIndicator';
+import { useUserOnlineStatus } from '../hooks/useUserOnlineStatus';
 
 type ChatScreenRouteProp = RouteProp<{ Chat: { chatId: string } }, 'Chat'>;
 
@@ -288,6 +290,9 @@ export default function ChatScreen() {
     messages,
     onMessagesUpdate: setMessages,
   });
+
+  // Online status hook
+  const { isUserOnline, getLastSeenTime } = useUserOnlineStatus();
 
   // Helper function to determine if a message is the last in a consecutive series
   const isLastMessageInSeries = (currentMessage: Message, currentIndex: number): boolean => {
@@ -631,9 +636,21 @@ export default function ChatScreen() {
               </Text>
             </View>
           )}
-          <Text style={styles.headerUsername} numberOfLines={1}>
-            {displayName}
-          </Text>
+          <View style={styles.headerUserInfo}>
+            <Text style={styles.headerUsername} numberOfLines={1}>
+              {displayName}
+            </Text>
+            {/* Online Status Indicator - only show for direct chats */}
+            {!isGroup && peerUser && (
+              <OnlineStatusIndicator
+                isOnline={isUserOnline(peerUser.id)}
+                lastSeen={getLastSeenTime(peerUser.id) || undefined}
+                showLastSeen={true}
+                size="small"
+                style={styles.headerOnlineStatus}
+              />
+            )}
+          </View>
           {isGroup && <Text style={styles.headerChevron}>›</Text>}
         </TouchableOpacity>
         <TouchableOpacity
@@ -881,6 +898,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#111',
+  },
+  headerUserInfo: {
+    flex: 1,
+  },
+  headerOnlineStatus: {
+    marginTop: 2,
   },
   headerRightSpacer: {
     width: 40,
