@@ -23,6 +23,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     async handleConnection(client: Socket){
         console.log('Client connected:', client.id);
+        // Note: We'll emit user:online when the user joins their personal room
+        // This happens in handleJoinUser method
     }
 
     async handleDisconnect(client: Socket){
@@ -30,7 +32,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (userId){
             this.connectedUsers.delete(client.id);
 
-            this.server.emit('user:offline', { userId });
+            // Broadcast to all users that this user is offline
+            this.server.emit('user:offline', { 
+                userId,
+                timestamp: new Date().toISOString()
+            });
         }
         console.log(`Client disconnected: ${client.id}`);
     }
@@ -109,7 +115,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     handleJoinUser(@MessageBody() data: { userId: string }, @ConnectedSocket() client: Socket) {
         // Join user to their personal room for receiving updates
         client.join(data.userId);
-        console.log(`User ${data.userId} joined their personal room`);
+        
+        // Store the user connection
+        this.connectedUsers.set(client.id, data.userId);
+        
+        // Broadcast to all users that this user is online
+        this.server.emit('user:online', { 
+            userId: data.userId,
+            timestamp: new Date().toISOString()
+        });
+        
+        console.log(`User ${data.userId} joined their personal room and is now online`);
     }
 
     @SubscribeMessage('leaveUser')

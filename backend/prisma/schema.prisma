@@ -17,6 +17,7 @@ model User {
   inviteCode          String?              @unique
   isOnline            Boolean              @default(false)
   lastSeen            DateTime             @default(now())
+  showOnlineStatus    Boolean              @default(true)  // Global setting for online status visibility
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   chatParticipants    ChatParticipant[]
@@ -32,6 +33,8 @@ model User {
   messageReactions    MessageReaction[]
   messageReadReceipts MessageReadReceipt[]
   sentMessages        Message[]            @relation("MessageSender")
+  privacySettings     UserPrivacySettings[] @relation("UserPrivacyOwner")
+  privacySettingsTarget UserPrivacySettings[] @relation("UserPrivacyTarget")
 
   @@map("users")
 }
@@ -258,6 +261,24 @@ model Friendship {
   @@unique([userId, friendId])
   @@map("friendships")
 }
+
+model UserPrivacySettings {
+  id              String   @id @default(cuid())
+  userId          String   // User who owns the privacy setting
+  targetUserId    String   // User who the setting applies to
+  hideOnlineStatus Boolean  @default(false)  // Whether to hide online status from target user
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user        User @relation("UserPrivacyOwner", fields: [userId], references: [id], onDelete: Cascade)
+  targetUser  User @relation("UserPrivacyTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetUserId])
+  @@map("user_privacy_settings")
+}
+
+// Enums
 
 enum ChatType {
   DIRECT

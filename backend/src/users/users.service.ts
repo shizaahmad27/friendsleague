@@ -199,4 +199,107 @@ export class UsersService {
     const hmac = crypto.createHmac('sha256', secret).update(userId).digest('hex');
     return hmac.substring(0, 8).toUpperCase();
   }
+
+  // Privacy Settings Methods
+  async getPrivacySettings(userId: string): Promise<{
+    global: { showOnlineStatus: boolean };
+    friends: Array<{ friendId: string; hideOnlineStatus: boolean }>;
+  }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { showOnlineStatus: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const friendSettings = await this.prisma.userPrivacySettings.findMany({
+      where: { userId },
+      select: { targetUserId: true, hideOnlineStatus: true },
+    });
+
+    return {
+      global: { showOnlineStatus: user.showOnlineStatus },
+      friends: friendSettings.map(setting => ({
+        friendId: setting.targetUserId,
+        hideOnlineStatus: setting.hideOnlineStatus,
+      })),
+    };
+  }
+
+  async updateGlobalOnlineStatus(userId: string, showOnlineStatus: boolean): Promise<{ success: boolean; message: string }> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { showOnlineStatus },
+    });
+
+    return {
+      success: true,
+      message: `Global online status visibility updated to ${showOnlineStatus ? 'visible' : 'hidden'}`,
+    };
+  }
+
+  async updateFriendOnlineStatusVisibility(
+    userId: string, 
+    targetUserId: string, 
+    hideOnlineStatus: boolean
+  ): Promise<{ success: boolean; message: string }> {
+    await this.prisma.userPrivacySettings.upsert({
+      where: {
+        userId_targetUserId: {
+          userId,
+          targetUserId,
+        },
+      },
+      update: { hideOnlineStatus },
+      create: {
+        userId,
+        targetUserId,
+        hideOnlineStatus,
+      },
+    });
+
+    return {
+      success: true,
+      message: `Online status visibility for friend updated to ${hideOnlineStatus ? 'hidden' : 'visible'}`,
+    };
+  }
+
+  async getFriendOnlineStatusVisibility(userId: string, targetUserId: string): Promise<boolean> {
+    const setting = await this.prisma.userPrivacySettings.findUnique({
+      where: {
+        userId_targetUserId: {
+          userId,
+          targetUserId,
+        },
+      },
+    });
+
+    return setting?.hideOnlineStatus || false;
+  }
+
+  async canUserSeeOnlineStatus(viewerId: string, targetUserId: string): Promise<boolean> {
+    // Check if target user has global online status enabled
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { showOnlineStatus: true },
+    });
+
+    if (!targetUser || !targetUser.showOnlineStatus) {
+      return false;
+    }
+
+    // Check if target user has hidden their status from the viewer
+    const privacySetting = await this.prisma.userPrivacySettings.findUnique({
+      where: {
+        userId_targetUserId: {
+          userId: targetUserId,
+          targetUserId: viewerId,
+        },
+      },
+    });
+
+    return !privacySetting?.hideOnlineStatus;
+  }
 }
