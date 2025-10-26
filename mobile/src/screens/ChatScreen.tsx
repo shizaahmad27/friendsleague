@@ -198,7 +198,13 @@ export default function ChatScreen() {
     if (message.chatId === chatId) {
       setMessages(prev => {
         const exists = prev.some(m => m.id === message.id);
-        return exists ? prev : [message, ...prev];
+        if (exists) {
+          console.log('Duplicate message detected, skipping:', message.id);
+          return prev;
+        }
+        
+        console.log('Adding new message via socket:', message.id);
+        return [message, ...prev];
       });
     }
   }, [chatId]);
@@ -407,11 +413,8 @@ export default function ChatScreen() {
 
       const messageWithSender = { ...message, senderId: user.id };
 
-      // Add to local state immediately for ephemeral messages to ensure sender sees it
-      if (isEphemeral) {
-        setMessages(prev => [messageWithSender, ...prev]);
-      }
-      // For non-ephemeral messages, socket event will handle it to avoid duplicates
+      // Don't add to local state - socket events will handle it for all messages now
+      // Backend emits to both chat room and sender's personal room
 
       socketService.emitTyping(chatId, user.id, false);
       setIsTyping(false);

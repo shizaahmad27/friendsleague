@@ -128,15 +128,24 @@ export const EphemeralViewer: React.FC<EphemeralViewerProps> = ({
 
   const renderMedia = () => {
     if (mediaType === 'VIDEO') {
+      const isPlayOnce = viewDuration === -1;
+      const isLoop = viewDuration === null;
+      
       return (
         <Video
           source={{ uri: mediaUrl }}
           style={styles.media}
           resizeMode={ResizeMode.COVER}
           shouldPlay
-          isLooping
+          isLooping={isLoop}
           isMuted={false}
-          onPlaybackStatusUpdate={(status) => setVideoStatus(status)}
+          onPlaybackStatusUpdate={(status) => {
+            setVideoStatus(status);
+            // Close automatically when video finishes playing (Play Once mode)
+            if (isPlayOnce && status.didJustFinish) {
+              handleClose();
+            }
+          }}
         />
       );
     } else {
@@ -175,12 +184,24 @@ export const EphemeralViewer: React.FC<EphemeralViewerProps> = ({
               <Ionicons name="close" size={24} color="#fff" />
             </TouchableOpacity>
             
-            {timeRemaining !== null && (
+            {mediaType === 'IMAGE' && timeRemaining !== null && (
               <View style={styles.timerContainer}>
                 <View style={styles.timerCircle}>
                   <Text style={styles.timerText}>
                     {formatTime(timeRemaining)}
                   </Text>
+                </View>
+              </View>
+            )}
+            
+            {mediaType === 'VIDEO' && (
+              <View style={styles.timerContainer}>
+                <View style={styles.timerCircle}>
+                  <Ionicons 
+                    name={viewDuration === -1 ? 'play-circle-outline' : 'infinite-outline'} 
+                    size={24} 
+                    color="#fff" 
+                  />
                 </View>
               </View>
             )}
@@ -196,9 +217,13 @@ export const EphemeralViewer: React.FC<EphemeralViewerProps> = ({
           {/* Bottom instructions */}
           <View style={styles.bottomContainer}>
             <Text style={styles.instructionText}>
-              {timeRemaining === null 
-                ? 'Tap to close • Swipe down to dismiss'
-                : 'Tap to close • Swipe down to dismiss'
+              {mediaType === 'VIDEO' 
+                ? (viewDuration === -1 
+                    ? 'Tap to close • Video will stop after playing once'
+                    : 'Tap to close • Video will loop until you close it')
+                : (timeRemaining === null 
+                    ? 'Tap to close • Swipe down to dismiss'
+                    : 'Tap to close • Swipe down to dismiss')
               }
             </Text>
           </View>

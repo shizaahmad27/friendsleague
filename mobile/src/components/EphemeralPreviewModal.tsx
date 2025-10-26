@@ -29,6 +29,11 @@ const TIMER_OPTIONS = [
   { label: '∞', value: null }, // Unlimited
 ];
 
+const VIDEO_OPTIONS = [
+  { label: 'Play Once', value: -1, icon: 'play-circle-outline' },
+  { label: 'Loop', value: null, icon: 'infinite-outline' },
+];
+
 export const EphemeralPreviewModal: React.FC<EphemeralPreviewModalProps> = ({
   visible,
   mediaUri,
@@ -36,7 +41,9 @@ export const EphemeralPreviewModal: React.FC<EphemeralPreviewModalProps> = ({
   onSend,
   onCancel,
 }) => {
-  const [selectedDuration, setSelectedDuration] = useState<number | null>(10); // Default to 10s
+  // Set default based on media type
+  const defaultDuration = mediaType === 'VIDEO' ? -1 : 10; // Play Once for videos, 10s for photos
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(defaultDuration);
 
   const handleSend = () => {
     onSend(selectedDuration);
@@ -105,13 +112,18 @@ export const EphemeralPreviewModal: React.FC<EphemeralPreviewModalProps> = ({
 
         {/* Timer Selection */}
         <View style={styles.timerSection}>
-          <Text style={styles.timerTitle}>View Duration</Text>
+          <Text style={styles.timerTitle}>
+            {mediaType === 'VIDEO' ? 'Playback Mode' : 'View Duration'}
+          </Text>
           <Text style={styles.timerSubtitle}>
-            How long can the recipient view this snap?
+            {mediaType === 'VIDEO' 
+              ? 'How should the recipient watch this video?'
+              : 'How long can the recipient view this snap?'
+            }
           </Text>
           
           <View style={styles.timerOptions}>
-            {TIMER_OPTIONS.map((option) => (
+            {(mediaType === 'VIDEO' ? VIDEO_OPTIONS : TIMER_OPTIONS).map((option) => (
               <TouchableOpacity
                 key={option.label}
                 style={[
@@ -120,6 +132,14 @@ export const EphemeralPreviewModal: React.FC<EphemeralPreviewModalProps> = ({
                 ]}
                 onPress={() => setSelectedDuration(option.value)}
               >
+                {option.icon && (
+                  <Ionicons 
+                    name={option.icon as any} 
+                    size={20} 
+                    color={selectedDuration === option.value ? '#fff' : '#ccc'} 
+                    style={styles.optionIcon}
+                  />
+                )}
                 <Text
                   style={[
                     styles.timerOptionText,
@@ -133,9 +153,14 @@ export const EphemeralPreviewModal: React.FC<EphemeralPreviewModalProps> = ({
           </View>
 
           <Text style={styles.timerDescription}>
-            {selectedDuration === null
-              ? 'Recipient can view once, then it disappears'
-              : `Snap will disappear after ${selectedDuration} seconds`}
+            {mediaType === 'VIDEO' 
+              ? (selectedDuration === -1 
+                  ? 'Video will play once and close automatically'
+                  : 'Video will loop until recipient closes it')
+              : (selectedDuration === null
+                  ? 'Recipient can view once, then it disappears'
+                  : `Snap will disappear after ${selectedDuration} seconds`)
+            }
           </Text>
         </View>
 
@@ -225,6 +250,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     minWidth: 60,
     alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
   },
   timerOptionSelected: {
     borderColor: '#007AFF',
@@ -237,6 +264,9 @@ const styles = StyleSheet.create({
   },
   timerOptionTextSelected: {
     color: '#fff',
+  },
+  optionIcon: {
+    marginRight: 4,
   },
   timerDescription: {
     color: '#999',

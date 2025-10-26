@@ -221,8 +221,9 @@ const chat = await this.prisma.chat.create({
 
             // Validate ephemeral parameters
             if (isEphemeral && ephemeralViewDuration !== null && ephemeralViewDuration !== undefined) {
-                if (ephemeralViewDuration < 1 || ephemeralViewDuration > 300) { // Max 5 minutes
-                    throw new BadRequestException('Ephemeral view duration must be between 1 and 300 seconds');
+                // Allow -1 for "Play Once" (videos only), or 1-300 seconds for timer
+                if (ephemeralViewDuration !== -1 && (ephemeralViewDuration < 1 || ephemeralViewDuration > 300)) {
+                    throw new BadRequestException('Ephemeral view duration must be -1 (Play Once), null (Loop/Unlimited), or between 1 and 300 seconds');
                 }
             }
 
@@ -266,8 +267,11 @@ const chat = await this.prisma.chat.create({
             });
             // Do not update readers here; they will mark read on open
 
-            // Emit socket event for new message
+            // Emit socket event for new message to chat room
             this.chatGateway.server.to(chatId).emit('newMessage', message);
+            
+            // Also emit to sender's personal room for immediate visibility
+            this.chatGateway.server.to(senderId).emit('newMessage', message);
 
             // Emit unread count updates to all participants except sender
             const participants = await this.prisma.chatParticipant.findMany({
@@ -335,7 +339,14 @@ const chat = await this.prisma.chat.create({
             },
         });
 
-        // Emit socket event to notify sender that their snap was viewed
+        // Emit socket event to notify all participants about the viewed status
+        this.chatGateway.server.to(message.chatId).emit('ephemeralViewed', {
+            messageId,
+            viewedBy: userId,
+            viewedAt: updatedMessage.ephemeralViewedAt,
+        });
+        
+        // Also emit to sender's personal room for immediate notification
         this.chatGateway.server.to(message.senderId).emit('ephemeralViewed', {
             messageId,
             viewedBy: userId,

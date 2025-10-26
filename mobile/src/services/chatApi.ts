@@ -30,7 +30,7 @@ export interface Message {
   waveformData?: number[]; // Array of bar heights for voice messages
   replyToId?: string;
   isEphemeral?: boolean;
-  ephemeralViewDuration?: number | null;
+  ephemeralViewDuration?: number | null; // -1 = Play Once (video only), null = Loop/Unlimited, 1-300 = Timer in seconds (photos only)
   ephemeralViewedAt?: string | null;
   ephemeralViewedBy?: string | null;
   createdAt: string;
