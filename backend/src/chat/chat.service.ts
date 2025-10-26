@@ -197,7 +197,7 @@ const chat = await this.prisma.chat.create({
         }));
         }
     
-        async sendMessage(chatId: string, senderId: string, content: string, type: MessageType = MessageType.TEXT, mediaUrl?: string, replyToId?: string) {
+        async sendMessage(chatId: string, senderId: string, content: string, type: MessageType = MessageType.TEXT, mediaUrl?: string, replyToId?: string, isEphemeral?: boolean, ephemeralViewDuration?: number) {
             // Validate mediaUrl if provided
             if (mediaUrl && !this.s3Service.validateMediaUrl(mediaUrl)) {
                 throw new BadRequestException('Invalid media URL');
@@ -219,6 +219,13 @@ const chat = await this.prisma.chat.create({
                 }
             }
 
+            // Validate ephemeral parameters
+            if (isEphemeral && ephemeralViewDuration !== null && ephemeralViewDuration !== undefined) {
+                if (ephemeralViewDuration < 1 || ephemeralViewDuration > 300) { // Max 5 minutes
+                    throw new BadRequestException('Ephemeral view duration must be between 1 and 300 seconds');
+                }
+            }
+
             const message = await this.prisma.message.create({
               data: {
                 content,
@@ -227,6 +234,8 @@ const chat = await this.prisma.chat.create({
                 chatId,
                 mediaUrl,
                 replyToId,
+                isEphemeral: isEphemeral || false,
+                ephemeralViewDuration: ephemeralViewDuration || null,
               },
               include: {
                 sender: {
@@ -278,6 +287,63 @@ const chat = await this.prisma.chat.create({
         
             return message;
           }
+
+    async markEphemeralAsViewed(messageId: string, userId: string) {
+        // Find the message and verify it's ephemeral
+        const message = await this.prisma.message.findUnique({
+            where: { id: messageId },
+            include: { sender: true, chat: true },
+        });
+
+        if (!message) {
+            throw new BadRequestException('Message not found');
+        }
+
+        if (!message.isEphemeral) {
+            throw new BadRequestException('Message is not ephemeral');
+        }
+
+        // Check if already viewed
+        if (message.ephemeralViewedAt) {
+            throw new BadRequestException('Ephemeral message has already been viewed');
+        }
+
+        // Check if user is a participant in the chat
+        const participant = await this.prisma.chatParticipant.findUnique({
+            where: { chatId_userId: { chatId: message.chatId, userId } },
+        });
+
+        if (!participant) {
+            throw new BadRequestException('User is not a participant in this chat');
+        }
+
+        // Mark as viewed
+        const updatedMessage = await this.prisma.message.update({
+            where: { id: messageId },
+            data: {
+                ephemeralViewedAt: new Date(),
+                ephemeralViewedBy: userId,
+            },
+            include: {
+                sender: {
+                    select: {
+                        id: true,
+                        username: true,
+                        avatar: true,
+                    },
+                },
+            },
+        });
+
+        // Emit socket event to notify sender that their snap was viewed
+        this.chatGateway.server.to(message.senderId).emit('ephemeralViewed', {
+            messageId,
+            viewedBy: userId,
+            viewedAt: updatedMessage.ephemeralViewedAt,
+        });
+
+        return updatedMessage;
+    }
 
     async markChatRead(chatId: string, userId: string) {
         await this.prisma.chatParticipant.update({

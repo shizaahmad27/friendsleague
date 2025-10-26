@@ -189,7 +189,7 @@ services/
 - **Normalisering** - følg 3NF for dataintegritet
 - **Indeksering** - lag indekser på alle foreign keys og ofte brukte kolonner
 - **Soft delete** for viktige data (ikke hard delete)
-- **Prisma migrations** - alltid kjøre via CI/CD før produksjon for å unngå inkonsistens
+- **Prisma migrations** - alltid kjøre via CI/CD før produksjon for å unngå inkonsistens. Alltid spør før reset
 
 ## 🚀 Performance
 - Implementer **caching** med Redis

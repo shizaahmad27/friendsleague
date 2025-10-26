@@ -108,7 +108,7 @@ export class ChatController {
   async sendMessage(
       @Param('chatId') chatId: string,
       @Request() req: any,
-      @Body() body: { content: string; type?: string; mediaUrl?: string },
+      @Body() body: { content: string; type?: string; mediaUrl?: string; isEphemeral?: boolean; ephemeralViewDuration?: number },
   ) {
       return this.chatService.sendMessage(
           chatId,
@@ -116,8 +116,21 @@ export class ChatController {
           body.content,
           (body.type as MessageType) || MessageType.TEXT,
           body.mediaUrl,
+          undefined, // replyToId
+          body.isEphemeral,
+          body.ephemeralViewDuration,
         );
       }
+
+  @Post(':chatId/messages/:messageId/view-ephemeral')
+  @HttpCode(HttpStatus.OK)
+  async markEphemeralAsViewed(
+      @Param('chatId') chatId: string,
+      @Param('messageId') messageId: string,
+      @Request() req: any,
+  ) {
+      return this.chatService.markEphemeralAsViewed(messageId, req.user.id);
+  }
 
   // Message Reaction Endpoints
   @Post('messages/:messageId/reactions')

@@ -28,6 +28,9 @@ import { ChatSettingsModal } from '../components/ChatSettingsModal';
 import { MediaGalleryModal } from '../components/MediaGalleryModal';
 import { MediaService } from '../services/mediaService';
 import { useMediaSelection } from '../hooks/useMediaSelection';
+import { useQuickCamera } from '../hooks/useQuickCamera';
+import { EphemeralPreviewModal } from '../components/EphemeralPreviewModal';
+import { EphemeralViewer } from '../components/EphemeralViewer';
 import { VoiceRecorder } from '../components/VoiceRecorder';
 import { Ionicons } from '@expo/vector-icons';
 import { useReadReceipts } from '../hooks/useReadReceipts';
@@ -64,7 +67,7 @@ export default function ChatScreen() {
   const [selectedMessageForReceipts, setSelectedMessageForReceipts] = useState<Message | null>(null);
 
   // Reusable media callbacks
-  const handleMediaSelected = (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE', localUri?: string) => {
+  const handleMediaSelected = (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE', localUri?: string, isEphemeral?: boolean, ephemeralViewDuration?: number | null) => {
     // Replace provisional with real message after upload
     const tempPrefix = 'temp-';
     setMessages(prev => {
@@ -74,8 +77,8 @@ export default function ChatScreen() {
       copy.splice(idx, 1); // remove provisional
       return copy;
     });
-    // Now send the real message once
-    sendMessage(mediaUrl, type);
+    // Now send the real message once - but don't add it to local state since socket will handle it
+    sendMessage(mediaUrl, type, isEphemeral, ephemeralViewDuration, false); // Add skipLocalAdd parameter
   };
 
   const handlePreviewSelected = (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE') => {
@@ -97,6 +100,29 @@ export default function ChatScreen() {
   const mediaSelection = useMediaSelection({
     onMediaSelected: handleMediaSelected,
     onPreviewSelected: handlePreviewSelected,
+  });
+
+  // Quick camera hook for camera shortcut button
+  const quickCamera = useQuickCamera({
+    onMediaSelected: (mediaUrl, type, localUri, isEphemeral, ephemeralViewDuration) => {
+      handleMediaSelected(mediaUrl, type, localUri, isEphemeral, ephemeralViewDuration);
+    },
+    onPreviewSelected: handlePreviewSelected,
+  });
+
+  // Ephemeral viewer state
+  const [ephemeralViewer, setEphemeralViewer] = useState<{
+    visible: boolean;
+    messageId: string;
+    mediaUrl: string;
+    mediaType: 'IMAGE' | 'VIDEO';
+    viewDuration?: number | null;
+  }>({
+    visible: false,
+    messageId: '',
+    mediaUrl: '',
+    mediaType: 'IMAGE',
+    viewDuration: null,
   });
 
   // Voice message handler
@@ -320,7 +346,45 @@ export default function ChatScreen() {
     setFullscreenMessage(null);
   };
 
-  const sendMessage = async (mediaUrl?: string, mediaType?: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE') => {
+  // Ephemeral message handlers
+  const handleEphemeralMessagePress = async (message: Message) => {
+    if (!message.isEphemeral || !message.mediaUrl) return;
+
+    // Check if already viewed
+    if (message.ephemeralViewedAt) {
+      Alert.alert('Snap Already Viewed', 'This snap has already been opened and cannot be viewed again.');
+      return;
+    }
+
+    // Open ephemeral viewer
+    setEphemeralViewer({
+      visible: true,
+      messageId: message.id,
+      mediaUrl: message.mediaUrl,
+      mediaType: message.type as 'IMAGE' | 'VIDEO',
+      viewDuration: message.ephemeralViewDuration || null,
+    });
+  };
+
+  const markEphemeralAsViewed = async () => {
+    try {
+      await chatApi.markEphemeralAsViewed(chatId, ephemeralViewer.messageId);
+    } catch (error) {
+      console.error('Failed to mark ephemeral as viewed:', error);
+    }
+  };
+
+  const closeEphemeralViewer = () => {
+    setEphemeralViewer({
+      visible: false,
+      messageId: '',
+      mediaUrl: '',
+      mediaType: 'IMAGE',
+      viewDuration: null,
+    });
+  };
+
+  const sendMessage = async (mediaUrl?: string, mediaType?: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE', isEphemeral?: boolean, ephemeralViewDuration?: number | null, skipLocalAdd?: boolean) => {
     if ((!newMessage.trim() && !mediaUrl) || !user?.id) return;
 
     const messageContent = newMessage.trim();
@@ -332,12 +396,17 @@ export default function ChatScreen() {
         messageContent || '', // Send empty string instead of emoji + text
         mediaType || 'TEXT',
         mediaUrl,
-        replyingTo?.id
+        replyingTo?.id,
+        isEphemeral,
+        ephemeralViewDuration || undefined
       );
 
       const messageWithSender = { ...message, senderId: user.id };
 
-      setMessages(prev => [messageWithSender, ...prev]);
+      // Only add to local state if not skipping (for media messages, socket will handle it)
+      if (!skipLocalAdd) {
+        setMessages(prev => [messageWithSender, ...prev]);
+      }
 
       socketService.sendMessage(chatId, messageWithSender);
 
@@ -438,6 +507,56 @@ export default function ChatScreen() {
   const renderMessage = ({ item }: { item: Message }) => {
     const isOwnMessage = item.senderId === user?.id;
     const isMediaMessage = item.mediaUrl && item.type !== 'TEXT';
+    const isEphemeral = item.isEphemeral;
+
+    // Handle ephemeral message press
+    const handleMessagePress = () => {
+      if (isEphemeral && !isOwnMessage) {
+        handleEphemeralMessagePress(item);
+      } else {
+        handleDoubleTap(item);
+      }
+    };
+
+    // Render ephemeral message content
+    const renderEphemeralContent = () => {
+      if (!isEphemeral) return null;
+
+      const isViewed = item.ephemeralViewedAt;
+      const mediaType = item.type === 'IMAGE' ? '📷' : '🎥';
+      const mediaText = item.type === 'IMAGE' ? 'Photo' : 'Video';
+      
+      if (isOwnMessage) {
+        // Sender sees "Sent photo/video"
+        return (
+          <View style={styles.ephemeralMessageContent}>
+            <Text style={styles.ephemeralMessageText}>
+              {mediaType} Sent {mediaText.toLowerCase()}
+            </Text>
+          </View>
+        );
+      } else {
+        // Receiver sees different states
+        if (isViewed) {
+          return (
+            <View style={[styles.ephemeralMessageContent, styles.ephemeralViewed]}>
+              <Text style={[styles.ephemeralMessageText, styles.ephemeralViewedText]}>
+                {mediaType} {mediaText} (viewed)
+              </Text>
+            </View>
+          );
+        } else {
+          return (
+            <View style={[styles.ephemeralMessageContent, styles.ephemeralUnviewed]}>
+              <Text style={[styles.ephemeralMessageText, styles.ephemeralUnviewedText]}>
+                {mediaType} {mediaText}
+              </Text>
+              <View style={styles.ephemeralIndicator} />
+            </View>
+          );
+        }
+      }
+    };
 
     return (
       <View style={[
@@ -449,9 +568,10 @@ export default function ChatScreen() {
             isMediaMessage ? styles.mediaMessageContainer : styles.messageContainer,
             isOwnMessage ? styles.ownMessage : styles.otherMessage,
             !isMediaMessage && (isOwnMessage ? styles.ownMessageBackground : styles.otherMessageBackground),
+            isEphemeral && styles.ephemeralMessageContainer,
           ]}
-          onPress={() => handleDoubleTap(item)}
-          onLongPress={() => handleReactionPress(item)}
+          onPress={handleMessagePress}
+          onLongPress={() => !isEphemeral && handleReactionPress(item)}
           activeOpacity={0.7}
         >
           {/* Reply Preview */}
@@ -468,7 +588,7 @@ export default function ChatScreen() {
             />
           )}
           
-          {isMediaMessage && item.mediaUrl ? (
+          {isMediaMessage && item.mediaUrl && !isEphemeral ? (
             <MessageMedia
               mediaUrl={item.mediaUrl}
               type={item.type as 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE'}
@@ -482,7 +602,11 @@ export default function ChatScreen() {
               onMediaPress={openGallery}
             />
           ) : null}
-          {item.content && (
+          
+          {/* Render ephemeral content */}
+          {renderEphemeralContent()}
+          
+          {item.content && !isEphemeral && (
             <Text
               style={[
                 styles.messageText,
@@ -725,8 +849,7 @@ export default function ChatScreen() {
               <TouchableOpacity
                 style={styles.inlineIconButton}
                 onPress={() => {
-                  console.log('Camera icon pressed');
-                  Alert.alert('Coming soon', 'Quick camera shortcut');
+                  quickCamera.launchCamera();
                 }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
@@ -800,6 +923,25 @@ export default function ChatScreen() {
           setSelectedMessageForReceipts(null);
         }}
         message={selectedMessageForReceipts}
+      />
+
+      {/* Ephemeral Preview Modal */}
+      <EphemeralPreviewModal
+        visible={quickCamera.showEphemeralPreview}
+        mediaUri={quickCamera.capturedMedia?.uri || ''}
+        mediaType={quickCamera.capturedMedia?.type || 'IMAGE'}
+        onSend={quickCamera.sendEphemeralMedia}
+        onCancel={quickCamera.cancelEphemeralPreview}
+      />
+
+      {/* Ephemeral Viewer Modal */}
+      <EphemeralViewer
+        visible={ephemeralViewer.visible}
+        mediaUrl={ephemeralViewer.mediaUrl}
+        mediaType={ephemeralViewer.mediaType}
+        viewDuration={ephemeralViewer.viewDuration}
+        onClose={closeEphemeralViewer}
+        onMarkAsViewed={markEphemeralAsViewed}
       />
 
     </KeyboardAvoidingView>
@@ -1073,5 +1215,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     fontWeight: '500',
+  },
+  
+  // Ephemeral message styles
+  ephemeralMessageContainer: {
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    borderRadius: 16,
+  },
+  ephemeralMessageContent: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 60,
+  },
+  ephemeralMessageText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  ephemeralUnviewed: {
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+  },
+  ephemeralUnviewedText: {
+    color: '#007AFF',
+  },
+  ephemeralViewed: {
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  ephemeralViewedText: {
+    color: '#999',
+  },
+  ephemeralIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#007AFF',
   },
 });

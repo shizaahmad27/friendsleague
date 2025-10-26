@@ -29,6 +29,10 @@ export interface Message {
   duration?: number; 
   waveformData?: number[]; // Array of bar heights for voice messages
   replyToId?: string;
+  isEphemeral?: boolean;
+  ephemeralViewDuration?: number | null;
+  ephemeralViewedAt?: string | null;
+  ephemeralViewedBy?: string | null;
   createdAt: string;
   reactions?: Array<{
     emoji: string;
@@ -76,8 +80,21 @@ export const chatApi = {
   },
 
   // Send message
-  sendMessage: async (chatId: string, content: string, type = 'TEXT', mediaUrl?: string, replyToId?: string): Promise<Message> => {
-    const response = await api.post(`/chats/${chatId}/messages`, { content, type, mediaUrl, replyToId });
+  sendMessage: async (chatId: string, content: string, type = 'TEXT', mediaUrl?: string, replyToId?: string, isEphemeral?: boolean, ephemeralViewDuration?: number): Promise<Message> => {
+    const response = await api.post(`/chats/${chatId}/messages`, { 
+      content, 
+      type, 
+      mediaUrl, 
+      replyToId, 
+      isEphemeral, 
+      ephemeralViewDuration 
+    });
+    return response.data;
+  },
+
+  // Mark ephemeral message as viewed
+  markEphemeralAsViewed: async (chatId: string, messageId: string): Promise<Message> => {
+    const response = await api.post(`/chats/${chatId}/messages/${messageId}/view-ephemeral`);
     return response.data;
   },
 
