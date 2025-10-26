@@ -30,9 +30,6 @@ let ChatController = class ChatController {
     async getChatMessages(chatId, page = '1', limit = '50') {
         return this.chatService.getChatMessages(chatId, parseInt(page), parseInt(limit));
     }
-    async sendMessage(chatId, req, body) {
-        return this.chatService.sendMessage(chatId, req.user.id, body.content, body.type || client_1.MessageType.TEXT, body.mediaUrl);
-    }
     async createGroupChat(req, body) {
         return this.chatService.createGroupChat(req.user.id, body.name, body.description, body.participantIds);
     }
@@ -50,6 +47,18 @@ let ChatController = class ChatController {
     }
     async markChatRead(chatId, req) {
         return this.chatService.markChatRead(chatId, req.user.id);
+    }
+    async markMessagesAsRead(chatId, req, body) {
+        return this.chatService.markMessagesAsRead(chatId, req.user.id, body.messageIds);
+    }
+    async getMessageReadReceipts(messageId) {
+        return this.chatService.getMessageReadReceipts(messageId);
+    }
+    async toggleReadReceipts(chatId, req, body) {
+        return this.chatService.toggleReadReceipts(chatId, req.user.id, body.enabled);
+    }
+    async sendMessage(chatId, req, body) {
+        return this.chatService.sendMessage(chatId, req.user.id, body.content, body.type || client_1.MessageType.TEXT, body.mediaUrl);
     }
     async addReaction(messageId, req, body) {
         return this.chatService.addReaction(messageId, req.user.id, body.emoji);
@@ -87,15 +96,6 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "getChatMessages", null);
-__decorate([
-    (0, common_1.Post)(':chatId/messages'),
-    __param(0, (0, common_1.Param)('chatId')),
-    __param(1, (0, common_1.Request)()),
-    __param(2, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object, Object]),
-    __metadata("design:returntype", Promise)
-], ChatController.prototype, "sendMessage", null);
 __decorate([
     (0, common_1.Post)('group'),
     __param(0, (0, common_1.Request)()),
@@ -143,6 +143,40 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "markChatRead", null);
+__decorate([
+    (0, common_1.Post)(':chatId/messages/read'),
+    __param(0, (0, common_1.Param)('chatId')),
+    __param(1, (0, common_1.Request)()),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "markMessagesAsRead", null);
+__decorate([
+    (0, common_1.Get)('messages/:messageId/read-receipts'),
+    __param(0, (0, common_1.Param)('messageId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "getMessageReadReceipts", null);
+__decorate([
+    (0, common_1.Put)(':chatId/read-receipts-settings'),
+    __param(0, (0, common_1.Param)('chatId')),
+    __param(1, (0, common_1.Request)()),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "toggleReadReceipts", null);
+__decorate([
+    (0, common_1.Post)(':chatId/messages'),
+    __param(0, (0, common_1.Param)('chatId')),
+    __param(1, (0, common_1.Request)()),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "sendMessage", null);
 __decorate([
     (0, common_1.Post)('messages/:messageId/reactions'),
     __param(0, (0, common_1.Param)('messageId')),

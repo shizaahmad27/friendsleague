@@ -130,7 +130,7 @@ let ChatService = class ChatService {
     }
     async getChatMessages(chatId, page = 1, limit = 50) {
         const skip = (page - 1) * limit;
-        return this.prisma.message.findMany({
+        const messages = await this.prisma.message.findMany({
             where: {
                 chatId: chatId,
             },
@@ -153,6 +153,28 @@ let ChatService = class ChatService {
                         },
                     },
                 },
+                reactions: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true,
+                                avatar: true,
+                            },
+                        },
+                    },
+                    orderBy: {
+                        createdAt: 'asc',
+                    },
+                },
+                readReceipts: {
+                    include: {
+                        user: {
+                            select: { id: true, username: true, avatar: true },
+                        },
+                    },
+                    orderBy: { readAt: 'asc' },
+                },
             },
             orderBy: {
                 createdAt: 'desc',
@@ -160,6 +182,10 @@ let ChatService = class ChatService {
             skip,
             take: limit,
         });
+        return messages.map(message => ({
+            ...message,
+            reactions: this.groupReactions(message.reactions),
+        }));
     }
     async sendMessage(chatId, senderId, content, type = client_1.MessageType.TEXT, mediaUrl, replyToId) {
         if (mediaUrl && !this.s3Service.validateMediaUrl(mediaUrl)) {
@@ -219,6 +245,50 @@ let ChatService = class ChatService {
             data: { lastReadAt: new Date() },
         });
         return { success: true };
+    }
+    async markMessagesAsRead(chatId, userId, messageIds) {
+        const participant = await this.prisma.chatParticipant.findUnique({
+            where: { chatId_userId: { chatId, userId } },
+        });
+        if (!participant?.readReceiptsEnabled) {
+            return { success: true, readReceiptsDisabled: true };
+        }
+        const readReceipts = await Promise.all(messageIds.map(messageId => this.prisma.messageReadReceipt.upsert({
+            where: { messageId_userId: { messageId, userId } },
+            update: { readAt: new Date() },
+            create: { messageId, userId },
+            include: {
+                user: {
+                    select: { id: true, username: true, avatar: true },
+                },
+            },
+        })));
+        this.chatGateway.server.to(chatId).emit('messagesRead', {
+            chatId,
+            userId,
+            messageIds,
+            readAt: new Date(),
+        });
+        return { success: true, readReceipts };
+    }
+    async getMessageReadReceipts(messageId) {
+        const receipts = await this.prisma.messageReadReceipt.findMany({
+            where: { messageId },
+            include: {
+                user: {
+                    select: { id: true, username: true, avatar: true },
+                },
+            },
+            orderBy: { readAt: 'asc' },
+        });
+        return receipts;
+    }
+    async toggleReadReceipts(chatId, userId, enabled) {
+        await this.prisma.chatParticipant.update({
+            where: { chatId_userId: { chatId, userId } },
+            data: { readReceiptsEnabled: enabled },
+        });
+        return { success: true, enabled };
     }
     async createGroupChat(adminId, name, description, participantIds) {
         const allParticipantIds = [...new Set([adminId, ...participantIds])];
@@ -445,6 +515,28 @@ let ChatService = class ChatService {
                 createdAt: 'asc',
             },
         });
+        const groupedReactions = reactions.reduce((acc, reaction) => {
+            if (!acc[reaction.emoji]) {
+                acc[reaction.emoji] = {
+                    emoji: reaction.emoji,
+                    count: 0,
+                    users: [],
+                };
+            }
+            acc[reaction.emoji].count++;
+            acc[reaction.emoji].users.push({
+                id: reaction.user.id,
+                username: reaction.user.username,
+                avatar: reaction.user.avatar,
+            });
+            return acc;
+        }, {});
+        return Object.values(groupedReactions);
+    }
+    groupReactions(reactions) {
+        if (!reactions || reactions.length === 0) {
+            return [];
+        }
         const groupedReactions = reactions.reduce((acc, reaction) => {
             if (!acc[reaction.emoji]) {
                 acc[reaction.emoji] = {

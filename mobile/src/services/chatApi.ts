@@ -39,6 +39,15 @@ export interface Message {
       avatar?: string;
     }>;
   }>;
+  readReceipts?: Array<{
+    userId: string;
+    readAt: string;
+    user: {
+      id: string;
+      username: string;
+      avatar?: string;
+    };
+  }>;
   sender?: {
     id: string;
     username: string;
@@ -116,6 +125,21 @@ export const chatApi = {
   },
   markChatRead: async (chatId: string): Promise<{ success: boolean }> => {
     const response = await api.put(`/chats/${chatId}/read`);
+    return response.data;
+  },
+
+  markMessagesAsRead: async (chatId: string, messageIds: string[]): Promise<any> => {
+    const response = await api.post(`/chats/${chatId}/messages/read`, { messageIds });
+    return response.data;
+  },
+
+  getMessageReadReceipts: async (messageId: string): Promise<any[]> => {
+    const response = await api.get(`/chats/messages/${messageId}/read-receipts`);
+    return response.data;
+  },
+
+  toggleReadReceipts: async (chatId: string, enabled: boolean): Promise<{ success: boolean; enabled: boolean }> => {
+    const response = await api.put(`/chats/${chatId}/read-receipts-settings`, { enabled });
     return response.data;
   },
 

@@ -15,12 +15,25 @@ export declare class ChatService {
         type: import(".prisma/client").$Enums.ChatType;
     }>;
     getUserChats(userId: string): Promise<any[]>;
-    getChatMessages(chatId: string, page?: number, limit?: number): Promise<({
+    getChatMessages(chatId: string, page?: number, limit?: number): Promise<{
+        reactions: unknown[];
         sender: {
             username: string;
             id: string;
             avatar: string;
         };
+        readReceipts: ({
+            user: {
+                username: string;
+                id: string;
+                avatar: string;
+            };
+        } & {
+            id: string;
+            userId: string;
+            messageId: string;
+            readAt: Date;
+        })[];
         replyTo: {
             sender: {
                 username: string;
@@ -38,7 +51,6 @@ export declare class ChatService {
             senderId: string;
             replyToId: string | null;
         };
-    } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -48,7 +60,7 @@ export declare class ChatService {
         content: string;
         senderId: string;
         replyToId: string | null;
-    })[]>;
+    }[]>;
     sendMessage(chatId: string, senderId: string, content: string, type?: MessageType, mediaUrl?: string, replyToId?: string): Promise<{
         sender: {
             username: string;
@@ -86,6 +98,42 @@ export declare class ChatService {
     markChatRead(chatId: string, userId: string): Promise<{
         success: boolean;
     }>;
+    markMessagesAsRead(chatId: string, userId: string, messageIds: string[]): Promise<{
+        success: boolean;
+        readReceiptsDisabled: boolean;
+        readReceipts?: undefined;
+    } | {
+        success: boolean;
+        readReceipts: ({
+            user: {
+                username: string;
+                id: string;
+                avatar: string;
+            };
+        } & {
+            id: string;
+            userId: string;
+            messageId: string;
+            readAt: Date;
+        })[];
+        readReceiptsDisabled?: undefined;
+    }>;
+    getMessageReadReceipts(messageId: string): Promise<({
+        user: {
+            username: string;
+            id: string;
+            avatar: string;
+        };
+    } & {
+        id: string;
+        userId: string;
+        messageId: string;
+        readAt: Date;
+    })[]>;
+    toggleReadReceipts(chatId: string, userId: string, enabled: boolean): Promise<{
+        success: boolean;
+        enabled: boolean;
+    }>;
     createGroupChat(adminId: string, name: string, description: string, participantIds: string[]): Promise<{
         participants: ({
             user: {
@@ -99,6 +147,7 @@ export declare class ChatService {
             userId: string;
             joinedAt: Date;
             lastReadAt: Date;
+            readReceiptsEnabled: boolean;
             chatId: string;
         })[];
     } & {
@@ -113,6 +162,7 @@ export declare class ChatService {
         userId: string;
         joinedAt: Date;
         lastReadAt: Date;
+        readReceiptsEnabled: boolean;
         chatId: string;
     }[]>;
     removeParticipantFromGroup(chatId: string, userId: string): Promise<{
@@ -131,6 +181,7 @@ export declare class ChatService {
             userId: string;
             joinedAt: Date;
             lastReadAt: Date;
+            readReceiptsEnabled: boolean;
             chatId: string;
         })[];
     } & {
@@ -152,6 +203,7 @@ export declare class ChatService {
         userId: string;
         joinedAt: Date;
         lastReadAt: Date;
+        readReceiptsEnabled: boolean;
         chatId: string;
     })[]>;
     addReaction(messageId: string, userId: string, emoji: string): Promise<{
@@ -175,4 +227,5 @@ export declare class ChatService {
         count: number;
         users: any[];
     }[]>;
+    private groupReactions;
 }

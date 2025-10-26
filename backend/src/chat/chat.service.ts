@@ -170,6 +170,14 @@ const chat = await this.prisma.chat.create({
                     createdAt: 'asc',
                 },
             },
+            readReceipts: {
+                include: {
+                    user: {
+                        select: { id: true, username: true, avatar: true },
+                    },
+                },
+                orderBy: { readAt: 'asc' },
+            },
             },
             orderBy: {
             createdAt: 'desc',
@@ -254,6 +262,66 @@ const chat = await this.prisma.chat.create({
             data: { lastReadAt: new Date() } as any,
         });
         return { success: true };
+    }
+
+    async markMessagesAsRead(chatId: string, userId: string, messageIds: string[]) {
+        // Check if user has read receipts enabled
+        const participant = await this.prisma.chatParticipant.findUnique({
+            where: { chatId_userId: { chatId, userId } },
+        });
+
+        if (!participant?.readReceiptsEnabled) {
+            return { success: true, readReceiptsDisabled: true };
+        }
+
+        // Bulk create read receipts
+        const readReceipts = await Promise.all(
+            messageIds.map(messageId =>
+                this.prisma.messageReadReceipt.upsert({
+                    where: { messageId_userId: { messageId, userId } },
+                    update: { readAt: new Date() },
+                    create: { messageId, userId },
+                    include: {
+                        user: {
+                            select: { id: true, username: true, avatar: true },
+                        },
+                    },
+                })
+            )
+        );
+
+        // Emit socket event for real-time updates
+        this.chatGateway.server.to(chatId).emit('messagesRead', {
+            chatId,
+            userId,
+            messageIds,
+            readAt: new Date(),
+        });
+
+        return { success: true, readReceipts };
+    }
+
+    async getMessageReadReceipts(messageId: string) {
+        const receipts = await this.prisma.messageReadReceipt.findMany({
+            where: { messageId },
+            include: {
+                user: {
+                    select: { id: true, username: true, avatar: true },
+                },
+            },
+            orderBy: { readAt: 'asc' },
+        });
+
+        return receipts;
+    }
+
+    async toggleReadReceipts(chatId: string, userId: string, enabled: boolean) {
+        await this.prisma.chatParticipant.update({
+            where: { chatId_userId: { chatId, userId } },
+            data: { readReceiptsEnabled: enabled },
+        });
+
+        return { success: true, enabled };
     }
 
     async createGroupChat(adminId: string, name: string, description: string, participantIds: string[]) {

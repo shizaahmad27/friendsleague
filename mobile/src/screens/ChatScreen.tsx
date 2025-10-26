@@ -30,6 +30,10 @@ import { MediaService } from '../services/mediaService';
 import { useMediaSelection } from '../hooks/useMediaSelection';
 import { VoiceRecorder } from '../components/VoiceRecorder';
 import { Ionicons } from '@expo/vector-icons';
+import { useReadReceipts } from '../hooks/useReadReceipts';
+import { useChatSocket } from '../hooks/useChatSocket';
+import { MessageStatus } from '../components/MessageStatus';
+import { ReadReceiptsModal } from '../components/ReadReceiptsModal';
 
 type ChatScreenRouteProp = RouteProp<{ Chat: { chatId: string } }, 'Chat'>;
 
@@ -54,6 +58,8 @@ export default function ChatScreen() {
   const [participants, setParticipants] = useState<Array<{ id: string; username: string; avatar?: string }>>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [lastTap, setLastTap] = useState<number | null>(null);
+  const [readReceiptsModalVisible, setReadReceiptsModalVisible] = useState(false);
+  const [selectedMessageForReceipts, setSelectedMessageForReceipts] = useState<Message | null>(null);
 
   // Reusable media callbacks
   const handleMediaSelected = (mediaUrl: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE', localUri?: string) => {
@@ -163,138 +169,130 @@ export default function ChatScreen() {
   const typingNames = typingUsers.map(id => usernamesById[id] ?? id);
   const usernamesRef = useRef(usernamesById);
 
+  // Socket event handlers
+  const handleNewMessage = (message: Message) => {
+    if (message.chatId === chatId) {
+      setMessages(prev => {
+        const exists = prev.some(m => m.id === message.id);
+        return exists ? prev : [message, ...prev];
+      });
+    }
+  };
 
+  const handleUserTyping = (data: { userId: string; isTyping: boolean }) => {
+    if (data.isTyping) {
+      setTypingUsers(prev => [...prev.filter(id => id !== data.userId), data.userId]);
+    } else {
+      setTypingUsers(prev => prev.filter(id => id !== data.userId));
+    }
+  };
 
+  const handleReactionAdded = (data: { messageId: string; userId: string; emoji: string; reaction: any }) => {
+    setMessages(prev => prev.map(message => {
+      if (message.id === data.messageId) {
+        // Update reactions for this message
+        const existingReactions = message.reactions || [];
+        const existingReactionIndex = existingReactions.findIndex(r => r.emoji === data.emoji);
+        
+        if (existingReactionIndex >= 0) {
+          // Update existing 
+          const updatedReactions = [...existingReactions];
+          updatedReactions[existingReactionIndex] = {
+            ...updatedReactions[existingReactionIndex],
+            count: updatedReactions[existingReactionIndex].count + 1,
+            users: [...updatedReactions[existingReactionIndex].users, {
+              id: data.userId,
+              username: data.reaction.user.username,
+              avatar: data.reaction.user.avatar,
+            }],
+          };
+          return { ...message, reactions: updatedReactions };
+        } else {
+          // Add new reaction
+          return {
+            ...message,
+            reactions: [
+              ...existingReactions,
+              {
+                emoji: data.emoji,
+                count: 1,
+                users: [{
+                  id: data.userId,
+                  username: data.reaction.user.username,
+                  avatar: data.reaction.user.avatar,
+                }],
+              },
+            ],
+          };
+        }
+      }
+      return message;
+    }));
+  };
+
+  const handleReactionRemoved = (data: { messageId: string; userId: string; emoji: string }) => {
+    setMessages(prev => prev.map(message => {
+      if (message.id === data.messageId) {
+        const existingReactions = message.reactions || [];
+        const updatedReactions = existingReactions
+          .map(reaction => {
+            if (reaction.emoji === data.emoji) {
+              const updatedUsers = reaction.users.filter(user => user.id !== data.userId);
+              if (updatedUsers.length === 0) {
+                return null; // Mark for removal
+              }
+              return {
+                ...reaction,
+                count: updatedUsers.length,
+                users: updatedUsers,
+              };
+            }
+            return reaction;
+          })
+          .filter((reaction): reaction is NonNullable<typeof reaction> => reaction !== null);
+        
+        return { ...message, reactions: updatedReactions };
+      }
+      return message;
+    }));
+  };
+
+  // Use custom hooks
   useEffect(() => {
     loadMessages();
-    if (!user?.id) return;
-
-    // Ensure socket connected before joining/listening
-    socketService.connect();
-
-    socketService.joinChat(chatId, user.id);
-
-    const handleNewMessage = (message: Message) => {
-      if (message.chatId === chatId) {
-        setMessages(prev => {
-          const exists = prev.some(m => m.id === message.id);
-          return exists ? prev : [message, ...prev];
-        });
-      }
-    };
-
-    const handleUserTyping = (data: { userId: string; isTyping: boolean }) => {
-      
-      if (data.isTyping) {
-        setTypingUsers(prev => [...prev.filter(id => id !== data.userId), data.userId]);
-
-      } else {
-        setTypingUsers(prev => prev.filter(id => id !== data.userId));
-      }
-    };
-
-    const handleReactionAdded = (data: { messageId: string; userId: string; emoji: string; reaction: any }) => {
-      setMessages(prev => prev.map(message => {
-        if (message.id === data.messageId) {
-          // Update reactions for this message
-          const existingReactions = message.reactions || [];
-          const existingReactionIndex = existingReactions.findIndex(r => r.emoji === data.emoji);
-          
-          if (existingReactionIndex >= 0) {
-            // Update existing 
-            const updatedReactions = [...existingReactions];
-            updatedReactions[existingReactionIndex] = {
-              ...updatedReactions[existingReactionIndex],
-              count: updatedReactions[existingReactionIndex].count + 1,
-              users: [...updatedReactions[existingReactionIndex].users, {
-                id: data.userId,
-                username: data.reaction.user.username,
-                avatar: data.reaction.user.avatar,
-              }],
-            };
-            return { ...message, reactions: updatedReactions };
-          } else {
-            // Add new reaction
-            return {
-              ...message,
-              reactions: [
-                ...existingReactions,
-                {
-                  emoji: data.emoji,
-                  count: 1,
-                  users: [{
-                    id: data.userId,
-                    username: data.reaction.user.username,
-                    avatar: data.reaction.user.avatar,
-                  }],
-                },
-              ],
-            };
-          }
-        }
-        return message;
-      }));
-    };
-
-    const handleReactionRemoved = (data: { messageId: string; userId: string; emoji: string }) => {
-      setMessages(prev => prev.map(message => {
-        if (message.id === data.messageId) {
-          const existingReactions = message.reactions || [];
-          const updatedReactions = existingReactions
-            .map(reaction => {
-              if (reaction.emoji === data.emoji) {
-                const updatedUsers = reaction.users.filter(user => user.id !== data.userId);
-                if (updatedUsers.length === 0) {
-                  return null; // Mark for removal
-                }
-                return {
-                  ...reaction,
-                  count: updatedUsers.length,
-                  users: updatedUsers,
-                };
-              }
-              return reaction;
-            })
-            .filter((reaction): reaction is NonNullable<typeof reaction> => reaction !== null);
-          
-          return { ...message, reactions: updatedReactions };
-        }
-        return message;
-      }));
-    };
-
-    socketService.onNewMessage(handleNewMessage);
-    socketService.onUserTyping(handleUserTyping);
-    socketService.onReactionAdded(handleReactionAdded);
-    socketService.onReactionRemoved(handleReactionRemoved);
-
-    // Re-join on reconnect to keep room subscription
-    const sock = socketService.getSocket();
-    const onReconnect = () => socketService.joinChat(chatId, user.id);
-    if (sock) {
-      sock.on('connect', onReconnect);
-    }
-
-    return () => {
-      socketService.emitTyping(chatId, user.id, false);
-      socketService.offNewMessage(handleNewMessage);
-      socketService.offUserTyping(handleUserTyping);
-      socketService.offReactionAdded(handleReactionAdded);
-      socketService.offReactionRemoved(handleReactionRemoved);
-      if (sock) {
-        sock.off('connect', onReconnect);
-      }
-    };
-  }, [chatId, user?.id]);
-
-  // Mark chat as read when opening
-  useEffect(() => {
-    (async () => {
-      try {
-        await chatApi.markChatRead(chatId);
-      } catch {}
-    })();
   }, [chatId]);
+
+  useChatSocket({
+    chatId,
+    userId: user?.id || '',
+    onNewMessage: handleNewMessage,
+    onUserTyping: handleUserTyping,
+    onReactionAdded: handleReactionAdded,
+    onReactionRemoved: handleReactionRemoved,
+  });
+
+  const { getMessageStatus, getReadByCount } = useReadReceipts({
+    chatId,
+    messages,
+    onMessagesUpdate: setMessages,
+  });
+
+  // Helper function to determine if a message is the last in a consecutive series
+  const isLastMessageInSeries = (currentMessage: Message, currentIndex: number): boolean => {
+    // Since messages are in reverse chronological order (newest first), 
+    // we need to check the PREVIOUS message (lower index) to see if it's from a different sender
+    const previousMessage = messages[currentIndex - 1];
+    
+    // If this is the first message (highest index), it's the last in series
+    if (!previousMessage) return true;
+    
+    // Different sender = end of series
+    if (previousMessage.senderId !== currentMessage.senderId) return true;
+    
+    // Time gap > 5 minutes = end of series
+    const timeDiff = new Date(currentMessage.createdAt).getTime() - new Date(previousMessage.createdAt).getTime();
+    return timeDiff > 300000; // 5 minutes
+  };
 
   const loadMessages = async () => {
     try {
@@ -487,6 +485,7 @@ export default function ChatScreen() {
               {item.content}
             </Text>
           )}
+          
         </TouchableOpacity>
         
         {/* Message Reactions - Now outside the bubble */}
@@ -497,6 +496,23 @@ export default function ChatScreen() {
             messageId={item.id}
           />
         )}
+
+        {/* Message Status - Only for own messages and only on the last message in a series */}
+        {isOwnMessage && (() => {
+          const currentIndex = messages.findIndex(msg => msg.id === item.id);
+          return isLastMessageInSeries(item, currentIndex) ? (
+            <MessageStatus
+              message={item}
+              status={getMessageStatus(item)}
+              isGroupChat={chatMeta?.type === 'GROUP'}
+              readByCount={chatMeta?.type === 'GROUP' ? getReadByCount(item, participants.length + 1) : undefined}
+              onPress={() => {
+                setSelectedMessageForReceipts(item);
+                setReadReceiptsModalVisible(true);
+              }}
+            />
+          ) : null;
+        })()}
       </View>
     );
   };
@@ -729,6 +745,7 @@ export default function ChatScreen() {
         onClose={() => setIsChatSettingsVisible(false)}
         messages={messages}
         onOpenGallery={openGallery}
+        chatId={chatId}
       />
 
       {/* Fullscreen Media Modal */}
@@ -752,6 +769,16 @@ export default function ChatScreen() {
           setSelectedMessageForReaction(null);
         }}
         onSelectEmoji={handleEmojiSelect}
+      />
+
+      {/* Read Receipts Modal */}
+      <ReadReceiptsModal
+        visible={readReceiptsModalVisible}
+        onClose={() => {
+          setReadReceiptsModalVisible(false);
+          setSelectedMessageForReceipts(null);
+        }}
+        message={selectedMessageForReceipts}
       />
 
     </KeyboardAvoidingView>
