@@ -147,6 +147,8 @@ export interface SocketEvents {
   'user:typing': (payload: { userId: string; isTyping: boolean }) => void;
   'user:online': (data: { userId: string; timestamp: string }) => void;
   'user:offline': (data: { userId: string; timestamp: string }) => void;
+  'privacy:global-changed': (data: { userId: string; showOnlineStatus: boolean; timestamp: string }) => void;
+  'privacy:friend-changed': (data: { userId: string; targetUserId: string; hideOnlineStatus: boolean; timestamp: string }) => void;
   'messagesRead': (data: { userId: string; messageIds: string[]; readAt: string }) => void;
   'newChat': (chat: any) => void;
   'unreadCountUpdate': (data: { userId: string; unreadCount: number }) => void;

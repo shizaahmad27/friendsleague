@@ -177,6 +177,31 @@ class SocketService {
     }
   }
 
+  // Privacy setting change listeners
+  onPrivacyGlobalChanged(callback: (data: { userId: string; showOnlineStatus: boolean; timestamp: string }) => void) {
+    if (this.socket) {
+      this.socket.on('privacy:global-changed', callback);
+    }
+  }
+
+  offPrivacyGlobalChanged(callback: (data: { userId: string; showOnlineStatus: boolean; timestamp: string }) => void) {
+    if (this.socket) {
+      this.socket.off('privacy:global-changed', callback);
+    }
+  }
+
+  onPrivacyFriendChanged(callback: (data: { userId: string; targetUserId: string; hideOnlineStatus: boolean; timestamp: string }) => void) {
+    if (this.socket) {
+      this.socket.on('privacy:friend-changed', callback);
+    }
+  }
+
+  offPrivacyFriendChanged(callback: (data: { userId: string; targetUserId: string; hideOnlineStatus: boolean; timestamp: string }) => void) {
+    if (this.socket) {
+      this.socket.off('privacy:friend-changed', callback);
+    }
+  }
+
   getSocket() {
     return this.socket;
   }

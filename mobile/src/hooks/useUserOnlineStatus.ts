@@ -10,6 +10,7 @@ interface OnlineStatusData {
 export const useUserOnlineStatus = () => {
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const [lastSeenTimes, setLastSeenTimes] = useState<Map<string, string>>(new Map());
+  const [privacySettings, setPrivacySettings] = useState<Map<string, { showOnlineStatus: boolean; hideFromMe: boolean }>>(new Map());
 
   // Handle user coming online
   const handleUserOnline = useCallback((data: OnlineStatusData) => {
@@ -27,21 +28,58 @@ export const useUserOnlineStatus = () => {
     setLastSeenTimes(prev => new Map(prev).set(data.userId, data.timestamp));
   }, []);
 
+  // Handle global privacy setting changes
+  const handlePrivacyGlobalChanged = useCallback((data: { userId: string; showOnlineStatus: boolean; timestamp: string }) => {
+    setPrivacySettings(prev => {
+      const newMap = new Map(prev);
+      const current = newMap.get(data.userId) || { showOnlineStatus: true, hideFromMe: false };
+      newMap.set(data.userId, { ...current, showOnlineStatus: data.showOnlineStatus });
+      return newMap;
+    });
+  }, []);
+
+  // Handle per-friend privacy setting changes
+  const handlePrivacyFriendChanged = useCallback((data: { userId: string; targetUserId: string; hideOnlineStatus: boolean; timestamp: string }) => {
+    setPrivacySettings(prev => {
+      const newMap = new Map(prev);
+      const current = newMap.get(data.userId) || { showOnlineStatus: true, hideFromMe: false };
+      newMap.set(data.userId, { ...current, hideFromMe: data.hideOnlineStatus });
+      return newMap;
+    });
+  }, []);
+
   // Set up socket listeners
   useEffect(() => {
     socketService.onUserOnline(handleUserOnline);
     socketService.onUserOffline(handleUserOffline);
+    socketService.onPrivacyGlobalChanged(handlePrivacyGlobalChanged);
+    socketService.onPrivacyFriendChanged(handlePrivacyFriendChanged);
 
     return () => {
       socketService.offUserOnline(handleUserOnline);
       socketService.offUserOffline(handleUserOffline);
+      socketService.offPrivacyGlobalChanged(handlePrivacyGlobalChanged);
+      socketService.offPrivacyFriendChanged(handlePrivacyFriendChanged);
     };
-  }, [handleUserOnline, handleUserOffline]);
+  }, [handleUserOnline, handleUserOffline, handlePrivacyGlobalChanged, handlePrivacyFriendChanged]);
 
-  // Helper function to check if a user is online
+  // Helper function to check if a user is online (considering privacy settings)
   const isUserOnline = useCallback((userId: string): boolean => {
-    return onlineUsers.has(userId);
-  }, [onlineUsers]);
+    const isActuallyOnline = onlineUsers.has(userId);
+    if (!isActuallyOnline) return false;
+    
+    // Check privacy settings
+    const privacy = privacySettings.get(userId);
+    if (!privacy) return true; // Default to showing if no privacy settings
+    
+    // If user has hidden their status globally, don't show
+    if (!privacy.showOnlineStatus) return false;
+    
+    // If user has hidden their status from me specifically, don't show
+    if (privacy.hideFromMe) return false;
+    
+    return true;
+  }, [onlineUsers, privacySettings]);
 
   // Helper function to get last seen time
   const getLastSeenTime = useCallback((userId: string): string | null => {

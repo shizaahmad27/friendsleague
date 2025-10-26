@@ -153,32 +153,46 @@ export default function PrivacySettingsScreen() {
             Control who can see your online status
           </Text>
           
-          {friends.map((friend) => (
-            <TouchableOpacity 
-              key={friend.id}
-              style={styles.friendItem} 
-              onPress={() => handleFriendToggle(friend.id)}
-              disabled={updatingSettings.has(friend.id)}
-            >
-              <View style={styles.friendInfo}>
-                <View style={styles.friendAvatar}>
-                  <Text style={styles.friendAvatarText}>
-                    {friend.username.charAt(0).toUpperCase()}
-                  </Text>
+          {!privacySettings?.global.showOnlineStatus && (
+            <View style={styles.disabledNotice}>
+              <Ionicons name="information-circle-outline" size={16} color="#666" />
+              <Text style={styles.disabledNoticeText}>
+                Per-friend settings are disabled when global setting is off
+              </Text>
+            </View>
+          )}
+          
+          {friends.map((friend) => {
+            const isGlobalOff = !privacySettings?.global.showOnlineStatus;
+            const isDisabled = isGlobalOff || updatingSettings.has(friend.id);
+            
+            return (
+              <TouchableOpacity 
+                key={friend.id}
+                style={[styles.friendItem, isGlobalOff && styles.disabledItem]} 
+                onPress={() => handleFriendToggle(friend.id)}
+                disabled={isDisabled}
+              >
+                <View style={styles.friendInfo}>
+                  <View style={[styles.friendAvatar, isGlobalOff && styles.disabledAvatar]}>
+                    <Text style={[styles.friendAvatarText, isGlobalOff && styles.disabledText]}>
+                      {friend.username.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <Text style={[styles.friendName, isGlobalOff && styles.disabledText]}>{friend.username}</Text>
                 </View>
-                <Text style={styles.friendName}>{friend.username}</Text>
-              </View>
-              {updatingSettings.has(friend.id) ? (
-                <ActivityIndicator size="small" color="#007AFF" />
-              ) : (
-                <Ionicons 
-                  name={getFriendSetting(friend.id) ? "toggle-outline" : "toggle"} 
-                  size={24} 
-                  color={getFriendSetting(friend.id) ? "#666" : "#007AFF"} 
-                />
-              )}
-            </TouchableOpacity>
-          ))}
+                {updatingSettings.has(friend.id) ? (
+                  <ActivityIndicator size="small" color="#007AFF" />
+                ) : (
+                  <Ionicons 
+                    name={getFriendSetting(friend.id) ? "toggle-outline" : "toggle"} 
+                    size={24} 
+                    color={isGlobalOff ? "#ccc" : (getFriendSetting(friend.id) ? "#666" : "#007AFF")} 
+                  />
+                )}
+              </TouchableOpacity>
+            );
+          })}
           
           {friends.length === 0 && (
             <Text style={styles.emptyText}>No friends yet</Text>
@@ -313,5 +327,31 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 20,
     fontStyle: 'italic',
+  },
+  // Disabled state styles
+  disabledItem: {
+    opacity: 0.5,
+  },
+  disabledAvatar: {
+    backgroundColor: '#ccc',
+  },
+  disabledText: {
+    color: '#999',
+  },
+  disabledNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#007AFF',
+  },
+  disabledNoticeText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 8,
+    flex: 1,
   },
 });

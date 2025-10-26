@@ -1,11 +1,15 @@
 import { Controller, Get, Put, Query, UseGuards, Request, Body, Param } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { ChatGateway } from '../chat/chat.gateway';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private chatGateway: ChatGateway,
+  ) {}
 
   @Get('search')
   async searchUsers(@Query('username') username: string) {
@@ -40,7 +44,16 @@ export class UsersController {
     @Request() req: any,
     @Body() body: { showOnlineStatus: boolean }
   ) {
-    return this.usersService.updateGlobalOnlineStatus(req.user.id, body.showOnlineStatus);
+    const result = await this.usersService.updateGlobalOnlineStatus(req.user.id, body.showOnlineStatus);
+    
+    // Emit privacy setting change to all connected users
+    this.chatGateway.server.emit('privacy:global-changed', {
+      userId: req.user.id,
+      showOnlineStatus: body.showOnlineStatus,
+      timestamp: new Date().toISOString(),
+    });
+    
+    return result;
   }
 
   @Put('privacy-settings/friend/:friendId')
@@ -49,11 +62,21 @@ export class UsersController {
     @Param('friendId') friendId: string,
     @Body() body: { hideOnlineStatus: boolean }
   ) {
-    return this.usersService.updateFriendOnlineStatusVisibility(
+    const result = await this.usersService.updateFriendOnlineStatusVisibility(
       req.user.id, 
       friendId, 
       body.hideOnlineStatus
     );
+    
+    // Emit privacy setting change to the specific friend
+    this.chatGateway.server.to(friendId).emit('privacy:friend-changed', {
+      userId: req.user.id,
+      targetUserId: friendId,
+      hideOnlineStatus: body.hideOnlineStatus,
+      timestamp: new Date().toISOString(),
+    });
+    
+    return result;
   }
 
   @Get('privacy-settings/friend/:friendId')
