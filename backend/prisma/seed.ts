@@ -4,27 +4,6 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting database seeding...');
-
-  // Clear existing data (optional - remove if you want to keep existing data)
-  console.log('🧹 Clearing existing data...');
-  await prisma.messageReadReceipt.deleteMany();
-  await prisma.messageReaction.deleteMany();
-  await prisma.message.deleteMany();
-  await prisma.chatParticipant.deleteMany();
-  await prisma.chat.deleteMany();
-  await prisma.eventInvitation.deleteMany();
-  await prisma.eventParticipant.deleteMany();
-  await prisma.eventRule.deleteMany();
-  await prisma.event.deleteMany();
-  await prisma.leagueAdmin.deleteMany();
-  await prisma.leagueMember.deleteMany();
-  await prisma.leagueRule.deleteMany();
-  await prisma.league.deleteMany();
-  await prisma.friendship.deleteMany();
-  await prisma.invitation.deleteMany();
-  await prisma.user.deleteMany();
-
   
   const hashedPassword = await bcrypt.hash('password123', 10);
 
