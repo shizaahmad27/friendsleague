@@ -77,11 +77,12 @@ export default function ChatScreen() {
       copy.splice(idx, 1); // remove provisional
       return copy;
     });
-    // Now send the real message once - socket will handle adding it to local state
+    
+    // Send the real message - socket events will handle adding it to local state
     sendMessage(mediaUrl, type, isEphemeral, ephemeralViewDuration);
   };
 
-  const handlePreviewSelected = (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE') => {
+  const handlePreviewSelected = (localUri: string, type: 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE', isEphemeral?: boolean, ephemeralViewDuration?: number | null) => {
     // Insert a provisional message at top (inverted list) with a temp id
     const tempId = `temp-${Date.now()}`;
     const provisional: Message = {
@@ -91,6 +92,8 @@ export default function ChatScreen() {
       senderId: user?.id || 'me',
       chatId,
       mediaUrl: localUri,
+      isEphemeral: isEphemeral || false,
+      ephemeralViewDuration: ephemeralViewDuration || null,
       createdAt: new Date().toISOString(),
     } as Message;
     setMessages(prev => [provisional, ...prev]);
@@ -107,7 +110,9 @@ export default function ChatScreen() {
     onMediaSelected: (mediaUrl, type, localUri, isEphemeral, ephemeralViewDuration) => {
       handleMediaSelected(mediaUrl, type, localUri, isEphemeral, ephemeralViewDuration);
     },
-    onPreviewSelected: handlePreviewSelected,
+    onPreviewSelected: (localUri, type, isEphemeral, ephemeralViewDuration) => {
+      handlePreviewSelected(localUri, type, isEphemeral, ephemeralViewDuration);
+    },
   });
 
   // Ephemeral viewer state
@@ -594,7 +599,7 @@ export default function ChatScreen() {
             />
           )}
           
-          {isMediaMessage && item.mediaUrl && !isEphemeral ? (
+          {isMediaMessage && item.mediaUrl && !isEphemeral && item.mediaUrl.trim() !== '' ? (
             <MessageMedia
               mediaUrl={item.mediaUrl}
               type={item.type as 'IMAGE' | 'VIDEO' | 'FILE' | 'VOICE'}

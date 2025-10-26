@@ -6,7 +6,7 @@ import { MediaService, MediaFile } from '../services/mediaService';
 export interface QuickCameraCallbacks {
   onMediaSelected: (mediaUrl: string, type: 'IMAGE' | 'VIDEO', localUri?: string, isEphemeral?: boolean, ephemeralViewDuration?: number | null) => void;
   onUploadProgress?: (progress: any) => void;
-  onPreviewSelected?: (localUri: string, type: 'IMAGE' | 'VIDEO') => void;
+  onPreviewSelected?: (localUri: string, type: 'IMAGE' | 'VIDEO', isEphemeral?: boolean, ephemeralViewDuration?: number | null) => void;
 }
 
 export interface QuickCameraState {
@@ -126,9 +126,9 @@ export const useQuickCamera = (callbacks: QuickCameraCallbacks) => {
         size: capturedMedia.size || 1, // Use actual file size, fallback to 1 if 0
       };
 
-      // Emit local preview first
+      // Emit local preview first with ephemeral parameters
       try {
-        callbacks.onPreviewSelected?.(mediaFile.uri, capturedMedia.type);
+        callbacks.onPreviewSelected?.(mediaFile.uri, capturedMedia.type, true, viewDuration);
       } catch (error) {
         console.warn('useQuickCamera: Error calling onPreviewSelected:', error);
       }
