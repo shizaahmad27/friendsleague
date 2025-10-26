@@ -149,7 +149,8 @@ export default function ChatScreen() {
         msg.id === tempId ? messageWithSender : msg
       ));
 
-      socketService.sendMessage(chatId, messageWithSender);
+      // Don't emit Socket.io event for our own messages to avoid duplicates
+      // The message is already added locally, and other users will receive it via Socket.io
       
       // Clear reply state after sending
       if (replyingTo) {
@@ -174,6 +175,11 @@ export default function ChatScreen() {
   // Socket event handlers
   const handleNewMessage = (message: Message) => {
     if (message.chatId === chatId) {
+      // Don't add our own messages - they're already added locally
+      if (message.senderId === user?.id) {
+        return;
+      }
+      
       setMessages(prev => {
         const exists = prev.some(m => m.id === message.id);
         return exists ? prev : [message, ...prev];
@@ -339,7 +345,8 @@ export default function ChatScreen() {
 
       setMessages(prev => [messageWithSender, ...prev]);
 
-      socketService.sendMessage(chatId, messageWithSender);
+      // Don't emit Socket.io event for our own messages to avoid duplicates
+      // The message is already added locally, and other users will receive it via Socket.io
 
       socketService.emitTyping(chatId, user.id, false);
       setIsTyping(false);
@@ -505,10 +512,11 @@ export default function ChatScreen() {
           />
         )}
 
-        {/* Message Status - Only for own messages and only on the last message in a series */}
+        {/* Message Status - Only for own messages and only on the newest message */}
         {isOwnMessage && (() => {
           const currentIndex = messages.findIndex(msg => msg.id === item.id);
-          return isLastMessageInSeries(item, currentIndex) ? (
+          // Only show status on the newest message (index 0 in inverted list)
+          return currentIndex === 0 ? (
             <MessageStatus
               message={item}
               status={getMessageStatus(item)}
