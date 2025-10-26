@@ -24,10 +24,8 @@ export default function ChatListScreen() {
     loadChats();
     socketService.connect();
 
-    // Join user to their personal room for receiving updates
-    if (user?.id) {
-      socketService.joinUser(user.id);
-    }
+    // Socket connection and user room joining is handled globally by useOnlineStatus hook
+    // No need to manually manage user rooms here
 
     // Listen for new messages
     socketService.onNewMessage((message) => {
@@ -57,9 +55,6 @@ export default function ChatListScreen() {
     });
 
     return () => {
-      if (user?.id) {
-        socketService.leaveUser(user.id);
-      }
       socketService.disconnect();
     };
   }, [user?.id]);

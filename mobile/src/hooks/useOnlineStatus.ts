@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { usersApi } from '../services/usersApi';
 import { useAuthStore } from '../store/authStore';
+import socketService from '../services/socketService';
 
 export const useOnlineStatus = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -55,7 +56,20 @@ export const useOnlineStatus = () => {
     if (!isAuthenticated || !user) return;
 
     try {
+      // Update database
       await usersApi.updateOnlineStatus(isOnline);
+      
+      // Trigger Socket.io events for real-time updates
+      if (isOnline) {
+        // Connect socket and join user room
+        socketService.connect();
+        socketService.joinUser(user.id);
+      } else {
+        // Leave user room and disconnect
+        socketService.leaveUser(user.id);
+        socketService.disconnect();
+      }
+      
       console.log(`Online status updated: ${isOnline ? 'online' : 'offline'}`);
     } catch (error) {
       console.error('Failed to update online status:', error);

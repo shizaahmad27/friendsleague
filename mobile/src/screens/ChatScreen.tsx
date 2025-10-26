@@ -273,17 +273,8 @@ export default function ChatScreen() {
     onReactionRemoved: handleReactionRemoved,
   });
 
-  // Join user to their personal room for receiving updates
-  useEffect(() => {
-    if (user?.id) {
-      socketService.joinUser(user.id);
-    }
-    return () => {
-      if (user?.id) {
-        socketService.leaveUser(user.id);
-      }
-    };
-  }, [user?.id]);
+  // Socket connection and user room joining is handled globally by useOnlineStatus hook
+  // No need to manually manage user rooms here
 
   const { getMessageStatus, getReadByCount, getReadByUsers } = useReadReceipts({
     chatId,
