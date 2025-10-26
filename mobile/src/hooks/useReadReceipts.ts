@@ -88,8 +88,16 @@ export const useReadReceipts = ({ chatId, messages, onMessagesUpdate }: UseReadR
     return { read: readCount, total: totalParticipants - 1 };
   }, []);
 
+  const getReadByUsers = useCallback((message: Message): Array<{ username: string; avatar?: string }> => {
+    return (message.readReceipts || []).map(receipt => ({
+      username: receipt.user.username,
+      avatar: receipt.user.avatar,
+    }));
+  }, []);
+
   return {
     getMessageStatus,
     getReadByCount,
+    getReadByUsers,
   };
 };

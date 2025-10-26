@@ -271,7 +271,7 @@ export default function ChatScreen() {
     onReactionRemoved: handleReactionRemoved,
   });
 
-  const { getMessageStatus, getReadByCount } = useReadReceipts({
+  const { getMessageStatus, getReadByCount, getReadByUsers } = useReadReceipts({
     chatId,
     messages,
     onMessagesUpdate: setMessages,
@@ -506,6 +506,7 @@ export default function ChatScreen() {
               status={getMessageStatus(item)}
               isGroupChat={chatMeta?.type === 'GROUP'}
               readByCount={chatMeta?.type === 'GROUP' ? getReadByCount(item, participants.length + 1) : undefined}
+              readByUsers={chatMeta?.type === 'GROUP' ? getReadByUsers(item) : undefined}
               onPress={() => {
                 setSelectedMessageForReceipts(item);
                 setReadReceiptsModalVisible(true);
