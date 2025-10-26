@@ -1,6 +1,6 @@
 // mobile/src/services/privacyApi.ts
 import api from './api';
-import { PrivacySettingsResponse } from '../../shared/types';
+import { PrivacySettingsResponse } from '../../../shared/types';
 
 export const privacyApi = {
   // Get all privacy settings for the current user
