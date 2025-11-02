@@ -8,26 +8,33 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../types';
+import { Ionicons } from '@expo/vector-icons';
+import { RootStackParamList } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import { usersApi } from '../../services/usersApi';
-import { leaguesApi } from '../../services/leaguesApi';
+import { leaguesApi, League } from '../../services/leaguesApi';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
+
+type ProfileTab = 'Activity' | 'Achievements' | 'Leagues';
 
 export default function ProfileScreen() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { user, logout } = useAuthStore();
   
-  // State for friends count
+  const [activeTab, setActiveTab] = useState<ProfileTab>('Activity');
   const [friendsCount, setFriendsCount] = useState(0);
-  const [isLoadingFriends, setIsLoadingFriends] = useState(false);
-  // State for leagues count
   const [leaguesCount, setLeaguesCount] = useState(0);
+  const [totalPoints, setTotalPoints] = useState(0);
+  const [isLoadingFriends, setIsLoadingFriends] = useState(false);
   const [isLoadingLeagues, setIsLoadingLeagues] = useState(false);
+  const [isLoadingPoints, setIsLoadingPoints] = useState(false);
+  const [leagues, setLeagues] = useState<League[]>([]);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   // Load friends count
   const loadFriendsCount = async () => {
@@ -45,25 +52,45 @@ export default function ProfileScreen() {
     }
   };
 
-  // Load leagues count
-  const loadLeaguesCount = async () => {
+  // Load leagues count and calculate total points
+  const loadLeaguesData = async () => {
     setIsLoadingLeagues(true);
+    setIsLoadingPoints(true);
     try {
-      const leagues = await leaguesApi.getLeagues();
-      setLeaguesCount(leagues.length);
+      const leaguesData = await leaguesApi.getLeagues();
+      setLeagues(leaguesData);
+      setLeaguesCount(leaguesData.length);
+      
+      // Calculate total points across all leagues
+      let pointsTotal = 0;
+      for (const league of leaguesData) {
+        try {
+          const leaderboard = await leaguesApi.getLeaderboard(league.id);
+          const userEntry = leaderboard.find(m => m.userId === user?.id);
+          if (userEntry) {
+            pointsTotal += userEntry.totalPoints;
+          }
+        } catch (error) {
+          // Skip leagues where we can't get leaderboard
+          console.error(`Failed to get points for league ${league.id}:`, error);
+        }
+      }
+      setTotalPoints(pointsTotal);
     } catch (error) {
-      console.error('Failed to load leagues count:', error);
+      console.error('Failed to load leagues data:', error);
       setLeaguesCount(0);
+      setTotalPoints(0);
     } finally {
       setIsLoadingLeagues(false);
+      setIsLoadingPoints(false);
     }
   };
 
-  // Load friends count when screen comes into focus
+  // Load data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       loadFriendsCount();
-      loadLeaguesCount();
+      loadLeaguesData();
     }, [user])
   );
 
@@ -79,8 +106,11 @@ export default function ProfileScreen() {
   };
 
   const handleEditProfile = () => {
-    // TODO: Navigate to edit profile screen
     Alert.alert('Edit Profile', 'Edit profile functionality coming soon!');
+  };
+
+  const handleShareProfile = () => {
+    Alert.alert('Share Profile', 'Share profile functionality coming soon!');
   };
 
   const handleViewLeagues = () => {
@@ -91,112 +121,336 @@ export default function ProfileScreen() {
     navigation.navigate('ActiveFriends');
   };
 
-  const handleInviteFriends = () => {
-    navigation.navigate('InviteCode');
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'Activity':
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.emptyStateText}>No recent activity</Text>
+            <Text style={styles.emptyStateSubtext}>Your activities will appear here</Text>
+          </View>
+        );
+      case 'Achievements':
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.emptyStateText}>No achievements yet</Text>
+            <Text style={styles.emptyStateSubtext}>Unlock achievements as you participate in leagues and events</Text>
+          </View>
+        );
+      case 'Leagues':
+        return (
+          <View style={styles.tabContent}>
+            {isLoadingLeagues ? (
+              <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+            ) : leagues.length === 0 ? (
+              <>
+                <Text style={styles.emptyStateText}>No leagues yet</Text>
+                <Text style={styles.emptyStateSubtext}>Join or create a league to get started</Text>
+                <TouchableOpacity 
+                  style={styles.primaryButton}
+                  onPress={() => navigation.navigate('LeagueCreate')}
+                >
+                  <Text style={styles.primaryButtonText}>Create League</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <ScrollView>
+                {leagues.map((league) => (
+                  <TouchableOpacity
+                    key={league.id}
+                    style={styles.leagueCard}
+                    onPress={() => navigation.navigate('LeagueDetails', { leagueId: league.id })}
+                  >
+                    <View style={styles.leagueCardContent}>
+                      <Text style={styles.leagueCardTitle}>{league.name}</Text>
+                      {league.description && (
+                        <Text style={styles.leagueCardDescription} numberOfLines={2}>
+                          {league.description}
+                        </Text>
+                      )}
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#999" />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <View style={styles.avatarContainer}>
-          <Image
-            source={{ uri: user?.avatar || 'https://via.placeholder.com/100' }}
-            style={styles.avatar}
-          />
-        </View>
-        <Text style={styles.username}>{user?.username || 'User'}</Text>
-        <Text style={styles.email}>{user?.email || 'No email'}</Text>
-        <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-          <Text style={styles.editButtonText}>Edit Profile</Text>
+        <TouchableOpacity 
+          style={styles.headerButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Profile</Text>
+        <TouchableOpacity 
+          style={styles.headerButton}
+          onPress={() => setMenuVisible(true)}
+        >
+          <Ionicons name="ellipsis-vertical" size={24} color="#333" />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>My Leagues</Text>
-          <TouchableOpacity style={styles.actionButton} onPress={handleViewLeagues}>
-            <Text style={styles.actionButtonText}>View All Leagues</Text>
-            <Text style={styles.actionButtonArrow}>›</Text>
-          </TouchableOpacity>
-          <Text style={styles.sectionSubtext}>
-            {isLoadingLeagues ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#666" />
-                <Text style={styles.loadingText}>Loading...</Text>
-              </View>
-            ) : (
-              `You're currently in ${leaguesCount} league${leaguesCount !== 1 ? 's' : ''}`
-            )}
-          </Text>
+      {/* Menu Modal */}
+      <Modal
+        visible={menuVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setMenuVisible(false)}
+        >
+          <View style={styles.menuContainer}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                Alert.alert('Settings', 'Settings functionality coming soon!');
+              }}
+            >
+              <Ionicons name="settings-outline" size={20} color="#333" style={styles.menuIcon} />
+              <Text style={styles.menuItemText}>Settings</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('PrivacySettings');
+              }}
+            >
+              <Ionicons name="shield-outline" size={20} color="#333" style={styles.menuIcon} />
+              <Text style={styles.menuItemText}>Privacy</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                Alert.alert('Help & Support', 'Help & Support functionality coming soon!');
+              }}
+            >
+              <Ionicons name="help-circle-outline" size={20} color="#333" style={styles.menuIcon} />
+              <Text style={styles.menuItemText}>Help & Support</Text>
+            </TouchableOpacity>
+            
+            <View style={styles.menuDivider} />
+            
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                handleLogout();
+              }}
+            >
+              <Text style={styles.logoutMenuItemText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Profile Header */}
+        <View style={styles.profileHeaderBanner}>
+          <View style={styles.profileHeader}>
+          <View style={styles.avatarContainer}>
+            <Image
+              source={{ uri: user?.avatar || 'https://via.placeholder.com/120' }}
+              style={styles.avatar}
+            />
+            <TouchableOpacity style={styles.cameraButton} onPress={handleEditProfile}>
+              <Ionicons name="camera" size={16} color="#333" />
+            </TouchableOpacity>
+          </View>
+          
+          <Text style={styles.username}>{user?.username || 'User'}</Text>
+          <Text style={styles.userHandle}>@{user?.username?.toLowerCase().replace(/\s+/g, '_') || 'user'}</Text>
+          
+          {/* Action Buttons */}
+          <View style={styles.actionButtonsRow}>
+            <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
+              <Text style={styles.editButtonText}>Edit Profile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.shareButton} onPress={handleShareProfile}>
+              <Text style={styles.shareButtonText}>Share Profile</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Friends</Text>
-          <TouchableOpacity style={styles.actionButton} onPress={handleViewFriends}>
-            <Text style={styles.actionButtonText}>View All Friends</Text>
-            <Text style={styles.actionButtonArrow}>›</Text>
-          </TouchableOpacity>
-          <Text style={styles.sectionSubtext}>
-            {isLoadingFriends ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#666" />
-                <Text style={styles.loadingText}>Loading...</Text>
-              </View>
-            ) : (
-              `You have ${friendsCount} friend${friendsCount !== 1 ? 's' : ''}`
-            )}
-          </Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Invite Friends</Text>
-          <TouchableOpacity style={styles.actionButton} onPress={handleInviteFriends}>
-            <Text style={styles.actionButtonText}>Invite New Friends</Text>
-            <Text style={styles.actionButtonArrow}>›</Text>
-          </TouchableOpacity>
-          <Text style={styles.sectionSubtext}>Share FriendsLeague with your friends</Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>Notifications</Text>
-            <Text style={styles.actionButtonArrow}>›</Text>
-          </TouchableOpacity>
+        {/* Stats Section */}
+        <View style={styles.statsContainer}>
           <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => navigation.navigate('PrivacySettings' as never)}
+            style={styles.statItem}
+            onPress={handleViewFriends}
+            activeOpacity={0.7}
           >
-            <Text style={styles.actionButtonText}>Privacy</Text>
-            <Text style={styles.actionButtonArrow}>›</Text>
+            <Text style={styles.statNumber}>
+              {isLoadingFriends ? '...' : friendsCount.toLocaleString()}
+            </Text>
+            <Text style={styles.statLabel}>FRIENDS</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>About</Text>
-            <Text style={styles.actionButtonArrow}>›</Text>
+          <View style={styles.statDivider} />
+          <TouchableOpacity 
+            style={styles.statItem}
+            onPress={handleViewLeagues}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.statNumber}>
+              {isLoadingLeagues ? '...' : leaguesCount}
+            </Text>
+            <Text style={styles.statLabel}>LEAGUES</Text>
+          </TouchableOpacity>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>
+              {isLoadingPoints ? '...' : totalPoints.toLocaleString()}
+            </Text>
+            <Text style={styles.statLabel}>POINTS</Text>
+          </View>
+        </View>
+
+        {/* Tab Navigation */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'Activity' && styles.activeTab]}
+            onPress={() => setActiveTab('Activity')}
+          >
+            <Text style={[styles.tabText, activeTab === 'Activity' && styles.activeTabText]}>
+              Activity
+            </Text>
+            {activeTab === 'Activity' && <View style={styles.tabIndicator} />}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'Achievements' && styles.activeTab]}
+            onPress={() => setActiveTab('Achievements')}
+          >
+            <Text style={[styles.tabText, activeTab === 'Achievements' && styles.activeTabText]}>
+              Achievements
+            </Text>
+            {activeTab === 'Achievements' && <View style={styles.tabIndicator} />}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'Leagues' && styles.activeTab]}
+            onPress={() => setActiveTab('Leagues')}
+          >
+            <Text style={[styles.tabText, activeTab === 'Leagues' && styles.activeTabText]}>
+              Leagues
+            </Text>
+            {activeTab === 'Leagues' && <View style={styles.tabIndicator} />}
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        {/* Tab Content */}
+        {renderTabContent()}
+
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
   },
   header: {
-    backgroundColor: '#007AFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingTop: 60,
-    paddingBottom: 30,
+    paddingBottom: 6,
     paddingHorizontal: 20,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
     alignItems: 'center',
   },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: 80,
+    paddingRight: 20,
+  },
+  menuContainer: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    minWidth: 200,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+    overflow: 'hidden',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  menuIcon: {
+    marginRight: 12,
+  },
+  menuItemText: {
+    fontSize: 15,
+    color: '#333',
+    flex: 1,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginVertical: 4,
+  },
+  logoutMenuItemText: {
+    fontSize: 15,
+    color: '#FF3B30',
+    fontWeight: '600',
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  profileHeaderBanner: {
+    backgroundColor: '#f5f5f5',
+  },
+  profileHeader: {
+    alignItems: 'center',
+    paddingTop: 24,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+  },
   avatarContainer: {
+    position: 'relative',
     marginBottom: 16,
   },
   avatar: {
@@ -204,97 +458,184 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 3,
-    borderColor: 'white',
+    borderColor: '#f0f0f0',
+  },
+  cameraButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   username: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#333',
     marginBottom: 4,
   },
-  email: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+  userHandle: {
+    fontSize: 14,
+    color: '#666',
     marginBottom: 20,
   },
-  editButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  actionButtonsRow: {
+    flexDirection: 'row',
+    width: '100%',
     paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  editButton: {
+    flex: 1,
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
   },
   editButtonText: {
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
   },
-  content: {
-    padding: 20,
-  },
-  section: {
+  shareButton: {
+    flex: 1,
     backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  actionButtonText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  actionButtonArrow: {
-    fontSize: 20,
-    color: '#999',
-  },
-  sectionSubtext: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 8,
-    fontStyle: 'italic',
-  },
-  logoutButton: {
-    backgroundColor: '#FF3B30',
-    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 20,
+    marginLeft: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  logoutButtonText: {
-    color: 'white',
-    fontSize: 16,
+  shareButtonText: {
+    color: '#333',
+    fontSize: 14,
     fontWeight: '600',
   },
-  loadingContainer: {
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#666',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#f0f0f0',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    paddingHorizontal: 20,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  activeTab: {
+    // Active tab styling handled by text and indicator
+  },
+  tabText: {
+    fontSize: 14,
+    color: '#999',
+    fontWeight: '500',
+  },
+  activeTabText: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: '#007AFF',
+  },
+  tabContent: {
+    minHeight: 200,
+    padding: 20,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  loader: {
+    marginVertical: 40,
+  },
+  primaryButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignSelf: 'center',
+  },
+  primaryButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  leagueCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#f9f9f9',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
   },
-  loadingText: {
-    marginLeft: 8,
+  leagueCardContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  leagueCardTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  leagueCardDescription: {
+    fontSize: 13,
     color: '#666',
-    fontSize: 14,
   },
 });
