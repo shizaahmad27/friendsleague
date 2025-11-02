@@ -1,0 +1,469 @@
+// mobile/src/components/ChatSettingsModal.tsx
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  Image,
+  Animated,
+  Alert,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Message, chatApi } from '../../services/chatApi';
+import { MediaGalleryModal } from '../media/MediaGalleryModal';
+import { useSwipeToClose } from '../../hooks/useSwipeToClose';
+import { useVideoThumbnail } from '../../hooks/useVideoThumbnail';
+import { OnlineStatusIndicator } from '../ui/OnlineStatusIndicator';
+import { useUserOnlineStatus } from '../../hooks/useUserOnlineStatus';
+import { privacyApi } from '../../services/privacyApi';
+import { useAuthStore } from '../../store/authStore';
+
+interface ChatSettingsModalProps {
+  visible: boolean;
+  onClose: () => void;
+  messages: Message[];
+  onOpenGallery: (message: Message) => void;
+  chatId: string;
+}
+
+export const ChatSettingsModal: React.FC<ChatSettingsModalProps> = ({
+  visible,
+  onClose,
+  messages,
+  onOpenGallery,
+  chatId,
+}) => {
+  const { user } = useAuthStore();
+  const [showAllImages, setShowAllImages] = useState(false);
+  const [showAllVideos, setShowAllVideos] = useState(false);
+  const [showAllFiles, setShowAllFiles] = useState(false);
+  const [fullscreenMessage, setFullscreenMessage] = useState<Message | null>(null);
+  const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
+  const [peerUser, setPeerUser] = useState<{ id: string; username: string; avatar?: string; lastSeen?: string } | null>(null);
+  const [hideOnlineStatusFromPeer, setHideOnlineStatusFromPeer] = useState(false);
+  const [isLoadingPrivacy, setIsLoadingPrivacy] = useState(false);
+
+  // Online status hook
+  const { isUserOnline, getLastSeenTime } = useUserOnlineStatus();
+
+  // Swipe to close functionality for the main modal
+  const { panY, modalOpacity, imageScale, panResponder } = useSwipeToClose({
+    onClose,
+    enabled: visible,
+  });
+
+  // Load current read receipts setting
+  useEffect(() => {
+    // For now, we'll assume it's enabled by default
+    // In a real implementation, you'd fetch this from the API
+    setReadReceiptsEnabled(true);
+  }, [chatId]);
+
+  // Load peer user info and privacy settings
+  useEffect(() => {
+    if (!visible || !user) return;
+
+    const loadPeerUserAndPrivacy = async () => {
+      try {
+        // Get chat participants to find the peer user
+        const participants = await chatApi.getGroupChatParticipants(chatId);
+        const peer = participants.find(p => p.user.id !== user.id)?.user;
+        
+        if (peer) {
+          setPeerUser({
+            id: peer.id,
+            username: peer.username,
+            avatar: peer.avatar,
+            lastSeen: peer.lastSeen,
+          });
+
+          // Load privacy setting for this peer
+          setIsLoadingPrivacy(true);
+          const privacySetting = await privacyApi.getFriendOnlineStatusVisibility(peer.id);
+          setHideOnlineStatusFromPeer(privacySetting.hideOnlineStatus);
+        }
+      } catch (error) {
+        console.error('Failed to load peer user info:', error);
+      } finally {
+        setIsLoadingPrivacy(false);
+      }
+    };
+
+    loadPeerUserAndPrivacy();
+  }, [visible, chatId, user]);
+
+  const handleToggleReadReceipts = async () => {
+    try {
+      await chatApi.toggleReadReceipts(chatId, !readReceiptsEnabled);
+      setReadReceiptsEnabled(!readReceiptsEnabled);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update read receipts setting');
+    }
+  };
+
+  const handleTogglePrivacySetting = async () => {
+    if (!peerUser) return;
+
+    try {
+      setIsLoadingPrivacy(true);
+      await privacyApi.updateFriendOnlineStatusVisibility(
+        peerUser.id, 
+        !hideOnlineStatusFromPeer
+      );
+      setHideOnlineStatusFromPeer(!hideOnlineStatusFromPeer);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update privacy setting');
+    } finally {
+      setIsLoadingPrivacy(false);
+    }
+  };
+
+  const handleOpenGallery = (message: Message) => {
+    setFullscreenMessage(message);
+  };
+
+  const handleCloseGallery = () => {
+    setFullscreenMessage(null);
+  };
+
+  // Component for video thumbnails
+  const VideoThumbnail = ({ message }: { message: Message }) => {
+    const { videoThumbnail, isLoading } = useVideoThumbnail(
+      message.mediaUrl || '', 
+      message.type as 'IMAGE' | 'VIDEO' | 'FILE'
+    );
+    
+    return (
+      <TouchableOpacity 
+        key={message.id} 
+        style={styles.mediaItem}
+        onPress={() => handleOpenGallery(message)}
+      >
+        {videoThumbnail ? (
+          <Image source={{ uri: videoThumbnail }} style={styles.mediaThumbnail} />
+        ) : (
+          <View style={styles.videoThumbnail}>
+            {isLoading ? (
+              <Ionicons name="hourglass-outline" size={20} color="white" />
+            ) : (
+              <Ionicons name="play-circle" size={30} color="white" />
+            )}
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="none"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <Animated.View 
+          style={[
+            styles.chatSettingsModal, 
+            { 
+              opacity: modalOpacity,
+              transform: [{ translateY: panY }]
+            }
+          ]} 
+          {...panResponder.panHandlers}
+        >
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Chat Settings</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={onClose}
+            >
+              <Ionicons name="close" size={24} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Privacy Toggle Section */}
+          {peerUser && (
+            <View style={styles.settingsSection}>
+              <TouchableOpacity 
+                style={styles.settingItem} 
+                onPress={handleTogglePrivacySetting}
+                disabled={isLoadingPrivacy}
+              >
+                <Ionicons name="eye-outline" size={24} color="#007AFF" />
+                <Text style={styles.settingText}>
+                  Show my online status to {peerUser.username}
+                </Text>
+                <Ionicons 
+                  name={hideOnlineStatusFromPeer ? "toggle-outline" : "toggle"} 
+                  size={24} 
+                  color={hideOnlineStatusFromPeer ? "#666" : "#007AFF"} 
+                />
+              </TouchableOpacity>
+            </View>
+          )}
+          
+          {/* Read Receipts Toggle */}
+          <View style={styles.settingsSection}>
+            <TouchableOpacity style={styles.settingItem} onPress={handleToggleReadReceipts}>
+              <Ionicons name="eye-outline" size={24} color="#007AFF" />
+              <Text style={styles.settingText}>
+                Read Receipts: {readReceiptsEnabled ? 'On' : 'Off'}
+              </Text>
+              <Ionicons 
+                name={readReceiptsEnabled ? "toggle" : "toggle-outline"} 
+                size={24} 
+                color={readReceiptsEnabled ? "#007AFF" : "#666"} 
+              />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.mediaSections}>
+            {/* Images Section */}
+            <View style={styles.mediaSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Images</Text>
+                <TouchableOpacity 
+                  style={styles.showMoreButton}
+                  onPress={() => setShowAllImages(!showAllImages)}
+                >
+                  <Text style={styles.showMoreText}>
+                    {showAllImages ? 'Show less' : 'Show more'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.mediaGrid}>
+                {messages
+                  .filter(msg => msg.type === 'IMAGE' && msg.mediaUrl)
+                  .slice(0, showAllImages ? undefined : 6)
+                  .map((msg, index) => (
+                    <TouchableOpacity 
+                      key={msg.id} 
+                      style={styles.mediaItem}
+                      onPress={() => handleOpenGallery(msg)}
+                    >
+                      <Image source={{ uri: msg.mediaUrl }} style={styles.mediaThumbnail} />
+                    </TouchableOpacity>
+                  ))}
+              </View>
+            </View>
+
+            {/* Videos Section */}
+            <View style={styles.mediaSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Videos</Text>
+                <TouchableOpacity 
+                  style={styles.showMoreButton}
+                  onPress={() => setShowAllVideos(!showAllVideos)}
+                >
+                  <Text style={styles.showMoreText}>
+                    {showAllVideos ? 'Show less' : 'Show more'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.mediaGrid}>
+                {messages
+                  .filter(msg => msg.type === 'VIDEO' && msg.mediaUrl)
+                  .slice(0, showAllVideos ? undefined : 6)
+                  .map((msg, index) => (
+                    <VideoThumbnail key={msg.id} message={msg} />
+                  ))}
+              </View>
+            </View>
+
+            {/* Files Section */}
+            <View style={styles.mediaSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Files</Text>
+                <TouchableOpacity 
+                  style={styles.showMoreButton}
+                  onPress={() => setShowAllFiles(!showAllFiles)}
+                >
+                  <Text style={styles.showMoreText}>
+                    {showAllFiles ? 'Show less' : 'Show more'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.filesList}>
+                {messages
+                  .filter(msg => msg.type === 'FILE' && msg.mediaUrl)
+                  .slice(0, showAllFiles ? undefined : 5)
+                  .map((msg, index) => (
+                    <TouchableOpacity 
+                      key={msg.id} 
+                      style={styles.fileItem}
+                      onPress={() => handleOpenGallery(msg)}
+                    >
+                      <View style={styles.fileIcon}>
+                        <Ionicons name="document" size={20} color="#007AFF" />
+                      </View>
+                      <Text style={styles.fileName} numberOfLines={1}>
+                        File {index + 1}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+              </View>
+            </View>
+          </View>
+        </Animated.View>
+      </View>
+
+      {/* Media Gallery Modal */}
+      <MediaGalleryModal
+        visible={fullscreenMessage !== null}
+        onClose={handleCloseGallery}
+        message={fullscreenMessage}
+        allMessages={messages}
+      />
+    </Modal>
+  );
+};
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  chatSettingsModal: {
+    backgroundColor: '#1c1c1e',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    minHeight: '50%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2c2c2e',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  settingsSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2c2c2e',
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#2c2c2e',
+  },
+  settingText: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '500',
+  },
+  mediaSections: {
+    padding: 20,
+  },
+  mediaSection: {
+    marginBottom: 30,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'white',
+  },
+  showMoreButton: {
+    padding: 4,
+  },
+  showMoreText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  mediaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  mediaItem: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#2c2c2e',
+  },
+  mediaThumbnail: {
+    width: '100%',
+    height: '100%',
+  },
+  videoThumbnail: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filesList: {
+    gap: 10,
+  },
+  fileItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#2c2c2e',
+    borderRadius: 8,
+  },
+  fileIcon: {
+    marginRight: 12,
+  },
+  fileName: {
+    color: 'white',
+    fontSize: 16,
+    flex: 1,
+  },
+  userInfoSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2c2c2e',
+  },
+  userInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  userAvatarContainer: {
+    marginRight: 12,
+  },
+  userAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#2c2c2e',
+  },
+  userInfoText: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 4,
+  },
+});

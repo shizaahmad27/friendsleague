@@ -6,35 +6,47 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import { RootStackParamList } from '../types';
 
-// Screens
-import SignInScreen from '../screens/SignInScreen';
-import SignUpScreen from '../screens/SignUpScreen';
-import HomeScreen from '../screens/HomeScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-import LeaguesScreen from '../screens/LeaguesScreen';
-import FriendsScreen from '../screens/FriendsScreen';
-import ActiveFriendsScreen from '../screens/ActiveFriendsScreen';
-import EventsScreen from '../screens/EventsScreen';
-import EventCreateScreen from '../screens/EventCreateScreen';
-import EventDetailsScreen from '../screens/EventDetailsScreen';
-import EventParticipantsScreen from '../screens/EventParticipantsScreen';
-import EventRulesScreen from '../screens/EventRulesScreen';
-import EventLeaderboardScreen from '../screens/EventLeaderboardScreen';
-import InviteCodeScreen from '../screens/InviteCodeScreen';
-import ChatListScreen from '../screens/ChatListScreen';
-import ChatScreen from '../screens/ChatScreen';
-import CreateGroupChatScreen from '../screens/CreateGroupChatScreen';
-import GroupChatSettingsScreen from '../screens/GroupChatSettingsScreen';
-import LeagueCreateScreen from '../screens/LeagueCreateScreen';
-import LeagueDetailsScreen from '../screens/LeagueDetailsScreen';
-import LeagueMembersScreen from '../screens/LeagueMembersScreen';
-import LeagueAdminScreen from '../screens/LeagueAdminScreen';
-import LeagueRulesScreen from '../screens/LeagueRulesScreen';
-import LeagueLeaderboardScreen from '../screens/LeagueLeaderboardScreen';
-import LeagueRulesReadScreen from '../screens/LeagueRulesReadScreen';
-import LeagueAssignPointsScreen from '../screens/LeagueAssignPointsScreen';
-import PrivacySettingsScreen from '../screens/PrivacySettingsScreen';
-import StartDirectChatScreen from '../screens/StartDirectChatScreen';
+// Screens - Auth
+import SignInScreen from '../screens/auth/SignInScreen';
+import SignUpScreen from '../screens/auth/SignUpScreen';
+
+// Screens - Chat
+import ChatListScreen from '../screens/chat/ChatListScreen';
+import ChatScreen from '../screens/chat/ChatScreen';
+import CreateGroupChatScreen from '../screens/chat/CreateGroupChatScreen';
+import GroupChatSettingsScreen from '../screens/chat/GroupChatSettingsScreen';
+import StartDirectChatScreen from '../screens/chat/StartDirectChatScreen';
+
+// Screens - Events
+import EventsScreen from '../screens/events/EventsScreen';
+import EventCreateScreen from '../screens/events/EventCreateScreen';
+import EventDetailsScreen from '../screens/events/EventDetailsScreen';
+import EventParticipantsScreen from '../screens/events/EventParticipantsScreen';
+import EventRulesScreen from '../screens/events/EventRulesScreen';
+import EventLeaderboardScreen from '../screens/events/EventLeaderboardScreen';
+
+// Screens - Leagues
+import LeaguesScreen from '../screens/leagues/LeaguesScreen';
+import LeagueCreateScreen from '../screens/leagues/LeagueCreateScreen';
+import LeagueDetailsScreen from '../screens/leagues/LeagueDetailsScreen';
+import LeagueMembersScreen from '../screens/leagues/LeagueMembersScreen';
+import LeagueAdminScreen from '../screens/leagues/LeagueAdminScreen';
+import LeagueRulesScreen from '../screens/leagues/LeagueRulesScreen';
+import LeagueLeaderboardScreen from '../screens/leagues/LeagueLeaderboardScreen';
+import LeagueRulesReadScreen from '../screens/leagues/LeagueRulesReadScreen';
+import LeagueAssignPointsScreen from '../screens/leagues/LeagueAssignPointsScreen';
+
+// Screens - Social
+import HomeScreen from '../screens/social/HomeScreen';
+import FriendsScreen from '../screens/social/FriendsScreen';
+import ActiveFriendsScreen from '../screens/social/ActiveFriendsScreen';
+
+// Screens - Settings
+import ProfileScreen from '../screens/settings/ProfileScreen';
+import PrivacySettingsScreen from '../screens/settings/PrivacySettingsScreen';
+
+// Screens - Invitations
+import InviteCodeScreen from '../screens/invitations/InviteCodeScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
