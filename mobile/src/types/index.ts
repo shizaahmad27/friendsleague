@@ -7,6 +7,7 @@ export interface User {
   email?: string;
   phoneNumber?: string;
   avatar?: string;
+  bio?: string;
   isOnline: boolean;
   lastSeen: string;
   createdAt: string;

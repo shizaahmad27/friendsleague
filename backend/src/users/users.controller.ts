@@ -2,6 +2,7 @@ import { Controller, Get, Put, Query, UseGuards, Request, Body, Param } from '@n
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { ChatGateway } from '../chat/chat.gateway';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -89,5 +90,18 @@ export class UsersController {
       friendId
     );
     return { hideOnlineStatus };
+  }
+
+  @Put('profile')
+  async updateProfile(
+    @Request() req: any,
+    @Body() updateProfileDto: UpdateProfileDto
+  ) {
+    return this.usersService.updateProfile(req.user.id, updateProfileDto);
+  }
+
+  @Get('me')
+  async getCurrentUser(@Request() req: any) {
+    return this.usersService.findById(req.user.id);
   }
 }

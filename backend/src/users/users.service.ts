@@ -1,6 +1,6 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
-import { CreateUserDto, UpdateUserDto } from './dto';
+import { CreateUserDto, UpdateUserDto, UpdateProfileDto } from './dto';
 import { User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
@@ -108,6 +108,53 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
+    });
+
+    // Return user without password
+    const { password: _, ...userWithoutPassword } = updatedUser;
+    return userWithoutPassword;
+  }
+
+  async updateProfile(id: string, updateProfileDto: UpdateProfileDto): Promise<UserWithoutPassword> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Check username uniqueness if username is being updated
+    if (updateProfileDto.username && updateProfileDto.username !== user.username) {
+      const existingUser = await this.prisma.user.findUnique({
+        where: { username: updateProfileDto.username },
+      });
+
+      if (existingUser) {
+        throw new ConflictException('Username already exists');
+      }
+    }
+
+    // Build update data object
+    const updateData: any = {};
+    
+    if (updateProfileDto.username) {
+      updateData.username = updateProfileDto.username;
+    }
+    
+    if (updateProfileDto.bio !== undefined) {
+      // Allow empty string to clear bio
+      updateData.bio = updateProfileDto.bio || null;
+    }
+    
+    if (updateProfileDto.avatar !== undefined) {
+      // Allow empty string to clear avatar
+      updateData.avatar = updateProfileDto.avatar || null;
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: updateData,
     });
 
     // Return user without password

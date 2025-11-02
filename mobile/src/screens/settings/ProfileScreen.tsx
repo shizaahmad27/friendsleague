@@ -278,6 +278,15 @@ export default function ProfileScreen() {
           <Text style={styles.username}>{user?.username || 'User'}</Text>
           <Text style={styles.userHandle}>@{user?.username?.toLowerCase().replace(/\s+/g, '_') || 'user'}</Text>
           
+          {/* Bio */}
+          {user?.bio ? (
+            <Text style={styles.bio}>{user.bio}</Text>
+          ) : (
+            <TouchableOpacity onPress={handleEditProfile}>
+              <Text style={styles.bioPlaceholder}>Add a bio to tell people about yourself</Text>
+            </TouchableOpacity>
+          )}
+          
           {/* Action Buttons */}
           <View style={styles.actionButtonsRow}>
             <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
@@ -445,18 +454,18 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     alignItems: 'center',
-    paddingTop: 24,
-    paddingBottom: 24,
+    paddingTop: 20,
+    paddingBottom: 16,
     paddingHorizontal: 20,
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     borderWidth: 3,
     borderColor: '#f0f0f0',
   },
@@ -487,17 +496,35 @@ const styles = StyleSheet.create({
   userHandle: {
     fontSize: 14,
     color: '#666',
+    marginBottom: 12,
+  },
+  bio: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    paddingHorizontal: 20,
     marginBottom: 20,
+    lineHeight: 20,
+  },
+  bioPlaceholder: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    fontStyle: 'italic',
+    lineHeight: 20,
   },
   actionButtonsRow: {
     flexDirection: 'row',
     width: '100%',
     paddingHorizontal: 20,
+    marginTop: 12,
   },
   editButton: {
     flex: 1,
     backgroundColor: '#007AFF',
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 12,
     alignItems: 'center',
   },
@@ -509,7 +536,7 @@ const styles = StyleSheet.create({
   shareButton: {
     flex: 1,
     backgroundColor: 'white',
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 12,
     alignItems: 'center',
     marginLeft: 12,
@@ -525,7 +552,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: 20,
     paddingHorizontal: 20,
     borderTopWidth: 1,
     borderBottomWidth: 1,
