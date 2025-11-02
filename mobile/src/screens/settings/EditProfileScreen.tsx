@@ -136,12 +136,8 @@ export default function EditProfileScreen() {
       // Update auth store
       setUser(updatedUser);
 
-      Alert.alert('Success', 'Profile updated successfully', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      // Navigate back to profile screen
+      navigation.goBack();
     } catch (error: any) {
       console.error('Profile update error:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update profile';
