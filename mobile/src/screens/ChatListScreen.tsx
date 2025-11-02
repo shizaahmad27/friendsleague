@@ -12,6 +12,8 @@ import { useNavigation } from '@react-navigation/native';
 import { chatApi, Chat } from '../services/chatApi';
 import socketService from '../services/socketService';
 import { useAuthStore } from '../store/authStore';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ChatListScreen() {
   const navigation = useNavigation();
@@ -84,44 +86,68 @@ export default function ChatListScreen() {
     const unreadCount = item.unreadCount || 0;
     const lastMessage: any = (item as any).lastMessage ?? (item as any).messages?.[0] ?? null;
     
+    const getMessageIcon = (type: string) => {
+      switch (type) {
+        case 'IMAGE': return 'image-outline';
+        case 'VIDEO': return 'videocam-outline';
+        case 'FILE': return 'document-outline';
+        case 'VOICE': return 'mic-outline';
+        default: return null;
+      }
+    };
+
+    const messageIcon = lastMessage?.type ? getMessageIcon(lastMessage.type) : null;
+    
     return (
       <TouchableOpacity
         style={styles.chatItem}
-        onPress={() => (navigation as any).navigate('Chat', { chatId: item.id })}    
+        onPress={() => (navigation as any).navigate('Chat', { chatId: item.id })}
+        activeOpacity={0.7}
+      >
+        <LinearGradient
+          colors={isGroupChat ? ['#FF9500', '#FFB84D'] : ['#667eea', '#764ba2']}
+          style={styles.avatar}
         >
-        <View style={[styles.avatar, isGroupChat && styles.groupAvatar]}>
           <Text style={styles.avatarText}>
-            {avatarText}
+            {avatarText || '?'}
           </Text>
-        </View>
+        </LinearGradient>
         <View style={styles.chatInfo}>
           <View style={styles.chatHeader}>
-            <Text style={styles.username}>{displayName}</Text>
+            <Text style={styles.username} numberOfLines={1}>{displayName || 'Unknown'}</Text>
             {isGroupChat && (
-              <Text style={styles.memberCount}>
-                {item.participants.length} members
-              </Text>
+              <View style={styles.memberCountContainer}>
+                <Ionicons name="people" size={12} color="#666" />
+                <Text style={styles.memberCount}>
+                  {item.participants.length}
+                </Text>
+              </View>
             )}
           </View>
-          <Text style={styles.lastMessage} numberOfLines={1}>
-            {lastMessage ? (
-              lastMessage.content || 
-              (lastMessage.type === 'IMAGE' ? '📷 Bilde' :
-               lastMessage.type === 'VIDEO' ? '🎥 Video' :
-               lastMessage.type === 'FILE' ? '📄 Fil' :
-               lastMessage.type === 'VOICE' ? '🎤 Lydmelding' : 'Ingen meldinger ennå')
-            ) : 'Ingen meldinger ennå'}
-          </Text>
+          <View style={styles.lastMessageContainer}>
+            {messageIcon && (
+              <Ionicons name={messageIcon} size={14} color="#999" style={styles.messageIcon} />
+            )}
+            <Text style={styles.lastMessage} numberOfLines={1}>
+              {lastMessage ? (
+                lastMessage.content || 
+                (lastMessage.type === 'IMAGE' ? 'Photo' :
+                 lastMessage.type === 'VIDEO' ? 'Video' :
+                 lastMessage.type === 'FILE' ? 'File' :
+                 lastMessage.type === 'VOICE' ? 'Voice message' : 'No messages yet')
+              ) : 'No messages yet'}
+            </Text>
+          </View>
         </View>
         <View style={styles.chatMeta}>
           <Text style={styles.timestamp}>
             {lastMessage ? new Date(lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
           </Text>
-          {unreadCount > 0 ? (
+          {unreadCount > 0 && (
             <View style={styles.unreadBadge}>
               <Text style={styles.unreadCount}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
             </View>
-          ) : null}
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -129,23 +155,34 @@ export default function ChatListScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chats</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            style={styles.createDirectButton}
-            onPress={() => (navigation as any).navigate('StartDirectChat')}
-          >
-            <Text style={styles.createDirectButtonText}>+ Chat</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.createGroupButton}
-            onPress={() => (navigation as any).navigate('CreateGroupChat')}
-          >
-            <Text style={styles.createGroupButtonText}>+ Group</Text>
-          </TouchableOpacity>
+      <LinearGradient
+        colors={['#667eea', '#764ba2']}
+        style={styles.headerGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Chats</Text>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={styles.createDirectButton}
+              onPress={() => (navigation as any).navigate('StartDirectChat')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="person-add" size={18} color="white" />
+              <Text style={styles.createDirectButtonText}>Chat</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.createGroupButton}
+              onPress={() => (navigation as any).navigate('CreateGroupChat')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="people" size={18} color="white" />
+              <Text style={styles.createGroupButtonText}>Group</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </LinearGradient>
       
       <FlatList
         data={chats}
@@ -156,6 +193,7 @@ export default function ChatListScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
+            <Ionicons name="chatbubbles-outline" size={64} color="#ccc" />
             <Text style={styles.emptyText}>No chats yet</Text>
             <Text style={styles.emptySubtext}>Start a conversation with a friend!</Text>
           </View>
@@ -168,48 +206,64 @@ export default function ChatListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
+  },
+  headerGradient: {
+    paddingTop: 50,
+    paddingBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
   },
   header: {
-    paddingTop: 60,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#333',
+    color: 'white',
+    letterSpacing: -0.5,
   },
   headerButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
   createDirectButton: {
-    backgroundColor: '#34C759',
-    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   createDirectButtonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   createGroupButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   createGroupButtonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   chatItem: {
@@ -217,62 +271,82 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#f0f0f0',
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#007AFF',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   avatarText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
   },
   chatInfo: {
     flex: 1,
     justifyContent: 'center',
   },
+  chatHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 8,
+  },
   username: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    color: '#1a1a1a',
+    flex: 1,
+  },
+  memberCountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  memberCount: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  lastMessageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  messageIcon: {
+    marginRight: 6,
   },
   lastMessage: {
     fontSize: 14,
-    color: '#666',
+    color: '#777',
+    flex: 1,
   },
   chatMeta: {
     alignItems: 'flex-end',
     justifyContent: 'center',
+    minWidth: 60,
   },
   timestamp: {
     fontSize: 12,
     color: '#999',
-    marginBottom: 4,
-  },
-  onlineIndicator: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#34C759',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  onlineCount: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
+    marginBottom: 6,
+    fontWeight: '500',
   },
   unreadBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: '#FF3B30',
     justifyContent: 'center',
     alignItems: 'center',
@@ -280,21 +354,8 @@ const styles = StyleSheet.create({
   },
   unreadCount: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
-  },
-  groupAvatar: {
-    backgroundColor: '#FF9500',
-  },
-  chatHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  memberCount: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 8,
   },
   emptyContainer: {
     flex: 1,
@@ -303,13 +364,14 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#666',
     marginBottom: 8,
+    marginTop: 20,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#999',
     textAlign: 'center',
   },
