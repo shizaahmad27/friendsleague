@@ -12,14 +12,17 @@ import { RootStackParamList } from '../types';
 
 type HamburgerMenuProps = {
   onLogout: () => void;
+  variant?: 'light' | 'dark'; // light = white lines for dark backgrounds, dark = dark lines for light backgrounds
 };
 
 
 type HamburgerMenuNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
-export default function HamburgerMenu({ onLogout }: HamburgerMenuProps) {
+export default function HamburgerMenu({ onLogout, variant = 'dark' }: HamburgerMenuProps) {
   const navigation = useNavigation<HamburgerMenuNavigationProp>();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  
+  const lineColor = variant === 'light' ? '#fff' : '#333';
 
   const toggleMenu = () => {
     setIsMenuVisible(!isMenuVisible);
@@ -38,9 +41,9 @@ export default function HamburgerMenu({ onLogout }: HamburgerMenuProps) {
     <>
       {/* Hamburger Button */}
       <TouchableOpacity style={styles.hamburgerButton} onPress={toggleMenu}>
-        <View style={styles.hamburgerLine} />
-        <View style={styles.hamburgerLine} />
-        <View style={styles.hamburgerLine} />
+        <View style={[styles.hamburgerLine, { backgroundColor: lineColor }]} />
+        <View style={[styles.hamburgerLine, { backgroundColor: lineColor }]} />
+        <View style={[styles.hamburgerLine, { backgroundColor: lineColor }]} />
       </TouchableOpacity>
 
       {/* Hamburger Menu Modal */}
@@ -143,7 +146,6 @@ const styles = StyleSheet.create({
   hamburgerLine: {
     width: 25,
     height: 3,
-    backgroundColor: '#333',
     borderRadius: 2,
   },
   menuOverlay: {
