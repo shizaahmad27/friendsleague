@@ -135,6 +135,40 @@ export class UsersService {
       }
     }
 
+    // Check email uniqueness if email is being updated
+    if (updateProfileDto.email !== undefined) {
+      const normalizedEmail = updateProfileDto.email && updateProfileDto.email.trim() !== '' 
+        ? updateProfileDto.email.trim() 
+        : null;
+      
+      if (normalizedEmail && normalizedEmail !== user.email) {
+        const existingUser = await this.prisma.user.findUnique({
+          where: { email: normalizedEmail },
+        });
+
+        if (existingUser) {
+          throw new ConflictException('Email already exists');
+        }
+      }
+    }
+
+    // Check phone number uniqueness if phone number is being updated
+    if (updateProfileDto.phoneNumber !== undefined) {
+      const normalizedPhoneNumber = updateProfileDto.phoneNumber && updateProfileDto.phoneNumber.trim() !== '' 
+        ? updateProfileDto.phoneNumber.trim() 
+        : null;
+      
+      if (normalizedPhoneNumber && normalizedPhoneNumber !== user.phoneNumber) {
+        const existingUser = await this.prisma.user.findUnique({
+          where: { phoneNumber: normalizedPhoneNumber },
+        });
+
+        if (existingUser) {
+          throw new ConflictException('Phone number already exists');
+        }
+      }
+    }
+
     // Build update data object
     const updateData: any = {};
     
@@ -150,6 +184,22 @@ export class UsersService {
     if (updateProfileDto.avatar !== undefined) {
       // Allow empty string to clear avatar
       updateData.avatar = updateProfileDto.avatar || null;
+    }
+
+    if (updateProfileDto.email !== undefined) {
+      // Allow empty string to clear email
+      const normalizedEmail = updateProfileDto.email && updateProfileDto.email.trim() !== '' 
+        ? updateProfileDto.email.trim() 
+        : null;
+      updateData.email = normalizedEmail;
+    }
+
+    if (updateProfileDto.phoneNumber !== undefined) {
+      // Allow empty string to clear phone number
+      const normalizedPhoneNumber = updateProfileDto.phoneNumber && updateProfileDto.phoneNumber.trim() !== '' 
+        ? updateProfileDto.phoneNumber.trim() 
+        : null;
+      updateData.phoneNumber = normalizedPhoneNumber;
     }
 
     const updatedUser = await this.prisma.user.update({

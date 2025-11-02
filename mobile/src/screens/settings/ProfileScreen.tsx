@@ -278,6 +278,24 @@ export default function ProfileScreen() {
           <Text style={styles.username}>{user?.username || 'User'}</Text>
           <Text style={styles.userHandle}>@{user?.username?.toLowerCase().replace(/\s+/g, '_') || 'user'}</Text>
           
+          {/* Contact Info */}
+          {(user?.email || user?.phoneNumber) && (
+            <View style={styles.contactInfo}>
+              {user?.email && (
+                <View style={styles.contactItem}>
+                  <Ionicons name="mail-outline" size={14} color="#666" />
+                  <Text style={styles.contactText}>{user.email}</Text>
+                </View>
+              )}
+              {user?.phoneNumber && (
+                <View style={styles.contactItem}>
+                  <Ionicons name="call-outline" size={14} color="#666" />
+                  <Text style={styles.contactText}>{user.phoneNumber}</Text>
+                </View>
+              )}
+            </View>
+          )}
+          
           {/* Bio */}
           {user?.bio ? (
             <Text style={styles.bio}>{user.bio}</Text>
@@ -496,7 +514,21 @@ const styles = StyleSheet.create({
   userHandle: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  contactInfo: {
+    marginBottom: 8,
+    alignItems: 'center',
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  contactText: {
+    fontSize: 13,
+    color: '#666',
+    marginLeft: 6,
   },
   bio: {
     fontSize: 14,
