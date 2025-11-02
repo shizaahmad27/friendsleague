@@ -287,6 +287,9 @@ export default function ProfileScreen() {
                   <Text style={styles.contactText}>{user.email}</Text>
                 </View>
               )}
+              {user?.email && user?.phoneNumber && (
+                <Text style={styles.contactSeparator}>•</Text>
+              )}
               {user?.phoneNumber && (
                 <View style={styles.contactItem}>
                   <Ionicons name="call-outline" size={14} color="#666" />
@@ -517,18 +520,25 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   contactInfo: {
-    marginBottom: 8,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    flexWrap: 'wrap',
   },
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
   },
   contactText: {
     fontSize: 13,
     color: '#666',
     marginLeft: 6,
+  },
+  contactSeparator: {
+    fontSize: 13,
+    color: '#999',
+    marginHorizontal: 8,
   },
   bio: {
     fontSize: 14,
