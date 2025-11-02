@@ -11,9 +11,10 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../services/api';
-import HamburgerMenu from '../components/HamburgerMenu';
+import StoriesSection from '../components/StoriesSection';
 import { leaguesApi, League } from '../services/leaguesApi';
 import { eventsApi, EventItem } from '../services/eventsApi';
+import { Story } from '../types';
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
@@ -22,6 +23,45 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(false);
   const [leagues, setLeagues] = useState<League[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
+
+  // Mock stories data
+  const mockStories: Story[] = useMemo(() => [
+    {
+      id: 'own-story',
+      userId: user?.id || '',
+      username: user?.username || 'You',
+      isOwnStory: true,
+      hasNewStory: false,
+    },
+    {
+      id: 'story-1',
+      userId: 'user-1',
+      username: 'Emma',
+      hasNewStory: true,
+      isOwnStory: false,
+    },
+    {
+      id: 'story-2',
+      userId: 'user-2',
+      username: 'Alex',
+      hasNewStory: true,
+      isOwnStory: false,
+    },
+    {
+      id: 'story-3',
+      userId: 'user-3',
+      username: 'Sarah',
+      hasNewStory: false,
+      isOwnStory: false,
+    },
+    {
+      id: 'story-4',
+      userId: 'user-4',
+      username: 'Mike',
+      hasNewStory: true,
+      isOwnStory: false,
+    },
+  ], [user?.id, user?.username]);
 
   const handleLogout = async () => {
     try {
@@ -65,17 +105,28 @@ export default function HomeScreen() {
   const recentLeagues = useMemo(() => leagues.slice(0, 3), [leagues]);
   const recentEvents = useMemo(() => events.slice(0, 3), [events]);
 
+  const handleAddStory = () => {
+    // Placeholder for future story creation feature
+    Alert.alert('Coming Soon', 'Story creation feature will be available soon!');
+  };
+
+  const handleStoryPress = (story: Story) => {
+    // Placeholder for future story viewing feature
+    Alert.alert('Story', `Viewing ${story.username}'s story`);
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>FriendsLeague</Text>
-        <Text style={styles.subtitle}>Welcome back, {user?.username}!</Text>
-        <HamburgerMenu onLogout={confirmLogout} />
-      </View>
-
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Stories Section */}
+        <StoriesSection
+          stories={mockStories}
+          onStoryPress={handleStoryPress}
+          onAddStoryPress={handleAddStory}
+        />
         {/* Quick Actions */}
-        <View style={styles.quickRow}>
+        <View style={styles.quickRowContainer}>
+          <View style={styles.quickRow}>
           <TouchableOpacity style={styles.quickCard} onPress={() => navigation.navigate('LeagueCreate')}>
             <Text style={styles.quickIcon}>🏆</Text>
             <Text style={styles.quickTitle}>Create League</Text>
@@ -88,6 +139,7 @@ export default function HomeScreen() {
             <Text style={styles.quickIcon}>💬</Text>
             <Text style={styles.quickTitle}>New Chat</Text>
           </TouchableOpacity>
+          </View>
         </View>
 
         {/* Recent Leagues */}
@@ -167,41 +219,23 @@ export default function HomeScreen() {
           <Text style={styles.muted}>Check invitations in Friends, assign points in your latest events, or create a new league.</Text>
         </View>
       </ScrollView>
-
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.logoutButton} onPress={confirmLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
-  header: {
-    paddingTop: 60,
+  content: { paddingBottom: 120 },
+  quickRowContainer: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    paddingTop: 20,
   },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#333', textAlign: 'center' },
-  subtitle: { fontSize: 16, color: '#666', textAlign: 'center', marginTop: 4 },
-
-  content: { padding: 20, paddingBottom: 120 },
   quickRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
   quickCard: { flex: 1, backgroundColor: 'white', padding: 16, borderRadius: 12, marginRight: 10, alignItems: 'center', borderWidth: 1, borderColor: '#f0f0f0' },
   quickIcon: { fontSize: 24, marginBottom: 8 },
   quickTitle: { color: '#333', fontWeight: '600' },
 
-  card: { backgroundColor: 'white', padding: 16, borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: '#f0f0f0', elevation: 2 },
+  card: { backgroundColor: 'white', padding: 16, borderRadius: 16, marginBottom: 16, marginHorizontal: 20, borderWidth: 1, borderColor: '#f0f0f0', elevation: 2 },
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   link: { color: '#007AFF', fontWeight: '700' },
   cardTitle: { fontSize: 18, fontWeight: '700', color: '#333' },
@@ -219,8 +253,4 @@ const styles = StyleSheet.create({
 
   cardButton: { backgroundColor: '#007AFF', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, alignSelf: 'flex-start', marginTop: 12 },
   cardButtonText: { color: 'white', fontWeight: '700' },
-
-  footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#eee', backgroundColor: 'white' },
-  logoutButton: { backgroundColor: '#FF3B30', paddingVertical: 16, borderRadius: 8 },
-  logoutButtonText: { color: 'white', fontSize: 16, fontWeight: '600', textAlign: 'center' },
 });

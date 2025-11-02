@@ -38,6 +38,15 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+export interface Story {
+  id: string;
+  userId: string;
+  username: string;
+  avatar?: string;
+  hasNewStory: boolean;
+  isOwnStory: boolean; // For "Your Story" item
+}
+
 // Navigation types
 export type RootStackParamList = {
   SignIn: undefined;

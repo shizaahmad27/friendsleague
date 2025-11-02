@@ -2,6 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import { RootStackParamList } from '../types';
 
@@ -40,10 +41,79 @@ const Tab = createBottomTabNavigator();
 
 function MainTabs() {
   return (
-    <Tab.Navigator screenOptions={{ headerShown: false }}>
-      <Tab.Screen name="Friends" component={FriendsScreen} />
-      <Tab.Screen name="Leagues" component={LeaguesScreen} />
-      <Tab.Screen name="Events" component={EventsScreen} />
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: '#007AFF',
+        tabBarInactiveTintColor: '#999',
+        tabBarStyle: {
+          backgroundColor: 'white',
+          borderTopWidth: 1,
+          borderTopColor: '#eee',
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 60,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
+        },
+      }}
+    >
+      <Tab.Screen
+        name="Feed"
+        component={HomeScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Friends"
+        component={FriendsScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Leagues"
+        component={LeaguesScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="trophy" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Events"
+        component={EventsScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Messages"
+        component={ChatListScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubble" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
+          ),
+        }}
+      />
     </Tab.Navigator>
   );
 }
@@ -60,8 +130,8 @@ export default function AppNavigator() {
       >
         {isAuthenticated ? (
           <>
-            <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="MainTabs" component={MainTabs} />
+            <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Leagues" component={LeaguesScreen} />
             <Stack.Screen name="Friends" component={FriendsScreen} />
