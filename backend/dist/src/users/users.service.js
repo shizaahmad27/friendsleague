@@ -129,6 +129,38 @@ let UsersService = class UsersService {
         const { password: _, ...userWithoutPassword } = updatedUser;
         return userWithoutPassword;
     }
+    async updateProfile(id, updateProfileDto) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+        });
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        if (updateProfileDto.username && updateProfileDto.username !== user.username) {
+            const existingUser = await this.prisma.user.findUnique({
+                where: { username: updateProfileDto.username },
+            });
+            if (existingUser) {
+                throw new common_1.ConflictException('Username already exists');
+            }
+        }
+        const updateData = {};
+        if (updateProfileDto.username) {
+            updateData.username = updateProfileDto.username;
+        }
+        if (updateProfileDto.bio !== undefined) {
+            updateData.bio = updateProfileDto.bio || null;
+        }
+        if (updateProfileDto.avatar !== undefined) {
+            updateData.avatar = updateProfileDto.avatar || null;
+        }
+        const updatedUser = await this.prisma.user.update({
+            where: { id },
+            data: updateData,
+        });
+        const { password: _, ...userWithoutPassword } = updatedUser;
+        return userWithoutPassword;
+    }
     async updateOnlineStatus(id, isOnline) {
         await this.prisma.user.update({
             where: { id },
@@ -160,8 +192,10 @@ let UsersService = class UsersService {
                 phoneNumber: true,
                 inviteCode: true,
                 avatar: true,
+                bio: true,
                 isOnline: true,
                 lastSeen: true,
+                showOnlineStatus: true,
                 createdAt: true,
                 updatedAt: true,
             },
@@ -187,8 +221,10 @@ let UsersService = class UsersService {
                         phoneNumber: true,
                         inviteCode: true,
                         avatar: true,
+                        bio: true,
                         isOnline: true,
                         lastSeen: true,
+                        showOnlineStatus: true,
                         createdAt: true,
                         updatedAt: true,
                     },
@@ -204,6 +240,85 @@ let UsersService = class UsersService {
         const secret = process.env.INVITE_CODE_SECRET || process.env.JWT_SECRET || 'fallback-secret-change-me';
         const hmac = crypto.createHmac('sha256', secret).update(userId).digest('hex');
         return hmac.substring(0, 8).toUpperCase();
+    }
+    async getPrivacySettings(userId) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { showOnlineStatus: true },
+        });
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        const friendSettings = await this.prisma.userPrivacySettings.findMany({
+            where: { userId },
+            select: { targetUserId: true, hideOnlineStatus: true },
+        });
+        return {
+            global: { showOnlineStatus: user.showOnlineStatus },
+            friends: friendSettings.map(setting => ({
+                friendId: setting.targetUserId,
+                hideOnlineStatus: setting.hideOnlineStatus,
+            })),
+        };
+    }
+    async updateGlobalOnlineStatus(userId, showOnlineStatus) {
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { showOnlineStatus },
+        });
+        return {
+            success: true,
+            message: `Global online status visibility updated to ${showOnlineStatus ? 'visible' : 'hidden'}`,
+        };
+    }
+    async updateFriendOnlineStatusVisibility(userId, targetUserId, hideOnlineStatus) {
+        await this.prisma.userPrivacySettings.upsert({
+            where: {
+                userId_targetUserId: {
+                    userId,
+                    targetUserId,
+                },
+            },
+            update: { hideOnlineStatus },
+            create: {
+                userId,
+                targetUserId,
+                hideOnlineStatus,
+            },
+        });
+        return {
+            success: true,
+            message: `Online status visibility for friend updated to ${hideOnlineStatus ? 'hidden' : 'visible'}`,
+        };
+    }
+    async getFriendOnlineStatusVisibility(userId, targetUserId) {
+        const setting = await this.prisma.userPrivacySettings.findUnique({
+            where: {
+                userId_targetUserId: {
+                    userId,
+                    targetUserId,
+                },
+            },
+        });
+        return setting?.hideOnlineStatus || false;
+    }
+    async canUserSeeOnlineStatus(viewerId, targetUserId) {
+        const targetUser = await this.prisma.user.findUnique({
+            where: { id: targetUserId },
+            select: { showOnlineStatus: true },
+        });
+        if (!targetUser || !targetUser.showOnlineStatus) {
+            return false;
+        }
+        const privacySetting = await this.prisma.userPrivacySettings.findUnique({
+            where: {
+                userId_targetUserId: {
+                    userId: targetUserId,
+                    targetUserId: viewerId,
+                },
+            },
+        });
+        return !privacySetting?.hideOnlineStatus;
     }
 };
 exports.UsersService = UsersService;
