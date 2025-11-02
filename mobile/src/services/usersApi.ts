@@ -6,6 +6,7 @@ export interface User {
   email?: string;
   phoneNumber?: string;
   avatar?: string;
+  bio?: string;
   isOnline: boolean;
   lastSeen: string;
   createdAt: string;
@@ -34,6 +35,18 @@ export const usersApi = {
   // Update online status
   updateOnlineStatus: async (isOnline: boolean): Promise<{ success: boolean; message: string }> => {
     const response = await api.put('/users/online-status', { isOnline });
+    return response.data;
+  },
+
+  // Get current user
+  getCurrentUser: async (): Promise<User> => {
+    const response = await api.get('/users/me');
+    return response.data;
+  },
+
+  // Update profile
+  updateProfile: async (data: { username?: string; bio?: string; avatar?: string }): Promise<User> => {
+    const response = await api.put('/users/profile', data);
     return response.data;
   },
 };

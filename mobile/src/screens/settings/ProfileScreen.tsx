@@ -106,7 +106,7 @@ export default function ProfileScreen() {
   };
 
   const handleEditProfile = () => {
-    Alert.alert('Edit Profile', 'Edit profile functionality coming soon!');
+    navigation.navigate('EditProfile');
   };
 
   const handleShareProfile = () => {
