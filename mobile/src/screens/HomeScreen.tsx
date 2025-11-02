@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../services/api';
 import StoriesSection from '../components/StoriesSection';
@@ -115,8 +116,47 @@ export default function HomeScreen() {
     Alert.alert('Story', `Viewing ${story.username}'s story`);
   };
 
+  const handleNotificationPress = () => {
+    // Placeholder for future notifications feature
+    Alert.alert('Coming Soon', 'Notifications feature will be available soon!');
+  };
+
+  const handleSearchPress = () => {
+    // Placeholder for future search feature
+    Alert.alert('Coming Soon', 'Search feature will be available soon!');
+  };
+
   return (
     <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <View style={styles.logoContainer}>
+            <Ionicons name="flash" size={24} color="#007AFF" />
+          </View>
+          <Text style={styles.appTitle}>FriendsLeague</Text>
+        </View>
+        <View style={styles.headerRight}>
+          <TouchableOpacity 
+            style={[styles.headerIcon, { marginRight: 12 }]} 
+            onPress={handleSearchPress}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="search" size={24} color="#333" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.headerIcon} 
+            onPress={handleNotificationPress}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="notifications-outline" size={24} color="#333" />
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationBadgeText}>3</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <ScrollView contentContainerStyle={styles.content}>
         {/* Stories Section */}
         <StoriesSection
@@ -213,11 +253,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* What's Next */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>What’s next</Text>
-          <Text style={styles.muted}>Check invitations in Friends, assign points in your latest events, or create a new league.</Text>
-        </View>
+    
       </ScrollView>
     </View>
   );
@@ -225,6 +261,60 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
+  header: {
+    backgroundColor: 'white',
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  appTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerIcon: {
+    position: 'relative',
+    padding: 4,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+  },
+  notificationBadgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: '700',
+  },
   content: { paddingBottom: 120 },
   quickRowContainer: {
     paddingHorizontal: 20,
