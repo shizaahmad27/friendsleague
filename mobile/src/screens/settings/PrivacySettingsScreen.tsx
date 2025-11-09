@@ -13,7 +13,8 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { privacyApi } from '../../services/privacyApi';
 import { usersApi } from '../../services/usersApi';
-import { PrivacySettingsResponse } from '../../shared/types';
+import { PrivacySettingsResponse } from '../../../../shared/types';
+import * as Location from 'expo-location';
 
 export default function PrivacySettingsScreen() {
   const navigation = useNavigation();
@@ -25,6 +26,67 @@ export default function PrivacySettingsScreen() {
   useEffect(() => {
     loadPrivacySettings();
   }, []);
+
+  // Handle location tracking when setting changes
+  useEffect(() => {
+    let watchSubscription: Location.LocationSubscription | null = null;
+
+    const startLocationTracking = async () => {
+      if (!privacySettings?.global.locationSharingEnabled) {
+        return;
+      }
+
+      try {
+        // Check if location services are enabled
+        const servicesEnabled = await Location.hasServicesEnabledAsync();
+        if (!servicesEnabled) {
+          console.warn('Location services are disabled');
+          return;
+        }
+
+        // Check permission
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.warn('Location permission not granted');
+          return;
+        }
+
+        // Start watching location
+        watchSubscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Balanced,
+            timeInterval: 5000, // Update every 5 seconds
+            distanceInterval: 10, // Update every 10 meters
+          },
+          (location) => {
+            // Location is being tracked
+            // You can send this to the backend if needed
+            console.log('Location updated:', location.coords);
+          }
+        );
+      } catch (error) {
+        console.error('Error starting location tracking:', error);
+      }
+    };
+
+    const stopLocationTracking = () => {
+      if (watchSubscription) {
+        watchSubscription.remove();
+        watchSubscription = null;
+      }
+    };
+
+    if (privacySettings?.global.locationSharingEnabled) {
+      startLocationTracking();
+    } else {
+      stopLocationTracking();
+    }
+
+    // Cleanup on unmount or when setting changes
+    return () => {
+      stopLocationTracking();
+    };
+  }, [privacySettings?.global.locationSharingEnabled]);
 
   const loadPrivacySettings = async () => {
     try {
@@ -51,9 +113,12 @@ export default function PrivacySettingsScreen() {
       setUpdatingSettings(prev => new Set([...prev, 'global']));
       await privacyApi.updateGlobalOnlineStatus(!privacySettings.global.showOnlineStatus);
       
-      setPrivacySettings(prev => prev ? {
+      setPrivacySettings((prev: PrivacySettingsResponse | null) => prev ? {
         ...prev,
-        global: { showOnlineStatus: !prev.global.showOnlineStatus }
+        global: { 
+          ...prev.global,
+          showOnlineStatus: !prev.global.showOnlineStatus 
+        }
       } : null);
     } catch (error) {
       Alert.alert('Error', 'Failed to update global privacy setting');
@@ -66,19 +131,69 @@ export default function PrivacySettingsScreen() {
     }
   };
 
+  const handleLocationSharingToggle = async () => {
+    if (!privacySettings) return;
+
+    const newValue = !privacySettings.global.locationSharingEnabled;
+
+    try {
+      setUpdatingSettings(prev => new Set([...prev, 'location']));
+      
+      // If enabling, request permission first
+      if (newValue) {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          // Permission denied, don't update the setting
+          Alert.alert(
+            'Location Permission Required',
+            'Please enable location permissions in your device settings to share your location.',
+            [{ text: 'OK' }]
+          );
+          setUpdatingSettings(prev => {
+            const newSet = new Set(prev);
+            newSet.delete('location');
+            return newSet;
+          });
+          return;
+        }
+      }
+
+      // Update the backend setting
+      await privacyApi.updateLocationSharing(newValue);
+      
+      // Update local state
+      setPrivacySettings((prev: PrivacySettingsResponse | null) => prev ? {
+        ...prev,
+        global: { 
+          ...prev.global,
+          locationSharingEnabled: newValue 
+        }
+      } : null);
+    } catch (error) {
+      console.error('Error updating location sharing:', error);
+      Alert.alert('Error', 'Failed to update location sharing setting');
+    } finally {
+      setUpdatingSettings(prev => {
+        const newSet = new Set(prev);
+        newSet.delete('location');
+        return newSet;
+      });
+    }
+  };
+
   const handleFriendToggle = async (friendId: string) => {
     if (!privacySettings) return;
 
-    const currentSetting = privacySettings.friends.find(f => f.friendId === friendId);
+    const currentSetting = privacySettings.friends.find((f: { friendId: string; hideOnlineStatus: boolean }) => f.friendId === friendId);
     const newHideStatus = !currentSetting?.hideOnlineStatus;
 
     try {
       setUpdatingSettings(prev => new Set([...prev, friendId]));
       await privacyApi.updateFriendOnlineStatusVisibility(friendId, newHideStatus);
       
-      setPrivacySettings(prev => prev ? {
+      setPrivacySettings((prev: PrivacySettingsResponse | null) => prev ? {
         ...prev,
-        friends: prev.friends.map(f => 
+        friends: prev.friends.map((f: { friendId: string; hideOnlineStatus: boolean }) => 
           f.friendId === friendId 
             ? { ...f, hideOnlineStatus: newHideStatus }
             : f
@@ -96,7 +211,7 @@ export default function PrivacySettingsScreen() {
   };
 
   const getFriendSetting = (friendId: string) => {
-    return privacySettings?.friends.find(f => f.friendId === friendId)?.hideOnlineStatus || false;
+    return privacySettings?.friends.find((f: { friendId: string; hideOnlineStatus: boolean }) => f.friendId === friendId)?.hideOnlineStatus || false;
   };
 
   if (isLoading) {
@@ -141,6 +256,31 @@ export default function PrivacySettingsScreen() {
                 name={privacySettings?.global.showOnlineStatus ? "toggle" : "toggle-outline"} 
                 size={24} 
                 color={privacySettings?.global.showOnlineStatus ? "#007AFF" : "#666"} 
+              />
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.settingDivider} />
+
+          <TouchableOpacity 
+            style={styles.settingItem} 
+            onPress={handleLocationSharingToggle}
+            disabled={updatingSettings.has('location')}
+          >
+            <Ionicons name="location-outline" size={24} color="#007AFF" />
+            <View style={styles.settingTextContainer}>
+              <Text style={styles.settingText}>Share location</Text>
+              <Text style={styles.settingSubtext}>
+                Allow the app to access and share your location
+              </Text>
+            </View>
+            {updatingSettings.has('location') ? (
+              <ActivityIndicator size="small" color="#007AFF" />
+            ) : (
+              <Ionicons 
+                name={privacySettings?.global.locationSharingEnabled ? "toggle" : "toggle-outline"} 
+                size={24} 
+                color={privacySettings?.global.locationSharingEnabled ? "#007AFF" : "#666"} 
               />
             )}
           </TouchableOpacity>
@@ -288,6 +428,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 2,
+  },
+  settingDivider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginVertical: 8,
   },
   friendItem: {
     flexDirection: 'row',
