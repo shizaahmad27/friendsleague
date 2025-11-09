@@ -9,6 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Share,
+  Platform,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -109,8 +111,36 @@ export default function ProfileScreen() {
     navigation.navigate('EditProfile');
   };
 
-  const handleShareProfile = () => {
-    Alert.alert('Share Profile', 'Share profile functionality coming soon!');
+  const handleShareProfile = async () => {
+    if (!user) return;
+
+    try {
+      const username = user.username || 'User';
+      const userHandle = `@${username.toLowerCase().replace(/\s+/g, '_')}`;
+      
+      // Create shareable message similar to Instagram
+      const message = `Check out ${username}'s profile on FriendsLeague!\n\n${userHandle}${user.bio ? `\n\n${user.bio}` : ''}\n\nDownload FriendsLeague to connect!`;
+      
+      // For now, we'll share the username and message
+      // If you add deep linking later, you can include: `https://friendleague.onrender.com/profile/${user.id}`
+      
+      const result = await Share.share({
+        message: message,
+        title: `Share ${username}'s Profile`,
+      }, {
+        // Android only
+        dialogTitle: `Share ${username}'s Profile`,
+      });
+
+      if (result.action === Share.sharedAction) {
+        // User shared successfully (optional - we don't need to show alert per cursor rules)
+      } else if (result.action === Share.dismissedAction) {
+        // User dismissed the share sheet (no action needed)
+      }
+    } catch (error: any) {
+      console.error('Error sharing profile:', error);
+      Alert.alert('Error', 'Failed to share profile. Please try again.');
+    }
   };
 
   const handleViewLeagues = () => {
