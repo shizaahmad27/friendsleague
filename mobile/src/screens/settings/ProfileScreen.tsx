@@ -550,6 +550,27 @@ const styles = StyleSheet.create({
     color: theme.secondaryText,
     marginBottom: 12,
   },
+  contactInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 20,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  contactText: {
+    fontSize: 13,
+    color: theme.secondaryText,
+    marginLeft: 4,
+  },
+  contactSeparator: {
+    fontSize: 13,
+    color: theme.secondaryText,
+    marginHorizontal: 8,
+  },
   bio: {
     fontSize: 14,
     color: theme.secondaryText,
