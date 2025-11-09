@@ -133,7 +133,7 @@ export interface UserPrivacySettings {
 }
 
 export interface PrivacySettingsResponse {
-  global: { showOnlineStatus: boolean };
+  global: { showOnlineStatus: boolean; locationSharingEnabled: boolean };
   friends: Array<{ friendId: string; hideOnlineStatus: boolean }>;
 }
 

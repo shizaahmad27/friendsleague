@@ -303,12 +303,12 @@ export class UsersService {
 
   // Privacy Settings Methods
   async getPrivacySettings(userId: string): Promise<{
-    global: { showOnlineStatus: boolean };
+    global: { showOnlineStatus: boolean; locationSharingEnabled: boolean };
     friends: Array<{ friendId: string; hideOnlineStatus: boolean }>;
   }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { showOnlineStatus: true },
+      select: { showOnlineStatus: true, locationSharingEnabled: true },
     });
 
     if (!user) {
@@ -321,7 +321,10 @@ export class UsersService {
     });
 
     return {
-      global: { showOnlineStatus: user.showOnlineStatus },
+      global: { 
+        showOnlineStatus: user.showOnlineStatus,
+        locationSharingEnabled: user.locationSharingEnabled || false,
+      },
       friends: friendSettings.map(setting => ({
         friendId: setting.targetUserId,
         hideOnlineStatus: setting.hideOnlineStatus,
@@ -402,5 +405,17 @@ export class UsersService {
     });
 
     return !privacySetting?.hideOnlineStatus;
+  }
+
+  async updateLocationSharing(userId: string, locationSharingEnabled: boolean): Promise<{ success: boolean; message: string }> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { locationSharingEnabled },
+    });
+
+    return {
+      success: true,
+      message: `Location sharing ${locationSharingEnabled ? 'enabled' : 'disabled'}`,
+    };
   }
 }

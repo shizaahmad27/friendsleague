@@ -9,6 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Share,
+  Platform,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -17,6 +19,7 @@ import { RootStackParamList } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import { usersApi } from '../../services/usersApi';
 import { leaguesApi, League } from '../../services/leaguesApi';
+import { theme } from '../../constants/colors';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -109,8 +112,36 @@ export default function ProfileScreen() {
     navigation.navigate('EditProfile');
   };
 
-  const handleShareProfile = () => {
-    Alert.alert('Share Profile', 'Share profile functionality coming soon!');
+  const handleShareProfile = async () => {
+    if (!user) return;
+
+    try {
+      const username = user.username || 'User';
+      const userHandle = `@${username.toLowerCase().replace(/\s+/g, '_')}`;
+      
+      // Create shareable message similar to Instagram
+      const message = `Check out ${username}'s profile on FriendsLeague!\n\n${userHandle}${user.bio ? `\n\n${user.bio}` : ''}\n\nDownload FriendsLeague to connect!`;
+      
+      // For now, we'll share the username and message
+      // If you add deep linking later, you can include: `https://friendleague.onrender.com/profile/${user.id}`
+      
+      const result = await Share.share({
+        message: message,
+        title: `Share ${username}'s Profile`,
+      }, {
+        // Android only
+        dialogTitle: `Share ${username}'s Profile`,
+      });
+
+      if (result.action === Share.sharedAction) {
+        // User shared successfully (optional - we don't need to show alert per cursor rules)
+      } else if (result.action === Share.dismissedAction) {
+        // User dismissed the share sheet (no action needed)
+      }
+    } catch (error: any) {
+      console.error('Error sharing profile:', error);
+      Alert.alert('Error', 'Failed to share profile. Please try again.');
+    }
   };
 
   const handleViewLeagues = () => {
@@ -189,14 +220,14 @@ export default function ProfileScreen() {
           style={styles.headerButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={theme.primaryText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
         <TouchableOpacity 
           style={styles.headerButton}
           onPress={() => setMenuVisible(true)}
         >
-          <Ionicons name="ellipsis-vertical" size={24} color="#333" />
+          <Ionicons name="ellipsis-vertical" size={24} color={theme.primaryText} />
         </TouchableOpacity>
       </View>
 
@@ -239,7 +270,7 @@ export default function ProfileScreen() {
               style={styles.menuItem}
               onPress={() => {
                 setMenuVisible(false);
-                Alert.alert('Help & Support', 'Help & Support functionality coming soon!');
+                navigation.navigate('HelpSupport');
               }}
             >
               <Ionicons name="help-circle-outline" size={20} color="#333" style={styles.menuIcon} />
@@ -394,7 +425,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.background,
   },
   header: {
     flexDirection: 'row',
@@ -403,9 +434,9 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 6,
     paddingHorizontal: 20,
-    backgroundColor: 'white',
+    backgroundColor: theme.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.border,
   },
   headerButton: {
     width: 40,
@@ -416,21 +447,21 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.primaryText,
   },
   menuOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.overlay,
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
     paddingTop: 80,
     paddingRight: 20,
   },
   menuContainer: {
-    backgroundColor: 'white',
+    backgroundColor: theme.background,
     borderRadius: 12,
     minWidth: 200,
-    shadowColor: '#000',
+    shadowColor: theme.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -446,24 +477,24 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.border,
   },
   menuIcon: {
     marginRight: 12,
   },
   menuItemText: {
     fontSize: 15,
-    color: '#333',
+    color: theme.primaryText,
     flex: 1,
   },
   menuDivider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.border,
     marginVertical: 4,
   },
   logoutMenuItemText: {
     fontSize: 15,
-    color: '#FF3B30',
+    color: theme.error,
     fontWeight: '600',
     flex: 1,
   },
@@ -471,7 +502,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileHeaderBanner: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.backgroundSecondary,
   },
   profileHeader: {
     alignItems: 'center',
@@ -488,7 +519,7 @@ const styles = StyleSheet.create({
     height: 90,
     borderRadius: 45,
     borderWidth: 3,
-    borderColor: '#f0f0f0',
+    borderColor: theme.border,
   },
   cameraButton: {
     position: 'absolute',
@@ -497,12 +528,12 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'white',
+    backgroundColor: theme.background,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#f0f0f0',
-    shadowColor: '#000',
+    borderColor: theme.border,
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -511,38 +542,17 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.primaryText,
     marginBottom: 4,
   },
   userHandle: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  contactInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-    flexWrap: 'wrap',
-  },
-  contactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  contactText: {
-    fontSize: 13,
-    color: '#666',
-    marginLeft: 6,
-  },
-  contactSeparator: {
-    fontSize: 13,
-    color: '#999',
-    marginHorizontal: 8,
+    color: theme.secondaryText,
+    marginBottom: 12,
   },
   bio: {
     fontSize: 14,
-    color: '#666',
+    color: theme.secondaryText,
     textAlign: 'center',
     paddingHorizontal: 20,
     marginBottom: 20,
@@ -550,7 +560,7 @@ const styles = StyleSheet.create({
   },
   bioPlaceholder: {
     fontSize: 14,
-    color: '#999',
+    color: theme.tertiaryText,
     textAlign: 'center',
     paddingHorizontal: 20,
     marginBottom: 20,
@@ -565,28 +575,28 @@ const styles = StyleSheet.create({
   },
   editButton: {
     flex: 1,
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.primary,
     paddingVertical: 10,
     borderRadius: 12,
     alignItems: 'center',
   },
   editButtonText: {
-    color: 'white',
+    color: theme.primaryTextOnPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
   shareButton: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: theme.background,
     paddingVertical: 10,
     borderRadius: 12,
     alignItems: 'center',
     marginLeft: 12,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: theme.borderSecondary,
   },
   shareButtonText: {
-    color: '#333',
+    color: theme.primaryText,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -598,7 +608,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: theme.border,
   },
   statItem: {
     alignItems: 'center',
@@ -607,24 +617,24 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.primaryText,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 11,
-    color: '#666',
+    color: theme.secondaryText,
     fontWeight: '600',
     letterSpacing: 0.5,
   },
   statDivider: {
     width: 1,
     height: 40,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.border,
   },
   tabContainer: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.border,
     paddingHorizontal: 20,
   },
   tab: {
@@ -638,11 +648,11 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    color: '#999',
+    color: theme.tertiaryText,
     fontWeight: '500',
   },
   activeTabText: {
-    color: '#007AFF',
+    color: theme.primary,
     fontWeight: '600',
   },
   tabIndicator: {
@@ -651,7 +661,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 2,
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.primary,
   },
   tabContent: {
     minHeight: 200,
@@ -660,13 +670,13 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: theme.primaryText,
     textAlign: 'center',
     marginBottom: 8,
   },
   emptyStateSubtext: {
     fontSize: 13,
-    color: '#666',
+    color: theme.secondaryText,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -674,21 +684,21 @@ const styles = StyleSheet.create({
     marginVertical: 40,
   },
   primaryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.primary,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 12,
     alignSelf: 'center',
   },
   primaryButtonText: {
-    color: 'white',
+    color: theme.primaryTextOnPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
   leagueCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: theme.backgroundTertiary,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
@@ -700,11 +710,11 @@ const styles = StyleSheet.create({
   leagueCardTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: theme.primaryText,
     marginBottom: 4,
   },
   leagueCardDescription: {
     fontSize: 13,
-    color: '#666',
+    color: theme.secondaryText,
   },
 });

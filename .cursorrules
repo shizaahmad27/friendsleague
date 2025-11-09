@@ -83,6 +83,37 @@ friendsleague/
 - Bruk **Zustand** for global state management
 - Følg **React Navigation** best practices
 
+### 🎨 Styling & Dark Mode Considerations
+- **ALLTID** strukturere styling for fremtidig dark mode-støtte
+- **IKKE** hardkod farger direkte i StyleSheet - bruk variabler eller konstanter
+- **EKSTRAHER farger** til en sentral plassering (f.eks. `constants/colors.ts` eller `theme/colors.ts`)
+- **BRUK semantiske fargenavn** (f.eks. `primaryText`, `background`, `border`) i stedet for konkrete farger (f.eks. `#333`, `white`)
+- **GRUPPER relaterte farger** sammen (text colors, background colors, border colors, etc.)
+- **BEHOLD nåværende styling** - endre bare strukturen for å gjøre det enklere å legge til dark mode senere
+- **EKSEMPEL struktur**:
+  ```typescript
+  // constants/colors.ts
+  export const colors = {
+    light: {
+      background: '#ffffff',
+      text: '#333333',
+      border: '#f0f0f0',
+      // ... etc
+    },
+    // dark: { ... } kan legges til senere
+  };
+  
+  // I komponenter
+  const styles = StyleSheet.create({
+    container: {
+      backgroundColor: colors.light.background,
+      // ...
+    }
+  });
+  ```
+- **ALTERNATIVT**: Bruk en theme provider pattern hvis det passer bedre
+- **IKKE** implementer dark mode nå - bare strukturer koden slik at det blir enkelt å legge til senere
+
 ## 🏗️ Clean Code & Modularization Principles
 
 ### 📏 File Size & Complexity Limits
@@ -217,6 +248,8 @@ services/
 - MongoDB eller andre databaser (bruk PostgreSQL)
 - Redux (bruk Zustand)
 - JavaScript (bruk TypeScript)
+
+- Ikke bruk alerts eller toasts når ting blir successfully gjort, bare naviger direkte tilbake der man skal
 
 ## ✅ ALLTID BRUK
 - TypeScript for type-sikkerhet

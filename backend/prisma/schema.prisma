@@ -19,6 +19,7 @@ model User {
   isOnline            Boolean              @default(false)
   lastSeen            DateTime             @default(now())
   showOnlineStatus    Boolean              @default(true)  // Global setting for online status visibility
+  locationSharingEnabled Boolean            @default(false)  // Whether user has enabled location sharing
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   chatParticipants    ChatParticipant[]

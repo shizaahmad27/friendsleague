@@ -92,6 +92,23 @@ export class UsersController {
     return { hideOnlineStatus };
   }
 
+  @Put('privacy-settings/location-sharing')
+  async updateLocationSharing(
+    @Request() req: any,
+    @Body() body: { locationSharingEnabled: boolean }
+  ) {
+    const result = await this.usersService.updateLocationSharing(req.user.id, body.locationSharingEnabled);
+    
+    // Emit location sharing change to all connected users
+    this.chatGateway.server.emit('privacy:location-sharing-changed', {
+      userId: req.user.id,
+      locationSharingEnabled: body.locationSharingEnabled,
+      timestamp: new Date().toISOString(),
+    });
+    
+    return result;
+  }
+
   @Put('profile')
   async updateProfile(
     @Request() req: any,

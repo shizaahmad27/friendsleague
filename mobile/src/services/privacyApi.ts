@@ -29,4 +29,10 @@ export const privacyApi = {
     const response = await api.get(`/users/privacy-settings/friend/${friendId}`);
     return response.data;
   },
+
+  // Update location sharing setting
+  updateLocationSharing: async (locationSharingEnabled: boolean): Promise<{ success: boolean; message: string }> => {
+    const response = await api.put('/users/privacy-settings/location-sharing', { locationSharingEnabled });
+    return response.data;
+  },
 };
