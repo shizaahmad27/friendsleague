@@ -218,6 +218,8 @@ services/
 - Redux (bruk Zustand)
 - JavaScript (bruk TypeScript)
 
+- Ikke bruk alerts eller toasts når ting blir successfully gjort, bare naviger direkte tilbake der man skal
+
 ## ✅ ALLTID BRUK
 - TypeScript for type-sikkerhet
 - Prisma for database-operasjoner

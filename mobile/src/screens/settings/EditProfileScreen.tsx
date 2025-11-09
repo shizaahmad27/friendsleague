@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ActionSheetIOS,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -65,7 +66,58 @@ export default function EditProfileScreen() {
     }
   };
 
-  const handleSelectAvatar = async () => {
+  const showAvatarOptions = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Take Photo', 'Choose from Gallery'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            handleTakePhoto();
+          } else if (buttonIndex === 2) {
+            handleChooseFromGallery();
+          }
+        }
+      );
+    } else {
+      // Android - use Alert with options
+      Alert.alert(
+        'Select Profile Picture',
+        'Choose an option',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Take Photo', onPress: handleTakePhoto },
+          { text: 'Choose from Gallery', onPress: handleChooseFromGallery },
+        ]
+      );
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      setIsUploadingAvatar(true);
+
+      // Take photo with cropping enabled
+      const mediaFile = await MediaService.takeProfilePicture();
+      if (!mediaFile) {
+        setIsUploadingAvatar(false);
+        return;
+      }
+
+      // Upload to S3
+      const mediaUrl = await MediaService.uploadMedia(mediaFile);
+      setAvatar(mediaUrl);
+    } catch (error: any) {
+      console.error('Avatar upload error:', error);
+      Alert.alert('Error', error.message || 'Failed to upload avatar');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleChooseFromGallery = async () => {
     try {
       setIsUploadingAvatar(true);
       
@@ -177,7 +229,7 @@ export default function EditProfileScreen() {
         <View style={styles.avatarSection}>
           <TouchableOpacity
             style={styles.avatarContainer}
-            onPress={handleSelectAvatar}
+            onPress={showAvatarOptions}
             disabled={isUploadingAvatar}
           >
             {avatar ? (

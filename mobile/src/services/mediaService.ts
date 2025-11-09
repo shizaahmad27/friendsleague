@@ -139,6 +139,47 @@ export class MediaService {
   }
 
   /**
+   * Take a profile picture with camera and cropping enabled
+   * Allows users to take a photo and then crop/zoom it before selection
+   */
+  static async takeProfilePicture(): Promise<MediaFile | null> {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+   
+    if (status !== 'granted') {
+      throw new Error('Permission to access camera is required');
+    }
+    
+    try {
+      const result = await Promise.race([
+        ImagePicker.launchCameraAsync({
+          allowsEditing: true, // Enable cropping
+          aspect: [1, 1], // Square aspect ratio for profile pictures
+          quality: 1,
+        }),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Camera launch timeout after 30 seconds')), 30000)
+        )
+      ]) as ImagePicker.ImagePickerResult;
+      
+      if (result.canceled || !result.assets[0]) {
+        return null;
+      }
+
+      const asset = result.assets[0];
+
+      return {
+        uri: asset.uri,
+        name: asset.fileName || `profile_${Date.now()}.jpg`,
+        type: 'image/jpeg',
+        size: asset.fileSize || 0,
+      };
+    } catch (cameraError) {
+      console.error('MediaService.takeProfilePicture: Camera launch error:', cameraError);
+      throw cameraError;
+    }
+  }
+
+  /**
    * Pick a video from library
    */
   static async pickVideo(): Promise<MediaFile | null> {
