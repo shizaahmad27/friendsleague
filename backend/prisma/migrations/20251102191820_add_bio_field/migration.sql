@@ -1,3 +1,3 @@
 -- AlterTable
-ALTER TABLE "users" ADD COLUMN "bio" TEXT;
+ALTER TABLE IF NOT EXISTS "users" ADD COLUMN "bio" TEXT;
 

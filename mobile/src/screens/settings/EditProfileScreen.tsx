@@ -31,6 +31,8 @@ export default function EditProfileScreen() {
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -41,6 +43,8 @@ export default function EditProfileScreen() {
       setUsername(user.username || '');
       setBio(user.bio || '');
       setAvatar(user.avatar || '');
+      setEmail(user.email || '');
+      setPhoneNumber(user.phoneNumber || '');
     }
   }, [user]);
 
@@ -59,6 +63,8 @@ export default function EditProfileScreen() {
       setUsername(currentUser.username || '');
       setBio(currentUser.bio || '');
       setAvatar(currentUser.avatar || '');
+      setEmail(currentUser.email || '');
+      setPhoneNumber(currentUser.phoneNumber || '');
     } catch (error) {
       console.error('Failed to load user data:', error);
       Alert.alert('Error', 'Failed to load profile data');
@@ -176,6 +182,8 @@ export default function EditProfileScreen() {
         username: username.trim(),
         bio: bio.trim() || undefined,
         avatar: avatar || undefined,
+        email: email.trim() || undefined,
+        phoneNumber: phoneNumber.trim() || undefined,
       });
 
       // Update auth store
@@ -287,6 +295,40 @@ export default function EditProfileScreen() {
             />
             <Text style={styles.helperText}>
               {bio.length}/150 characters
+            </Text>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Email (optional)"
+              placeholderTextColor="#999"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Text style={styles.helperText}>
+              Optional - for account recovery
+            </Text>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Phone Number</Text>
+            <TextInput
+              style={styles.input}
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+              placeholder="Phone number (optional)"
+              placeholderTextColor="#999"
+              keyboardType="phone-pad"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Text style={styles.helperText}>
+              Optional - international format (e.g., +1234567890)
             </Text>
           </View>
         </View>

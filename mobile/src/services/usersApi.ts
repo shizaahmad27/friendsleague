@@ -45,7 +45,7 @@ export const usersApi = {
   },
 
   // Update profile
-  updateProfile: async (data: { username?: string; bio?: string; avatar?: string }): Promise<User> => {
+  updateProfile: async (data: { username?: string; bio?: string; avatar?: string; email?: string; phoneNumber?: string }): Promise<User> => {
     const response = await api.put('/users/profile', data);
     return response.data;
   },
