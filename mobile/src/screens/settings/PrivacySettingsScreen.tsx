@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -106,18 +107,18 @@ export default function PrivacySettingsScreen() {
     }
   };
 
-  const handleGlobalToggle = async () => {
+  const handleGlobalToggle = async (newValue: boolean) => {
     if (!privacySettings) return;
 
     try {
       setUpdatingSettings(prev => new Set([...prev, 'global']));
-      await privacyApi.updateGlobalOnlineStatus(!privacySettings.global.showOnlineStatus);
+      await privacyApi.updateGlobalOnlineStatus(newValue);
       
       setPrivacySettings((prev: PrivacySettingsResponse | null) => prev ? {
         ...prev,
         global: { 
           ...prev.global,
-          showOnlineStatus: !prev.global.showOnlineStatus 
+          showOnlineStatus: newValue 
         }
       } : null);
     } catch (error) {
@@ -131,10 +132,8 @@ export default function PrivacySettingsScreen() {
     }
   };
 
-  const handleLocationSharingToggle = async () => {
+  const handleLocationSharingToggle = async (newValue: boolean) => {
     if (!privacySettings) return;
-
-    const newValue = !privacySettings.global.locationSharingEnabled;
 
     try {
       setUpdatingSettings(prev => new Set([...prev, 'location']));
@@ -181,11 +180,12 @@ export default function PrivacySettingsScreen() {
     }
   };
 
-  const handleFriendToggle = async (friendId: string) => {
+  const handleFriendToggle = async (friendId: string, newValue: boolean) => {
     if (!privacySettings) return;
 
-    const currentSetting = privacySettings.friends.find((f: { friendId: string; hideOnlineStatus: boolean }) => f.friendId === friendId);
-    const newHideStatus = !currentSetting?.hideOnlineStatus;
+    // newValue is true when toggle is ON (meaning hideOnlineStatus should be false)
+    // newValue is false when toggle is OFF (meaning hideOnlineStatus should be true)
+    const newHideStatus = !newValue;
 
     try {
       setUpdatingSettings(prev => new Set([...prev, friendId]));
@@ -237,11 +237,7 @@ export default function PrivacySettingsScreen() {
         {/* Global Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Global Settings</Text>
-          <TouchableOpacity 
-            style={styles.settingItem} 
-            onPress={handleGlobalToggle}
-            disabled={updatingSettings.has('global')}
-          >
+          <View style={styles.settingItem}>
             <Ionicons name="eye-outline" size={24} color="#007AFF" />
             <View style={styles.settingTextContainer}>
               <Text style={styles.settingText}>Show when I'm active</Text>
@@ -252,21 +248,19 @@ export default function PrivacySettingsScreen() {
             {updatingSettings.has('global') ? (
               <ActivityIndicator size="small" color="#007AFF" />
             ) : (
-              <Ionicons 
-                name={privacySettings?.global.showOnlineStatus ? "toggle" : "toggle-outline"} 
-                size={24} 
-                color={privacySettings?.global.showOnlineStatus ? "#007AFF" : "#666"} 
+              <Switch
+                value={privacySettings?.global.showOnlineStatus || false}
+                onValueChange={handleGlobalToggle}
+                trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
+                thumbColor="#ffffff"
+                ios_backgroundColor="#e0e0e0"
               />
             )}
-          </TouchableOpacity>
+          </View>
 
           <View style={styles.settingDivider} />
 
-          <TouchableOpacity 
-            style={styles.settingItem} 
-            onPress={handleLocationSharingToggle}
-            disabled={updatingSettings.has('location')}
-          >
+          <View style={styles.settingItem}>
             <Ionicons name="location-outline" size={24} color="#007AFF" />
             <View style={styles.settingTextContainer}>
               <Text style={styles.settingText}>Share location</Text>
@@ -277,13 +271,15 @@ export default function PrivacySettingsScreen() {
             {updatingSettings.has('location') ? (
               <ActivityIndicator size="small" color="#007AFF" />
             ) : (
-              <Ionicons 
-                name={privacySettings?.global.locationSharingEnabled ? "toggle" : "toggle-outline"} 
-                size={24} 
-                color={privacySettings?.global.locationSharingEnabled ? "#007AFF" : "#666"} 
+              <Switch
+                value={privacySettings?.global.locationSharingEnabled || false}
+                onValueChange={handleLocationSharingToggle}
+                trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
+                thumbColor="#ffffff"
+                ios_backgroundColor="#e0e0e0"
               />
             )}
-          </TouchableOpacity>
+          </View>
         </View>
 
         {/* Per-Friend Settings */}
@@ -307,11 +303,9 @@ export default function PrivacySettingsScreen() {
             const isDisabled = isGlobalOff || updatingSettings.has(friend.id);
             
             return (
-              <TouchableOpacity 
+              <View 
                 key={friend.id}
                 style={[styles.friendItem, isGlobalOff && styles.disabledItem]} 
-                onPress={() => handleFriendToggle(friend.id)}
-                disabled={isDisabled}
               >
                 <View style={styles.friendInfo}>
                   <View style={[styles.friendAvatar, isGlobalOff && styles.disabledAvatar]}>
@@ -324,13 +318,16 @@ export default function PrivacySettingsScreen() {
                 {updatingSettings.has(friend.id) ? (
                   <ActivityIndicator size="small" color="#007AFF" />
                 ) : (
-                  <Ionicons 
-                    name={getFriendSetting(friend.id) ? "toggle-outline" : "toggle"} 
-                    size={24} 
-                    color={isGlobalOff ? "#ccc" : (getFriendSetting(friend.id) ? "#666" : "#007AFF")} 
+                  <Switch
+                    value={!getFriendSetting(friend.id)}
+                    onValueChange={(newValue) => handleFriendToggle(friend.id, newValue)}
+                    disabled={isDisabled}
+                    trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
+                    thumbColor="#ffffff"
+                    ios_backgroundColor="#e0e0e0"
                   />
                 )}
-              </TouchableOpacity>
+              </View>
             );
           })}
           
