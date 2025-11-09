@@ -46,6 +46,7 @@ import ActiveFriendsScreen from '../screens/social/ActiveFriendsScreen';
 import ProfileScreen from '../screens/settings/ProfileScreen';
 import PrivacySettingsScreen from '../screens/settings/PrivacySettingsScreen';
 import EditProfileScreen from '../screens/settings/EditProfileScreen';
+import HelpSupportScreen from '../screens/settings/HelpSupportScreen';
 
 // Screens - Invitations
 import InviteCodeScreen from '../screens/invitations/InviteCodeScreen';
@@ -173,6 +174,7 @@ export default function AppNavigator() {
             <Stack.Screen name="LeagueAssignPoints" component={LeagueAssignPointsScreen} />
             <Stack.Screen name="PrivacySettings" component={PrivacySettingsScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
             <Stack.Screen name="StartDirectChat" component={StartDirectChatScreen} />
           </>
         ) : (

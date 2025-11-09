@@ -20,6 +20,7 @@ import { RootStackParamList } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import { usersApi } from '../../services/usersApi';
 import { MediaService } from '../../services/mediaService';
+import { theme } from '../../constants/colors';
 
 type EditProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'EditProfile'>;
 
@@ -208,7 +209,7 @@ export default function EditProfileScreen() {
           style={styles.headerButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={theme.primaryText} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>
         <TouchableOpacity 
@@ -245,7 +246,7 @@ export default function EditProfileScreen() {
               </View>
             ) : (
               <View style={styles.cameraButton}>
-                <Ionicons name="camera" size={16} color="#333" />
+                <Ionicons name="camera" size={16} color={theme.primaryText} />
               </View>
             )}
           </TouchableOpacity>

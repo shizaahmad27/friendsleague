@@ -75,6 +75,7 @@ export type RootStackParamList = {
   LeagueAssignPoints: { leagueId: string };
   PrivacySettings: undefined;
   EditProfile: undefined;
+  HelpSupport: undefined;
   StartDirectChat: undefined;
   // Events
   EventCreate: { leagueId?: string } | undefined;
