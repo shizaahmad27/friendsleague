@@ -39,23 +39,18 @@ export class MediaService {
    * Pick an image from camera or photo library
    */
   static async pickImage(): Promise<MediaFile | null> {
-    console.log('MediaService.pickImage: Starting photo library permission request...');
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    console.log('MediaService.pickImage: Photo library permission status:', status);
-    
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();    
     if (status !== 'granted') {
-      console.error('MediaService.pickImage: Photo library permission denied');
+     
       throw new Error('Permission to access media library is required');
     }
 
-    console.log('MediaService.pickImage: Launching image library...');
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: false, // Do not force cropping; let users send full photo
       quality: 1,
     });
-    console.log('MediaService.pickImage: Image library result:', result);
-
+   
     
     if (result.canceled || !result.assets[0]) {
       return null;
@@ -66,6 +61,37 @@ export class MediaService {
     return {
       uri: asset.uri,
       name: asset.fileName || `image_${Date.now()}.jpg`,
+      type: 'image/jpeg',
+      size: asset.fileSize || 0,
+    };
+  }
+
+  /**
+   * Pick a profile picture with cropping enabled
+   * Allows users to crop and zoom the image before selection
+   */
+  static async pickProfilePicture(): Promise<MediaFile | null> {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (status !== 'granted') {
+      throw new Error('Permission to access media library is required');
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true, // Enable cropping
+      aspect: [1, 1], // Square aspect ratio for profile pictures
+      quality: 1,
+    });
+    
+    if (result.canceled || !result.assets[0]) {
+      return null;
+    }
+
+    const asset = result.assets[0];
+    
+    return {
+      uri: asset.uri,
+      name: asset.fileName || `profile_${Date.now()}.jpg`,
       type: 'image/jpeg',
       size: asset.fileSize || 0,
     };

@@ -77,8 +77,8 @@ export default function EditProfileScreen() {
         return;
       }
 
-      // Pick image
-      const mediaFile = await MediaService.pickImage();
+      // Pick image with cropping enabled
+      const mediaFile = await MediaService.pickProfilePicture();
       if (!mediaFile) {
         setIsUploadingAvatar(false);
         return;
