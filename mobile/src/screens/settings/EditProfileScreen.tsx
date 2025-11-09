@@ -237,7 +237,7 @@ export default function EditProfileScreen() {
               <Image source={{ uri: avatar }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={40} color="#999" />
+                <Ionicons name="person" size={40} color={theme.tertiaryText} />
               </View>
             )}
             {isUploadingAvatar ? (
@@ -262,7 +262,7 @@ export default function EditProfileScreen() {
               value={username}
               onChangeText={setUsername}
               placeholder="Username"
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.placeholderText}
               maxLength={20}
               autoCapitalize="none"
               autoCorrect={false}
@@ -279,7 +279,7 @@ export default function EditProfileScreen() {
               value={bio}
               onChangeText={setBio}
               placeholder="Tell people about yourself"
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.placeholderText}
               maxLength={150}
               multiline
               numberOfLines={4}
@@ -298,13 +298,13 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.background,
   },
   header: {
     flexDirection: 'row',
@@ -313,9 +313,9 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    backgroundColor: 'white',
+    backgroundColor: theme.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.border,
   },
   headerButton: {
     width: 60,
@@ -325,11 +325,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.primaryText,
   },
   saveButtonText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: theme.primary,
     fontWeight: '600',
   },
   scrollView: {
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 32,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.border,
   },
   avatarContainer: {
     position: 'relative',
@@ -350,17 +350,17 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 2,
-    borderColor: '#f0f0f0',
+    borderColor: theme.border,
   },
   avatarPlaceholder: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: theme.borderSecondary,
   },
   uploadingOverlay: {
     position: 'absolute',
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderRadius: 50,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -380,12 +380,12 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'white',
+    backgroundColor: theme.background,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#f0f0f0',
-    shadowColor: '#000',
+    borderColor: theme.border,
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   },
   avatarHint: {
     fontSize: 13,
-    color: '#666',
+    color: theme.secondaryText,
   },
   formSection: {
     padding: 20,
@@ -404,18 +404,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: theme.primaryText,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.backgroundSecondary,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#333',
+    color: theme.primaryText,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: theme.borderSecondary,
   },
   bioInput: {
     height: 100,
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
   },
   helperText: {
     fontSize: 12,
-    color: '#999',
+    color: theme.tertiaryText,
     marginTop: 6,
     textAlign: 'right',
   },
