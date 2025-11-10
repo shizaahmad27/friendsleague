@@ -250,6 +250,7 @@ export class UsersService {
         isOnline: true,
         lastSeen: true,
         showOnlineStatus: true,
+        locationSharingEnabled: true,
         createdAt: true,
         updatedAt: true,
         // Exclude password field
@@ -282,6 +283,7 @@ export class UsersService {
             isOnline: true,
             lastSeen: true,
             showOnlineStatus: true,
+            locationSharingEnabled: true,
             createdAt: true,
             updatedAt: true,
             // Exclude password field
