@@ -13,12 +13,31 @@ export class UsersController {
   ) {}
 
   @Get('search')
-  async searchUsers(@Query('username') username: string) {
+  async searchUsers(@Query('username') username: string, @Request() req: any) {
     if (!username || username.trim().length < 2) {
       return [];
     }
     
-    return this.usersService.searchUsers(username.trim());
+    const results = await this.usersService.searchUsers(username.trim());
+    
+    // Add mutual friends count to each result
+    const resultsWithMutualFriends = await Promise.all(
+      results.map(async (user) => {
+        const mutualFriendsCount = await this.usersService.getMutualFriendsCount(req.user.id, user.id);
+        return {
+          ...user,
+          mutualFriendsCount,
+        };
+      })
+    );
+    
+    return resultsWithMutualFriends;
+  }
+
+  @Get('suggested')
+  async getSuggestedUsers(@Request() req: any, @Query('limit') limit?: string) {
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.usersService.getSuggestedUsers(req.user.id, limitNum);
   }
 
   @Get('friends')

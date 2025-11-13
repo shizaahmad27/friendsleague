@@ -8,7 +8,7 @@ import {
 import { RefreshControl, FlatList } from 'react-native';
 import { leaguesApi, League } from '../../services/leaguesApi';
 import { useNavigation } from '@react-navigation/native';
-import HamburgerMenu from '../../components/layout/HamburgerMenu';
+import ScreenHeader from '../../components/layout/ScreenHeader';
 
 export default function LeaguesScreen() {
   const navigation = useNavigation();
@@ -40,18 +40,9 @@ export default function LeaguesScreen() {
     return leagues;
   }, [leagues, filter]);
 
-  const handleLogout = () => {
-    // This will be handled by the parent component
-    console.log('Logout from Leagues screen');
-  };
-
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Leagues</Text>
-        <Text style={styles.subtitle}>Manage your competitive leagues</Text>
-        <HamburgerMenu onLogout={handleLogout} />
-      </View>
+      <ScreenHeader title="Leagues" />
 
       <View style={styles.content}>
         {filter === 'PUBLIC' && (
@@ -114,34 +105,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 4,
   },
   content: {
     flex: 1,

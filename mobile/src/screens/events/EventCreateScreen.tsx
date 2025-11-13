@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Switch, Alert, Act
 import { eventsApi } from '../../services/eventsApi';
 import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
 import { leaguesApi } from '../../services/leaguesApi';
+import ScreenHeader from '../../components/layout/ScreenHeader';
 
 type CreateRouteProp = RouteProp<{ EventCreate: { leagueId?: string } }, 'EventCreate'>;
 
@@ -68,7 +69,7 @@ export default function EventCreateScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}><Text style={styles.title}>Create Event</Text></View>
+      <ScreenHeader title="Create Event" />
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         <TextInput 
           style={styles.input} 
@@ -146,8 +147,6 @@ export default function EventCreateScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
-  header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 20, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#eee' },
-  title: { fontSize: 22, fontWeight: '700', color: '#333' },
   input: { backgroundColor: 'white', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, marginBottom: 8, color: '#333', fontSize: 16 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8 },
   label: { color: '#333' },

@@ -19,7 +19,10 @@ import { RootStackParamList } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import { usersApi } from '../../services/usersApi';
 import { leaguesApi, League } from '../../services/leaguesApi';
+import { invitationApi } from '../../services/invitationApi';
 import { theme } from '../../constants/colors';
+import ScreenHeader from '../../components/layout/ScreenHeader';
+import * as Clipboard from 'expo-clipboard';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -38,6 +41,8 @@ export default function ProfileScreen() {
   const [isLoadingPoints, setIsLoadingPoints] = useState(false);
   const [leagues, setLeagues] = useState<League[]>([]);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string>('');
+  const [isLoadingInviteCode, setIsLoadingInviteCode] = useState(false);
 
   // Load friends count
   const loadFriendsCount = async () => {
@@ -89,11 +94,28 @@ export default function ProfileScreen() {
     }
   };
 
+  // Load invite code
+  const loadInviteCode = async () => {
+    if (!user) return;
+    
+    setIsLoadingInviteCode(true);
+    try {
+      const result = await invitationApi.getMyInviteCode();
+      setInviteCode(result.code);
+    } catch (error) {
+      console.error('Failed to load invite code:', error);
+      setInviteCode('');
+    } finally {
+      setIsLoadingInviteCode(false);
+    }
+  };
+
   // Load data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       loadFriendsCount();
       loadLeaguesData();
+      loadInviteCode();
     }, [user])
   );
 
@@ -150,6 +172,19 @@ export default function ProfileScreen() {
 
   const handleViewFriends = () => {
     navigation.navigate('ActiveFriends');
+  };
+
+  const handleCopyInviteCode = async () => {
+    if (!inviteCode || isLoadingInviteCode) return;
+    
+    try {
+      await Clipboard.setStringAsync(inviteCode);
+      // Navigate to invite screen after copying
+      navigation.navigate('InviteCode');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to copy invite code');
+      console.error('Copy error:', error);
+    }
   };
 
   const renderTabContent = () => {
@@ -215,21 +250,11 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.headerButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color={theme.primaryText} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity 
-          style={styles.headerButton}
-          onPress={() => setMenuVisible(true)}
-        >
-          <Ionicons name="ellipsis-vertical" size={24} color={theme.primaryText} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader 
+        title="Profile" 
+        showMenu={true}
+        onMenuPress={() => setMenuVisible(true)}
+      />
 
       {/* Menu Modal */}
       <Modal
@@ -306,8 +331,28 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           
-          <Text style={styles.username}>{user?.username || 'User'}</Text>
-          <Text style={styles.userHandle}>@{user?.username?.toLowerCase().replace(/\s+/g, '_') || 'user'}</Text>
+          <Text style={styles.username}>
+            {user?.username || 'User'} <Text style={styles.userHandle}>(@{user?.username?.toLowerCase().replace(/\s+/g, '_') || 'user'})</Text>
+          </Text>
+          
+          {/* Invite Code */}
+          {user && (
+            <TouchableOpacity 
+              style={styles.inviteCodeContainer}
+              onPress={handleCopyInviteCode}
+              activeOpacity={0.7}
+              disabled={isLoadingInviteCode || !inviteCode}
+            >
+              <Ionicons name="ticket-outline" size={14} color={theme.secondaryText} />
+              <Text style={styles.inviteCodeLabel}>Invite Code:</Text>
+              <Text style={styles.inviteCode}>
+                {isLoadingInviteCode ? 'Loading...' : inviteCode || 'N/A'}
+              </Text>
+              {!isLoadingInviteCode && inviteCode && (
+                <Ionicons name="copy-outline" size={14} color={theme.secondaryText} />
+              )}
+            </TouchableOpacity>
+          )}
           
           {/* Contact Info */}
           {(user?.email || user?.phoneNumber) && (
@@ -427,28 +472,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 60,
-    paddingBottom: 6,
-    paddingHorizontal: 20,
-    backgroundColor: theme.background,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.primaryText,
-  },
   menuOverlay: {
     flex: 1,
     backgroundColor: theme.overlay,
@@ -543,12 +566,35 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: theme.primaryText,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   userHandle: {
-    fontSize: 14,
+    fontSize: 16,
     color: theme.secondaryText,
+    fontWeight: 'normal',
+  },
+  inviteCodeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: theme.backgroundTertiary,
+    borderRadius: 16,
+    alignSelf: 'center',
+    gap: 6,
+  },
+  inviteCodeLabel: {
+    fontSize: 12,
+    color: theme.secondaryText,
+    fontWeight: '500',
+  },
+  inviteCode: {
+    fontSize: 12,
+    color: theme.primary,
+    fontWeight: '600',
+    letterSpacing: 1,
   },
   contactInfo: {
     flexDirection: 'row',

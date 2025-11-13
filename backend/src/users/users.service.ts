@@ -250,7 +250,6 @@ export class UsersService {
         isOnline: true,
         lastSeen: true,
         showOnlineStatus: true,
-        locationSharingEnabled: true,
         createdAt: true,
         updatedAt: true,
         // Exclude password field
@@ -261,7 +260,7 @@ export class UsersService {
       },
     });
 
-    return users;
+    return users as UserWithoutPassword[];
   }
 
   async getUserFriends(userId: string): Promise<UserWithoutPassword[]> {
@@ -283,7 +282,6 @@ export class UsersService {
             isOnline: true,
             lastSeen: true,
             showOnlineStatus: true,
-            locationSharingEnabled: true,
             createdAt: true,
             updatedAt: true,
             // Exclude password field
@@ -295,8 +293,94 @@ export class UsersService {
       },
     });
 
-    return friendships.map(friendship => friendship.friend);
+    return friendships.map(friendship => friendship.friend as UserWithoutPassword);
   }
+
+  async getMutualFriendsCount(userId1: string, userId2: string): Promise<number> {
+    // Get friends of user1
+    const user1Friendships = await this.prisma.friendship.findMany({
+      where: {
+        userId: userId1,
+        status: 'ACCEPTED',
+      },
+      select: {
+        friendId: true,
+      },
+    });
+    const user1FriendIds = user1Friendships.map(f => f.friendId);
+
+    // Get friends of user2
+    const user2Friendships = await this.prisma.friendship.findMany({
+      where: {
+        userId: userId2,
+        status: 'ACCEPTED',
+      },
+      select: {
+        friendId: true,
+      },
+    });
+    const user2FriendIds = user2Friendships.map(f => f.friendId);
+
+    // Find mutual friends
+    const mutualFriends = user1FriendIds.filter(id => user2FriendIds.includes(id));
+    return mutualFriends.length;
+  }
+
+  async getSuggestedUsers(userId: string, limit: number = 10): Promise<Array<UserWithoutPassword & { mutualFriendsCount: number }>> {
+    // Get current user's friends
+    const userFriendships = await this.prisma.friendship.findMany({
+      where: {
+        userId,
+        status: 'ACCEPTED',
+      },
+      select: {
+        friendId: true,
+      },
+    });
+    const userFriendIds = userFriendships.map(f => f.friendId);
+    userFriendIds.push(userId); // Exclude self
+
+    // Get all users except current user and their friends
+    const allUsers = await this.prisma.user.findMany({
+      where: {
+        id: {
+          notIn: userFriendIds,
+        },
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        phoneNumber: true,
+        inviteCode: true,
+        avatar: true,
+        bio: true,
+        isOnline: true,
+        lastSeen: true,
+        showOnlineStatus: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      take: limit * 2, // Get more to filter and sort
+    });
+
+    // Calculate mutual friends for each user
+    const usersWithMutualFriends = await Promise.all(
+      allUsers.map(async (user) => {
+        const mutualFriendsCount = await this.getMutualFriendsCount(userId, user.id);
+        return {
+          ...user,
+          mutualFriendsCount,
+        };
+      })
+    );
+
+    // Sort by mutual friends count (descending) and take limit
+    return usersWithMutualFriends
+      .sort((a, b) => b.mutualFriendsCount - a.mutualFriendsCount)
+      .slice(0, limit);
+  }
+
   private generateInviteCode(userId: string): string {
     const secret = process.env.INVITE_CODE_SECRET || process.env.JWT_SECRET || 'fallback-secret-change-me';
     const hmac = crypto.createHmac('sha256', secret).update(userId).digest('hex');
@@ -310,7 +394,7 @@ export class UsersService {
   }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { showOnlineStatus: true, locationSharingEnabled: true },
+      select: { showOnlineStatus: true },
     });
 
     if (!user) {
@@ -322,10 +406,16 @@ export class UsersService {
       select: { targetUserId: true, hideOnlineStatus: true },
     });
 
+    // Get locationSharingEnabled from user (using type assertion since Prisma client may not be regenerated)
+    const fullUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    const locationSharingEnabled = (fullUser as any)?.locationSharingEnabled || false;
+
     return {
       global: { 
         showOnlineStatus: user.showOnlineStatus,
-        locationSharingEnabled: user.locationSharingEnabled || false,
+        locationSharingEnabled,
       },
       friends: friendSettings.map(setting => ({
         friendId: setting.targetUserId,
@@ -412,7 +502,7 @@ export class UsersService {
   async updateLocationSharing(userId: string, locationSharingEnabled: boolean): Promise<{ success: boolean; message: string }> {
     await this.prisma.user.update({
       where: { id: userId },
-      data: { locationSharingEnabled },
+      data: { locationSharingEnabled } as any,
     });
 
     return {

@@ -50,6 +50,9 @@ import HelpSupportScreen from '../screens/settings/HelpSupportScreen';
 
 // Screens - Invitations
 import InviteCodeScreen from '../screens/invitations/InviteCodeScreen';
+import QRCodeScreen from '../screens/invitations/QRCodeScreen';
+import ContactsScreen from '../screens/invitations/ContactsScreen';
+import SearchUsersScreen from '../screens/invitations/SearchUsersScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -83,15 +86,6 @@ function MainTabs() {
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Friends"
-        component={FriendsScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" size={size} color={color} />
           ),
         }}
       />
@@ -160,6 +154,9 @@ export default function AppNavigator() {
             <Stack.Screen name="EventRules" component={EventRulesScreen} />
             <Stack.Screen name="EventLeaderboard" component={EventLeaderboardScreen} />
             <Stack.Screen name="InviteCode" component={InviteCodeScreen} />
+            <Stack.Screen name="QRCode" component={QRCodeScreen} />
+            <Stack.Screen name="Contacts" component={ContactsScreen} />
+            <Stack.Screen name="SearchUsers" component={SearchUsersScreen} />
             <Stack.Screen name="Messages" component={ChatListScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />
             <Stack.Screen name="CreateGroupChat" component={CreateGroupChatScreen} />
