@@ -95,8 +95,9 @@ export default function FriendsScreen() {
       setSearchQuery('');
       setSearchResults([]);
       setShowSearch(false);
-      // Refresh invitations after sending
+      // Refresh invitations and suggestions after sending
       loadInvitations();
+      loadSuggestions();
     } catch (error) {
       Alert.alert('Error', 'Failed to send invitation');
       console.error('Invitation error:', error);
@@ -252,13 +253,12 @@ export default function FriendsScreen() {
     navigation.navigate('SearchUsers');
   };
 
-  // Load suggestions (placeholder for now)
+  // Load suggestions
   const loadSuggestions = async () => {
     setIsLoadingSuggestions(true);
     try {
-      // TODO: Implement suggestions API when available
-      // For now, return empty array
-      setSuggestions([]);
+      const data = await usersApi.getSuggestedUsers(10);
+      setSuggestions(data);
     } catch (error) {
       console.error('Load suggestions error:', error);
     } finally {
@@ -473,18 +473,28 @@ export default function FriendsScreen() {
                   </View>
                   <View style={styles.userInfo}>
                     <Text style={styles.username}>{suggestion.username}</Text>
-                    <View style={styles.statusContainer}>
-                      <View style={[styles.onlineIndicator, suggestion.isOnline && styles.onlineIndicatorPulsing]} />
-                      <Text style={styles.userStatus}>
-                        {suggestion.isOnline ? 'Online' : 'Offline'}
+                    {suggestion.mutualFriendsCount !== undefined && suggestion.mutualFriendsCount > 0 ? (
+                      <Text style={styles.mutualFriendsText}>
+                        {suggestion.mutualFriendsCount === 1 
+                          ? '1 mutual friend' 
+                          : `${suggestion.mutualFriendsCount} mutual friends`}
                       </Text>
-                    </View>
+                    ) : suggestion.mutualFriendsCount === 0 ? (
+                      <Text style={styles.mutualFriendsText}>You might know</Text>
+                    ) : (
+                      <View style={styles.statusContainer}>
+                        <View style={[styles.onlineIndicator, suggestion.isOnline && styles.onlineIndicatorPulsing]} />
+                        <Text style={styles.userStatus}>
+                          {suggestion.isOnline ? 'Online' : 'Offline'}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                   <TouchableOpacity
                     style={styles.inviteButton}
                     onPress={() => handleSendInvitation(suggestion.id, suggestion.username)}
                   >
-                    <Text style={styles.inviteButtonText}>Invite</Text>
+                    <Text style={styles.inviteButtonText}>+ Add</Text>
                   </TouchableOpacity>
                 </View>
               ))}
@@ -625,12 +635,16 @@ const styles = StyleSheet.create({
     color: theme.primaryText,
     marginBottom: 4,
   },
+  mutualFriendsText: {
+    fontSize: 13,
+    color: theme.secondaryText,
+  },
   userStatus: {
     fontSize: 13,
     color: theme.secondaryText,
   },
   inviteButton: {
-    backgroundColor: theme.success,
+    backgroundColor: theme.warning,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
