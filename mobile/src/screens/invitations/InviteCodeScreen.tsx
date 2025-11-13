@@ -121,7 +121,7 @@ export default function InviteCodeScreen() {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.codeInput}
-              placeholder="Enter invite code (e.g., A1B2C3D4)"
+              placeholder="Enter invite code"
               placeholderTextColor={theme.placeholderText}
               value={inviteCode}
               onChangeText={setInviteCode}

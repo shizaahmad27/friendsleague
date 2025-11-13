@@ -180,7 +180,7 @@ export default function EditProfileScreen() {
     try {
       const updatedUser = await usersApi.updateProfile({
         username: username.trim(),
-        bio: bio.trim() || undefined,
+        bio: bio.trim(), // Always send bio (even if empty) to allow clearing
         avatar: avatar || undefined,
         email: email.trim() || undefined,
         phoneNumber: phoneNumber.trim() || undefined,
@@ -281,7 +281,19 @@ export default function EditProfileScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Bio</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Bio</Text>
+              {bio.length > 0 && (
+                <TouchableOpacity
+                  style={styles.clearButton}
+                  onPress={() => setBio('')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close-circle" size={16} color={theme.secondaryText} />
+                  <Text style={styles.clearButtonText}>Clear</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             <TextInput
               style={[styles.input, styles.bioInput]}
               value={bio}
@@ -448,6 +460,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: theme.primaryText,
     marginBottom: 8,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  clearButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  clearButtonText: {
+    fontSize: 13,
+    color: theme.secondaryText,
+    fontWeight: '500',
   },
   input: {
     backgroundColor: theme.backgroundSecondary,

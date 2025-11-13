@@ -88,15 +88,6 @@ function MainTabs() {
         }}
       />
       <Tab.Screen
-        name="Friends"
-        component={FriendsScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
         name="Leagues"
         component={LeaguesScreen}
         options={{
