@@ -19,8 +19,10 @@ import { RootStackParamList } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import { usersApi } from '../../services/usersApi';
 import { leaguesApi, League } from '../../services/leaguesApi';
+import { invitationApi } from '../../services/invitationApi';
 import { theme } from '../../constants/colors';
 import ScreenHeader from '../../components/layout/ScreenHeader';
+import * as Clipboard from 'expo-clipboard';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -39,6 +41,8 @@ export default function ProfileScreen() {
   const [isLoadingPoints, setIsLoadingPoints] = useState(false);
   const [leagues, setLeagues] = useState<League[]>([]);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string>('');
+  const [isLoadingInviteCode, setIsLoadingInviteCode] = useState(false);
 
   // Load friends count
   const loadFriendsCount = async () => {
@@ -90,11 +94,28 @@ export default function ProfileScreen() {
     }
   };
 
+  // Load invite code
+  const loadInviteCode = async () => {
+    if (!user) return;
+    
+    setIsLoadingInviteCode(true);
+    try {
+      const result = await invitationApi.getMyInviteCode();
+      setInviteCode(result.code);
+    } catch (error) {
+      console.error('Failed to load invite code:', error);
+      setInviteCode('');
+    } finally {
+      setIsLoadingInviteCode(false);
+    }
+  };
+
   // Load data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       loadFriendsCount();
       loadLeaguesData();
+      loadInviteCode();
     }, [user])
   );
 
@@ -151,6 +172,18 @@ export default function ProfileScreen() {
 
   const handleViewFriends = () => {
     navigation.navigate('ActiveFriends');
+  };
+
+  const handleCopyInviteCode = async () => {
+    if (!inviteCode || isLoadingInviteCode) return;
+    
+    try {
+      await Clipboard.setStringAsync(inviteCode);
+      // Success - no alert per cursor rules
+    } catch (error) {
+      Alert.alert('Error', 'Failed to copy invite code');
+      console.error('Copy error:', error);
+    }
   };
 
   const renderTabContent = () => {
@@ -299,6 +332,25 @@ export default function ProfileScreen() {
           
           <Text style={styles.username}>{user?.username || 'User'}</Text>
           <Text style={styles.userHandle}>@{user?.username?.toLowerCase().replace(/\s+/g, '_') || 'user'}</Text>
+          
+          {/* Invite Code */}
+          {user && (
+            <TouchableOpacity 
+              style={styles.inviteCodeContainer}
+              onPress={handleCopyInviteCode}
+              activeOpacity={0.7}
+              disabled={isLoadingInviteCode || !inviteCode}
+            >
+              <Ionicons name="ticket-outline" size={14} color={theme.secondaryText} />
+              <Text style={styles.inviteCodeLabel}>Invite Code:</Text>
+              <Text style={styles.inviteCode}>
+                {isLoadingInviteCode ? 'Loading...' : inviteCode || 'N/A'}
+              </Text>
+              {!isLoadingInviteCode && inviteCode && (
+                <Ionicons name="copy-outline" size={14} color={theme.secondaryText} />
+              )}
+            </TouchableOpacity>
+          )}
           
           {/* Contact Info */}
           {(user?.email || user?.phoneNumber) && (
@@ -517,7 +569,30 @@ const styles = StyleSheet.create({
   userHandle: {
     fontSize: 14,
     color: theme.secondaryText,
+    marginBottom: 8,
+  },
+  inviteCodeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: theme.backgroundTertiary,
+    borderRadius: 16,
+    alignSelf: 'center',
+    gap: 6,
+  },
+  inviteCodeLabel: {
+    fontSize: 12,
+    color: theme.secondaryText,
+    fontWeight: '500',
+  },
+  inviteCode: {
+    fontSize: 12,
+    color: theme.primary,
+    fontWeight: '600',
+    letterSpacing: 1,
   },
   contactInfo: {
     flexDirection: 'row',
