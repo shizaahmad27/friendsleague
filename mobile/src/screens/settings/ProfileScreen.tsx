@@ -20,6 +20,7 @@ import { useAuthStore } from '../../store/authStore';
 import { usersApi } from '../../services/usersApi';
 import { leaguesApi, League } from '../../services/leaguesApi';
 import { theme } from '../../constants/colors';
+import ScreenHeader from '../../components/layout/ScreenHeader';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -215,21 +216,11 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.headerButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color={theme.primaryText} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity 
-          style={styles.headerButton}
-          onPress={() => setMenuVisible(true)}
-        >
-          <Ionicons name="ellipsis-vertical" size={24} color={theme.primaryText} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader 
+        title="Profile" 
+        showMenu={true}
+        onMenuPress={() => setMenuVisible(true)}
+      />
 
       {/* Menu Modal */}
       <Modal
@@ -426,28 +417,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 60,
-    paddingBottom: 6,
-    paddingHorizontal: 20,
-    backgroundColor: theme.background,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.primaryText,
   },
   menuOverlay: {
     flex: 1,

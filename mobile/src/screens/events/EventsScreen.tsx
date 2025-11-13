@@ -8,8 +8,8 @@ import {
 import { RefreshControl, FlatList } from 'react-native';
 import { eventsApi, EventItem } from '../../services/eventsApi';
 import { useNavigation } from '@react-navigation/native';
-import HamburgerMenu from '../../components/layout/HamburgerMenu';
 import { leaguesApi } from '../../services/leaguesApi';
+import ScreenHeader from '../../components/layout/ScreenHeader';
 
 export default function EventsScreen() {
   const navigation = useNavigation();
@@ -50,17 +50,9 @@ export default function EventsScreen() {
     return events.filter(e => e.leagueId === selectedLeagueId);
   }, [events, selectedLeagueId]);
 
-  const handleLogout = () => {
-    console.log('Logout from Events screen');
-  };
-
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Events</Text>
-        <Text style={styles.subtitle}>Organize and join events</Text>
-        <HamburgerMenu onLogout={handleLogout} />
-      </View>
+      <ScreenHeader title="Events" />
 
       <View style={styles.content}>
         <TouchableOpacity style={styles.createFloating} onPress={() => (navigation as any).navigate('EventCreate')}>
@@ -120,34 +112,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 4,
   },
   content: {
     flex: 1,

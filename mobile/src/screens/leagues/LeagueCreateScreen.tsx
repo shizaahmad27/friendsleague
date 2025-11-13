@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Switch, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { leaguesApi } from '../../services/leaguesApi';
+import ScreenHeader from '../../components/layout/ScreenHeader';
 
 export default function LeagueCreateScreen() {
   const navigation = useNavigation<any>();
@@ -32,10 +33,7 @@ export default function LeagueCreateScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Create League</Text>
-        <Text style={styles.subtitle}>Set up a new competitive league</Text>
-      </View>
+      <ScreenHeader title="Create League" />
 
       <View style={styles.form}>
         <Text style={styles.label}>Name</Text>
@@ -86,16 +84,6 @@ export default function LeagueCreateScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
-  header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#333', textAlign: 'center' },
-  subtitle: { fontSize: 16, color: '#666', textAlign: 'center', marginTop: 4 },
   form: { padding: 20 },
   label: { fontSize: 14, color: '#333', marginBottom: 6, marginTop: 12 },
   input: {

@@ -12,11 +12,11 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import HamburgerMenu from '../../components/layout/HamburgerMenu';
 import { useAuthStore } from '../../store/authStore';
 import { invitationApi } from '../../services/invitationApi';
 import { eventsApi } from '../../services/eventsApi';
 import * as Clipboard from 'expo-clipboard';
+import ScreenHeader from '../../components/layout/ScreenHeader';
 
 type InviteCodeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'InviteCode'>;
 
@@ -28,10 +28,6 @@ export default function InviteCodeScreen() {
   const [eventCode, setEventCode] = useState('');
   const [myInviteCode, setMyInviteCode] = useState<string>('');
   const [isLoadingCode, setIsLoadingCode] = useState(false);
-
-  const handleLogout = () => {
-    console.log('Logout from InviteCode screen');
-  };
 
   // Load user's invite code on screen focus (no local fallback)
   useFocusEffect(
@@ -131,11 +127,7 @@ export default function InviteCodeScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Use Invite Code</Text>
-        <Text style={styles.subtitle}>Enter a friend's invite code to connect</Text>
-        <HamburgerMenu onLogout={handleLogout} />
-      </View>
+      <ScreenHeader title="Use Invite Code" />
 
       <View style={styles.content}>
         <View style={styles.card}>
@@ -253,34 +245,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 4,
   },
   content: {
     flex: 1,

@@ -14,10 +14,11 @@ import * as Clipboard from 'expo-clipboard';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import HamburgerMenu from '../../components/layout/HamburgerMenu';
 import { invitationApi, Invitation } from '../../services/invitationApi';
 import { usersApi, User } from '../../services/usersApi';
 import { useAuthStore } from '../../store/authStore';
+import { theme } from '../../constants/colors';
+import ScreenHeader from '../../components/layout/ScreenHeader';
 
 type FriendsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Friends'>;
 
@@ -40,11 +41,6 @@ export default function FriendsScreen() {
   const [friends, setFriends] = useState<User[]>([]);
   const [isLoadingFriends, setIsLoadingFriends] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
-  const handleLogout = () => {
-    // This will be handled by the parent component
-    console.log('Logout from Friends screen');
-  };
 
   // Search users by username
   const handleSearch = async () => {
@@ -242,11 +238,7 @@ export default function FriendsScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>Friends & Invitations</Text>
-        <Text style={styles.subtitle}>Discover and manage your connections</Text>
-        <HamburgerMenu onLogout={handleLogout} />
-      </View>
+      <ScreenHeader title="Friends & Invitations" />
 
       <View style={styles.content}>
         {/* Search Section */}
@@ -461,34 +453,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 4,
   },
   content: {
     flex: 1,
