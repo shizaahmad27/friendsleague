@@ -16,6 +16,7 @@ import StoriesSection from '../../components/ui/StoriesSection';
 import { leaguesApi, League } from '../../services/leaguesApi';
 import { eventsApi, EventItem } from '../../services/eventsApi';
 import { Story } from '../../types';
+import { theme } from '../../constants/colors';
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
@@ -131,9 +132,13 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <View style={styles.logoContainer}>
-            <Ionicons name="flash" size={24} color="#007AFF" />
-          </View>
+          <TouchableOpacity 
+            style={[styles.headerIcon, { marginRight: 10 }]} 
+            onPress={inviteFriends}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="person-add-outline" size={24} color={theme.primaryText} />
+          </TouchableOpacity>
           <Text style={styles.appTitle}>FriendsLeague</Text>
         </View>
         <View style={styles.headerRight}>
@@ -273,15 +278,6 @@ const styles = StyleSheet.create({
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  logoContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
   },
   appTitle: {
     fontSize: 20,
