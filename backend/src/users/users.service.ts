@@ -250,7 +250,6 @@ export class UsersService {
         isOnline: true,
         lastSeen: true,
         showOnlineStatus: true,
-        locationSharingEnabled: true,
         createdAt: true,
         updatedAt: true,
         // Exclude password field
@@ -261,7 +260,7 @@ export class UsersService {
       },
     });
 
-    return users;
+    return users as UserWithoutPassword[];
   }
 
   async getUserFriends(userId: string): Promise<UserWithoutPassword[]> {
@@ -283,7 +282,6 @@ export class UsersService {
             isOnline: true,
             lastSeen: true,
             showOnlineStatus: true,
-            locationSharingEnabled: true,
             createdAt: true,
             updatedAt: true,
             // Exclude password field
@@ -295,7 +293,7 @@ export class UsersService {
       },
     });
 
-    return friendships.map(friendship => friendship.friend);
+    return friendships.map(friendship => friendship.friend as UserWithoutPassword);
   }
 
   async getMutualFriendsCount(userId1: string, userId2: string): Promise<number> {
@@ -360,7 +358,6 @@ export class UsersService {
         isOnline: true,
         lastSeen: true,
         showOnlineStatus: true,
-        locationSharingEnabled: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -397,7 +394,7 @@ export class UsersService {
   }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { showOnlineStatus: true, locationSharingEnabled: true },
+      select: { showOnlineStatus: true },
     });
 
     if (!user) {
@@ -409,10 +406,16 @@ export class UsersService {
       select: { targetUserId: true, hideOnlineStatus: true },
     });
 
+    // Get locationSharingEnabled from user (using type assertion since Prisma client may not be regenerated)
+    const fullUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    const locationSharingEnabled = (fullUser as any)?.locationSharingEnabled || false;
+
     return {
       global: { 
         showOnlineStatus: user.showOnlineStatus,
-        locationSharingEnabled: user.locationSharingEnabled || false,
+        locationSharingEnabled,
       },
       friends: friendSettings.map(setting => ({
         friendId: setting.targetUserId,
@@ -499,7 +502,7 @@ export class UsersService {
   async updateLocationSharing(userId: string, locationSharingEnabled: boolean): Promise<{ success: boolean; message: string }> {
     await this.prisma.user.update({
       where: { id: userId },
-      data: { locationSharingEnabled },
+      data: { locationSharingEnabled } as any,
     });
 
     return {
