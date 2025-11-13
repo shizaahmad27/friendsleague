@@ -63,6 +63,83 @@ async function main() {
         isOnline: false,
       },
     }),
+    prisma.user.create({
+      data: {
+        username: 'frank',
+        email: 'frank@friendsleague.com',
+        phoneNumber: '+1234567895',
+        password: hashedPassword,
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=frank',
+        inviteCode: 'FRANK123',
+        isOnline: true,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        username: 'grace',
+        email: 'grace@friendsleague.com',
+        phoneNumber: '+1234567896',
+        password: hashedPassword,
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=grace',
+        inviteCode: 'GRACE123',
+        isOnline: true,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        username: 'henry',
+        email: 'henry@friendsleague.com',
+        phoneNumber: '+1234567897',
+        password: hashedPassword,
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=henry',
+        inviteCode: 'HENRY123',
+        isOnline: false,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        username: 'ivy',
+        email: 'ivy@friendsleague.com',
+        phoneNumber: '+1234567898',
+        password: hashedPassword,
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ivy',
+        inviteCode: 'IVY123',
+        isOnline: true,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        username: 'jack',
+        email: 'jack@friendsleague.com',
+        phoneNumber: '+1234567899',
+        password: hashedPassword,
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=jack',
+        inviteCode: 'JACK123',
+        isOnline: false,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        username: 'kate',
+        email: 'kate@friendsleague.com',
+        phoneNumber: '+1234567900',
+        password: hashedPassword,
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=kate',
+        inviteCode: 'KATE123',
+        isOnline: true,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        username: 'liam',
+        email: 'liam@friendsleague.com',
+        phoneNumber: '+1234567901',
+        password: hashedPassword,
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=liam',
+        inviteCode: 'LIAM123',
+        isOnline: false,
+      },
+    }),
   ]);
 
 
@@ -95,6 +172,62 @@ async function main() {
       data: {
         userId: users[3].id, // Diana
         friendId: users[4].id, // Eve
+        status: 'ACCEPTED',
+      },
+    }),
+    // Bob is also friends with Frank (mutual friend with Alice through Bob)
+    prisma.friendship.create({
+      data: {
+        userId: users[1].id, // Bob
+        friendId: users[5].id, // Frank
+        status: 'ACCEPTED',
+      },
+    }),
+    // Charlie is friends with Grace
+    prisma.friendship.create({
+      data: {
+        userId: users[2].id, // Charlie
+        friendId: users[6].id, // Grace
+        status: 'ACCEPTED',
+      },
+    }),
+    // Diana is friends with Henry
+    prisma.friendship.create({
+      data: {
+        userId: users[3].id, // Diana
+        friendId: users[7].id, // Henry
+        status: 'ACCEPTED',
+      },
+    }),
+    // Eve is friends with Ivy
+    prisma.friendship.create({
+      data: {
+        userId: users[4].id, // Eve
+        friendId: users[8].id, // Ivy
+        status: 'ACCEPTED',
+      },
+    }),
+    // Frank is friends with Jack
+    prisma.friendship.create({
+      data: {
+        userId: users[5].id, // Frank
+        friendId: users[9].id, // Jack
+        status: 'ACCEPTED',
+      },
+    }),
+    // Grace is friends with Kate
+    prisma.friendship.create({
+      data: {
+        userId: users[6].id, // Grace
+        friendId: users[10].id, // Kate
+        status: 'ACCEPTED',
+      },
+    }),
+    // Henry is friends with Liam
+    prisma.friendship.create({
+      data: {
+        userId: users[7].id, // Henry
+        friendId: users[11].id, // Liam
         status: 'ACCEPTED',
       },
     }),

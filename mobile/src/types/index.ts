@@ -12,6 +12,7 @@ export interface User {
   lastSeen: string;
   createdAt: string;
   updatedAt: string;
+  mutualFriendsCount?: number;
 }
 
 export interface AuthResponse {
@@ -62,6 +63,7 @@ export type RootStackParamList = {
   InviteCode: undefined;
   QRCode: undefined;
   Contacts: undefined;
+  SearchUsers: undefined;
   Messages: undefined;
   Chat: { chatId: string };
   CreateGroupChat: undefined;

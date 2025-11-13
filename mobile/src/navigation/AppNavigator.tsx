@@ -52,6 +52,7 @@ import HelpSupportScreen from '../screens/settings/HelpSupportScreen';
 import InviteCodeScreen from '../screens/invitations/InviteCodeScreen';
 import QRCodeScreen from '../screens/invitations/QRCodeScreen';
 import ContactsScreen from '../screens/invitations/ContactsScreen';
+import SearchUsersScreen from '../screens/invitations/SearchUsersScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -155,6 +156,7 @@ export default function AppNavigator() {
             <Stack.Screen name="InviteCode" component={InviteCodeScreen} />
             <Stack.Screen name="QRCode" component={QRCodeScreen} />
             <Stack.Screen name="Contacts" component={ContactsScreen} />
+            <Stack.Screen name="SearchUsers" component={SearchUsersScreen} />
             <Stack.Screen name="Messages" component={ChatListScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />
             <Stack.Screen name="CreateGroupChat" component={CreateGroupChatScreen} />

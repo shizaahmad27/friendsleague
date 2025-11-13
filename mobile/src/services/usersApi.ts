@@ -11,6 +11,7 @@ export interface User {
   lastSeen: string;
   createdAt: string;
   updatedAt: string;
+  mutualFriendsCount?: number;
 }
 
 export const usersApi = {
@@ -29,6 +30,12 @@ export const usersApi = {
   // Get user's friends
   getUserFriends: async (): Promise<User[]> => {
     const response = await api.get('/users/friends');
+    return response.data;
+  },
+
+  // Get suggested users with mutual friends
+  getSuggestedUsers: async (limit: number = 10): Promise<User[]> => {
+    const response = await api.get(`/users/suggested?limit=${limit}`);
     return response.data;
   },
 

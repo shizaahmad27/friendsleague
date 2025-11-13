@@ -8,10 +8,13 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
+  Share,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+import * as Contacts from 'expo-contacts';
+import * as Clipboard from 'expo-clipboard';
 import { RootStackParamList } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import { invitationApi } from '../../services/invitationApi';
@@ -38,6 +41,7 @@ export default function ContactsScreen() {
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permissionStatus, setPermissionStatus] = useState<Contacts.PermissionStatus | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [invitingContacts, setInvitingContacts] = useState<Set<string>>(new Set());
 
@@ -64,28 +68,25 @@ export default function ContactsScreen() {
 
   const requestPermissionAndLoadContacts = async () => {
     try {
-      // TODO: Import and use expo-contacts when installed
-      // For now, show placeholder
       setIsLoading(true);
       
-      // Simulate permission request
-      // const { status } = await Contacts.requestPermissionsAsync();
-      // if (status !== 'granted') {
-      //   setHasPermission(false);
-      //   setIsLoading(false);
-      //   return;
-      // }
+      const { status } = await Contacts.requestPermissionsAsync();
+      setPermissionStatus(status);
       
-      // setHasPermission(true);
-      // await loadContacts();
-      
-      // Placeholder: Show message that expo-contacts needs to be installed
-      setHasPermission(null);
-      Alert.alert(
-        'Contacts Permission',
-        'To use this feature, expo-contacts needs to be installed. Run: npx expo install expo-contacts',
-        [{ text: 'OK' }]
-      );
+      if (status === Contacts.PermissionStatus.GRANTED) {
+        setHasPermission(true);
+        await loadContacts();
+      } else if (status === Contacts.PermissionStatus.DENIED) {
+        setHasPermission(false);
+      } else {
+        // Limited access (iOS) or undetermined
+        const isLimited = status === (Contacts.PermissionStatus as any).LIMITED || 
+                         (status as any) === 'limited';
+        setHasPermission(isLimited);
+        if (isLimited) {
+          await loadContacts();
+        }
+      }
     } catch (error) {
       console.error('Error requesting contacts permission:', error);
       Alert.alert('Error', 'Failed to access contacts');
@@ -99,17 +100,13 @@ export default function ContactsScreen() {
     try {
       setIsLoading(true);
       
-      // TODO: Use expo-contacts when installed
-      // const { data } = await Contacts.getContactsAsync({
-      //   fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers, Contacts.Fields.Emails],
-      // });
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers, Contacts.Fields.Emails],
+      });
       
       // Process contacts and match with app users
-      // const processedContacts = await processContacts(data);
-      // setContacts(processedContacts);
-      
-      // For now, show empty state
-      setContacts([]);
+      const processedContacts = await processContacts(data);
+      setContacts(processedContacts);
     } catch (error) {
       console.error('Error loading contacts:', error);
       Alert.alert('Error', 'Failed to load contacts');
@@ -118,52 +115,123 @@ export default function ContactsScreen() {
     }
   };
 
-  const processContacts = async (rawContacts: any[]): Promise<Contact[]> => {
-    // TODO: Match contacts with app users by phone/email
-    // For each contact, check if phone/email exists in app
-    // Mark as isAppUser: true if found, with userId and username
-    
+  // Helper function to normalize phone numbers (remove spaces, dashes, etc.)
+  const normalizePhoneNumber = (phone: string): string => {
+    return phone.replace(/[\s\-\(\)]/g, '');
+  };
+
+  const processContacts = async (rawContacts: Contacts.Contact[]): Promise<Contact[]> => {
+    // Filter and process contacts
     const processed: Contact[] = rawContacts
       .filter((contact) => contact.name && (contact.phoneNumbers?.length || contact.emails?.length))
-      .map((contact) => ({
-        id: contact.id,
-        name: contact.name,
-        phoneNumbers: contact.phoneNumbers?.map((p: any) => p.number) || [],
-        emails: contact.emails?.map((e: any) => e.email) || [],
+      .map((contact, index) => ({
+        id: (contact as any).id || `contact-${index}`,
+        name: contact.name || 'Unknown',
+        phoneNumbers: contact.phoneNumbers?.map((p) => normalizePhoneNumber(p.number || '')) || [],
+        emails: contact.emails?.map((e) => (e.email || '').toLowerCase().trim()) || [],
         isAppUser: false,
       }));
 
-    // TODO: Batch check which contacts are app users
-    // This would require a backend endpoint to check multiple phone/emails at once
-    
-    return processed;
+    // Match contacts with app users by phone/email
+    // Check each contact's phone numbers and emails against app users
+    const matchedContacts = await Promise.all(
+      processed.map(async (contact) => {
+        // Check if any phone number or email matches an app user
+        if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
+          for (const phone of contact.phoneNumbers) {
+            try {
+              // Search users by phone - we'll need to check if user exists
+              // Since there's no direct search by phone/email endpoint, we'll try to find users
+              // by searching with the phone number as username (fallback approach)
+              // In a real implementation, you'd want a backend endpoint to batch check phone/emails
+              const users = await usersApi.searchUsers(phone);
+              if (users.length > 0) {
+                const matchedUser = users.find(u => u.phoneNumber === phone);
+                if (matchedUser) {
+                  return {
+                    ...contact,
+                    isAppUser: true,
+                    userId: matchedUser.id,
+                    username: matchedUser.username,
+                  };
+                }
+              }
+            } catch (error) {
+              // Continue checking other contacts
+              console.log(`Could not check phone ${phone}:`, error);
+            }
+          }
+        }
+
+        if (contact.emails && contact.emails.length > 0) {
+          for (const email of contact.emails) {
+            try {
+              const users = await usersApi.searchUsers(email);
+              if (users.length > 0) {
+                const matchedUser = users.find(u => u.email?.toLowerCase() === email);
+                if (matchedUser) {
+                  return {
+                    ...contact,
+                    isAppUser: true,
+                    userId: matchedUser.id,
+                    username: matchedUser.username,
+                  };
+                }
+              }
+            } catch (error) {
+              console.log(`Could not check email ${email}:`, error);
+            }
+          }
+        }
+
+        return contact;
+      })
+    );
+
+    return matchedContacts;
   };
 
   const handleInviteContact = async (contact: Contact) => {
     if (!contact.isAppUser || !contact.userId) {
       // Contact is not an app user - show share options
-      Alert.alert(
-        'Invite to FriendsLeague',
-        `${contact.name} is not on FriendsLeague yet. Share your invite code with them!`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Share Code',
-            onPress: async () => {
-              try {
-                const result = await invitationApi.getMyInviteCode();
-                // TODO: Use expo-sharing to share invite code
-                Alert.alert(
-                  'Share Invite Code',
-                  `Your invite code: ${result.code}\n\nShare this with ${contact.name} so they can join!`
-                );
-              } catch (error) {
-                Alert.alert('Error', 'Failed to get invite code');
-              }
+      try {
+        const result = await invitationApi.getMyInviteCode();
+        const shareMessage = `Hey ${contact.name}! Join me on FriendsLeague. Use my invite code: ${result.code}`;
+        
+        Alert.alert(
+          'Invite to FriendsLeague',
+          `${contact.name} is not on FriendsLeague yet. Share your invite code with them!`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Copy Code',
+              onPress: async () => {
+                await Clipboard.setStringAsync(result.code);
+                Alert.alert('Copied!', 'Invite code copied to clipboard');
+              },
             },
-          },
-        ]
-      );
+            {
+              text: 'Share',
+              onPress: async () => {
+                try {
+                  await Share.share({
+                    message: shareMessage,
+                  });
+                } catch (error: any) {
+                  if (error.message !== 'User did not share') {
+                    console.error('Error sharing:', error);
+                    // Fallback to clipboard
+                    await Clipboard.setStringAsync(result.code);
+                    Alert.alert('Copied!', 'Invite code copied to clipboard');
+                  }
+                }
+              },
+            },
+          ]
+        );
+      } catch (error) {
+        Alert.alert('Error', 'Failed to get invite code');
+      }
       return;
     }
 
@@ -249,6 +317,26 @@ export default function ContactsScreen() {
     );
   }
 
+  const handleAddContacts = async () => {
+    // Request full access to contacts
+    try {
+      const { status } = await Contacts.requestPermissionsAsync();
+      setPermissionStatus(status);
+      if (status === Contacts.PermissionStatus.GRANTED) {
+        setHasPermission(true);
+        await loadContacts();
+      } else {
+        Alert.alert(
+          'Permission Required',
+          'Full access to contacts is needed to see all your contacts. You can grant this in Settings.'
+        );
+      }
+    } catch (error) {
+      console.error('Error requesting full access:', error);
+      Alert.alert('Error', 'Failed to request full access');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScreenHeader title="Choose from contacts" />
@@ -258,7 +346,7 @@ export default function ContactsScreen() {
         <Ionicons name="search-outline" size={20} color={theme.secondaryText} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search contacts..."
+          placeholder="Search users..."
           placeholderTextColor={theme.placeholderText}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -270,6 +358,11 @@ export default function ContactsScreen() {
             <Ionicons name="close-circle" size={20} color={theme.secondaryText} />
           </TouchableOpacity>
         )}
+      </View>
+
+      {/* Contacts Header */}
+      <View style={styles.contactsHeader}>
+        <Text style={styles.contactsHeaderText}>Contacts</Text>
       </View>
 
       {isLoading ? (
@@ -299,6 +392,15 @@ export default function ContactsScreen() {
           contentContainerStyle={styles.listContent}
         />
       )}
+
+      {/* Add Contacts Button (shown when limited access) */}
+      {permissionStatus && 
+       permissionStatus !== Contacts.PermissionStatus.GRANTED && 
+       permissionStatus !== Contacts.PermissionStatus.DENIED && (
+        <TouchableOpacity style={styles.addContactsButton} onPress={handleAddContacts}>
+          <Text style={styles.addContactsButtonText}>+ Add Contacts</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -312,19 +414,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.backgroundSecondary,
-    marginHorizontal: 16,
-    marginTop: 8,
+    marginHorizontal: 20,
+    marginTop: 20,
     marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.border,
-    gap: 8,
+    gap: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
+    color: theme.primaryText,
+  },
+  contactsHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  contactsHeaderText: {
+    fontSize: 18,
+    fontWeight: '600',
     color: theme.primaryText,
   },
   loadingContainer: {
@@ -339,7 +451,8 @@ const styles = StyleSheet.create({
     color: theme.secondaryText,
   },
   listContent: {
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   contactItem: {
     flexDirection: 'row',
@@ -417,6 +530,25 @@ const styles = StyleSheet.create({
     color: theme.primaryTextOnPrimary,
     fontSize: 16,
     fontWeight: '600',
+  },
+  addContactsButton: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    zIndex: 10,
+    backgroundColor: theme.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  addContactsButtonText: {
+    color: 'white',
+    fontWeight: '700',
   },
 });
 

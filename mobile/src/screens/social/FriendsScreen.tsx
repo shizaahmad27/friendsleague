@@ -249,8 +249,7 @@ export default function FriendsScreen() {
 
   // Handle search by name
   const handleSearchByName = () => {
-    // Navigate to search screen or show search inline
-    setShowSearch(true);
+    navigation.navigate('SearchUsers');
   };
 
   // Load suggestions (placeholder for now)
