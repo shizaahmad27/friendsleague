@@ -12,7 +12,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import HamburgerMenu from '../../components/layout/HamburgerMenu';
+import ScreenHeader from '../../components/layout/ScreenHeader';
 import { usersApi, User } from '../../services/usersApi';
 import { chatApi } from '../../services/chatApi';
 import { useAuthStore } from '../../store/authStore';
@@ -52,10 +52,6 @@ export default function ActiveFriendsScreen() {
   const [friends, setFriends] = useState<User[]>([]);
   const [isLoadingFriends, setIsLoadingFriends] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
-  const handleLogout = () => {
-    console.log('Logout from ActiveFriends screen');
-  };
 
   // Load friends
   const loadFriends = async () => {
@@ -120,16 +116,7 @@ export default function ActiveFriendsScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>My Friends</Text>
-        <Text style={styles.subtitle}>
-          {friends.length === 0 
-            ? "You haven't added any friends yet" 
-            : `${friends.length} friend${friends.length !== 1 ? 's' : ''}`
-          }
-        </Text>
-        <HamburgerMenu onLogout={handleLogout} />
-      </View>
+      <ScreenHeader title="My Friends" />
 
       <View style={styles.content}>
         {isLoadingFriends ? (
@@ -207,34 +194,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 4,
   },
   content: {
     flex: 1,

@@ -13,6 +13,7 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../types';
 import { invitationApi, Invitation } from '../../services/invitationApi';
 import { usersApi, User } from '../../services/usersApi';
@@ -41,6 +42,10 @@ export default function FriendsScreen() {
   const [friends, setFriends] = useState<User[]>([]);
   const [isLoadingFriends, setIsLoadingFriends] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // State for suggestions
+  const [suggestions, setSuggestions] = useState<User[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
   // Search users by username
   const handleSearch = async () => {
@@ -177,6 +182,7 @@ export default function FriendsScreen() {
     React.useCallback(() => {
       loadFriends();
       loadInvitations();
+      loadSuggestions();
     }, [])
   );
 
@@ -231,6 +237,36 @@ export default function FriendsScreen() {
     );
   };
 
+  // Handle choose from contacts
+  const handleChooseFromContacts = () => {
+    Alert.alert('Coming Soon', 'Contact integration will be available in a future update!');
+  };
+
+  // Handle use invite code
+  const handleUseInviteCode = () => {
+    navigation.navigate('InviteCode');
+  };
+
+  // Handle search by name
+  const handleSearchByName = () => {
+    // Navigate to search screen or show search inline
+    setShowSearch(true);
+  };
+
+  // Load suggestions (placeholder for now)
+  const loadSuggestions = async () => {
+    setIsLoadingSuggestions(true);
+    try {
+      // TODO: Implement suggestions API when available
+      // For now, return empty array
+      setSuggestions([]);
+    } catch (error) {
+      console.error('Load suggestions error:', error);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
   return (
     <ScrollView 
       style={styles.container}
@@ -238,61 +274,97 @@ export default function FriendsScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
     >
-      <ScreenHeader title="Friends & Invitations" />
+      <ScreenHeader title="Find your friends" />
 
       <View style={styles.content}>
-        {/* Search Section */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>🔍 Find Friends</Text>
-          <Text style={styles.cardDescription}>
-            Search for friends by username
-          </Text>
-          
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Enter username..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              onSubmitEditing={handleSearch}
-              returnKeyType="search"
-            />
-            <TouchableOpacity 
-              style={[styles.searchButton, (isSearching || searchQuery.trim().length < 2) && styles.searchButtonDisabled]} 
-              onPress={handleSearch}
-              disabled={isSearching || searchQuery.trim().length < 2}
-            >
-              {isSearching ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Text style={styles.searchButtonText}>Search</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+        {/* Action Buttons */}
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={handleChooseFromContacts}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="people-outline" size={24} color="#FFD700" />
+            <Text style={styles.actionButtonText}>Choose from contacts</Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.secondaryText} />
+          </TouchableOpacity>
 
-          {/* Search Results */}
-          {showSearch && (
-            <View style={styles.searchResults}>
-              <View style={styles.searchResultsHeader}>
-                <Text style={styles.searchResultsTitle}>
-                  Search Results ({searchResults.length})
-                </Text>
-                <TouchableOpacity 
-                  style={styles.clearSearchButton}
-                  onPress={() => {
-                    setSearchQuery('');
-                    setSearchResults([]);
-                    setShowSearch(false);
-                  }}
-                >
-                  <Text style={styles.clearSearchButtonText}>Clear</Text>
-                </TouchableOpacity>
-              </View>
-              
-              {searchResults.length > 0 ? (
-                searchResults.map((user) => (
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={handleUseInviteCode}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="key-outline" size={24} color={theme.primary} />
+            <Text style={styles.actionButtonText}>Use invite code</Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.secondaryText} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={handleSearchByName}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="search-outline" size={24} color={theme.primary} />
+            <Text style={styles.actionButtonText}>Search by name</Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.secondaryText} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={handleGenerateLink}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="link-outline" size={24} color={theme.primary} />
+            <Text style={styles.actionButtonText}>Share follow link</Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.secondaryText} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Search Results (shown when searching) */}
+        {showSearch && (
+          <View style={styles.searchSection}>
+            <View style={styles.searchHeader}>
+              <Text style={styles.sectionTitle}>Search Users</Text>
+              <TouchableOpacity 
+                style={styles.closeSearchButton}
+                onPress={() => {
+                  setSearchQuery('');
+                  setSearchResults([]);
+                  setShowSearch(false);
+                }}
+              >
+                <Ionicons name="close" size={20} color={theme.secondaryText} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.searchInputContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search users..."
+                placeholderTextColor={theme.placeholderText}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+                onSubmitEditing={handleSearch}
+                returnKeyType="search"
+              />
+              <TouchableOpacity 
+                style={[styles.searchButton, (isSearching || searchQuery.trim().length < 2) && styles.searchButtonDisabled]} 
+                onPress={handleSearch}
+                disabled={isSearching || searchQuery.trim().length < 2}
+              >
+                {isSearching ? (
+                  <ActivityIndicator size="small" color={theme.primaryTextOnPrimary} />
+                ) : (
+                  <Ionicons name="search" size={20} color={theme.primaryTextOnPrimary} />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {searchResults.length > 0 ? (
+              <View style={styles.searchResultsList}>
+                {searchResults.map((user) => (
                   <View key={user.id} style={styles.userItem}>
                     <View style={styles.userAvatar}>
                       <Text style={styles.userAvatarText}>
@@ -307,9 +379,6 @@ export default function FriendsScreen() {
                           {user.isOnline ? 'Online' : 'Offline'}
                         </Text>
                       </View>
-                      <Text style={styles.userJoined}>
-                        Joined {new Date(user.createdAt).toLocaleDateString()}
-                      </Text>
                     </View>
                     <TouchableOpacity
                       style={styles.inviteButton}
@@ -318,74 +387,25 @@ export default function FriendsScreen() {
                       <Text style={styles.inviteButtonText}>Invite</Text>
                     </TouchableOpacity>
                   </View>
-                ))
-              ) : (
-                <View style={styles.noResultsContainer}>
-                  <Text style={styles.noResultsIcon}>🔍</Text>
-                  <Text style={styles.noResults}>No users found</Text>
-                  <Text style={styles.noResultsSubtext}>
-                    Try searching with a different username
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-
-        {/* Invite Friends Section */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>📱 Invite Friends</Text>
-          <Text style={styles.cardDescription}>
-            Invite friends to join FriendsLeague
-          </Text>
-          <TouchableOpacity 
-            style={styles.cardButton}
-            onPress={handleGenerateLink}
-          >
-            <Text style={styles.cardButtonText}>Generate Link</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Use Invite Code Section */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>🔗 Use Invite Code</Text>
-          <Text style={styles.cardDescription}>
-            Have a friend's invite code? Enter it here to connect with them.
-          </Text>
-          <TouchableOpacity 
-            style={styles.cardButton}
-            onPress={() => navigation.navigate('InviteCode')}
-          >
-            <Text style={styles.cardButtonText}>Enter Invite Code</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Invitations Section */}
-        <View style={styles.card}>
-          <View style={styles.invitationsHeader}>
-            <View>
-              <Text style={styles.cardTitle}>📨 Invitations ({invitations.length})</Text>
-              <Text style={styles.cardDescription}>
-                Manage your friend invitations
-              </Text>
-            </View>
-            {invitations.length > 0 && (
-              <TouchableOpacity 
-                style={styles.clearInvitationsButton}
-                onPress={() => {
-                  setInvitations([]);
-                  setShowSearch(false);
-                  setInvitationsCleared(true);
-                }}
-              >
-                <Text style={styles.clearInvitationsButtonText}>Clear</Text>
-              </TouchableOpacity>
-            )}
+                ))}
+              </View>
+            ) : searchQuery.trim().length >= 2 && !isSearching ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="people-outline" size={64} color={theme.borderSecondary} />
+                <Text style={styles.emptyStateText}>No users found</Text>
+                <Text style={styles.emptyStateSubtext}>Try searching with a different term</Text>
+              </View>
+            ) : null}
           </View>
+        )}
+
+        {/* Friend Invitations Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Friend invitations</Text>
           
           {isLoadingInvitations ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#007AFF" />
+              <ActivityIndicator size="small" color={theme.primary} />
               <Text style={styles.loadingText}>Loading invitations...</Text>
             </View>
           ) : invitations.length > 0 ? (
@@ -401,9 +421,6 @@ export default function FriendsScreen() {
                         ? 'Waiting for your response' 
                         : `Status: ${invitation.status}`
                       }
-                    </Text>
-                    <Text style={styles.invitationDate}>
-                      Sent {new Date(invitation.createdAt).toLocaleDateString()}
                     </Text>
                   </View>
                   {invitation.status === 'PENDING' && invitation.inviteeId === user?.id && (
@@ -426,23 +443,58 @@ export default function FriendsScreen() {
               ))}
             </View>
           ) : (
-            <Text style={styles.noInvitations}>No invitations found</Text>
+            <View style={styles.emptyState}>
+              <Ionicons name="mail-outline" size={48} color={theme.borderSecondary} />
+              <Text style={styles.emptyStateText}>No invitations</Text>
+            </View>
           )}
+        </View>
+
+        {/* Friend Suggestions Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Friend suggestions</Text>
           
-          <TouchableOpacity 
-            style={styles.cardButton}
-            onPress={() => {
-              setInvitationsCleared(false);
-              loadInvitations();
-            }}
-            disabled={isLoadingInvitations}
-          >
-            {isLoadingInvitations ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <Text style={styles.cardButtonText}>Refresh Invitations</Text>
-            )}
-          </TouchableOpacity>
+          {isLoadingSuggestions ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={theme.primary} />
+              <Text style={styles.loadingText}>Loading suggestions...</Text>
+            </View>
+          ) : suggestions.length > 0 ? (
+            <View style={styles.suggestionsList}>
+              {suggestions.map((suggestion) => (
+                <View key={suggestion.id} style={styles.suggestionItem}>
+                  <View style={styles.userAvatar}>
+                    <Text style={styles.userAvatarText}>
+                      {suggestion.username.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.userInfo}>
+                    <Text style={styles.username}>{suggestion.username}</Text>
+                    <View style={styles.statusContainer}>
+                      <View style={[styles.onlineIndicator, suggestion.isOnline && styles.onlineIndicatorPulsing]} />
+                      <Text style={styles.userStatus}>
+                        {suggestion.isOnline ? 'Online' : 'Offline'}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.inviteButton}
+                    onPress={() => handleSendInvitation(suggestion.id, suggestion.username)}
+                  >
+                    <Text style={styles.inviteButtonText}>Invite</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="people-outline" size={64} color={theme.borderSecondary} />
+              <Text style={styles.emptyStateText}>No suggestions available</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Try connecting with more people to get personalized suggestions
+              </Text>
+            </View>
+          )}
         </View>
       </View>
     </ScrollView>
@@ -452,192 +504,159 @@ export default function FriendsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.background,
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: 16,
   },
-  card: {
-    backgroundColor: 'white',
-    padding: 24,
-    borderRadius: 16,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
+  // Action buttons
+  actionButtonsContainer: {
+    marginBottom: 24,
   },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
-    lineHeight: 20,
-  },
-  cardButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-    shadowColor: '#007AFF',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  cardButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  // New styles for search functionality
-  searchContainer: {
+  actionButton: {
     flexDirection: 'row',
-    marginBottom: 16,
-    gap: 12,
-  },
-  searchInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    backgroundColor: 'white',
-  },
-  searchButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    justifyContent: 'center',
     alignItems: 'center',
-    minWidth: 80,
+    backgroundColor: theme.background,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
-  searchButtonDisabled: {
-    backgroundColor: '#ccc',
+  actionButtonText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: theme.primaryText,
+    marginLeft: 12,
   },
-  searchButtonText: {
-    color: 'white',
-    fontSize: 14,
+  // Sections
+  section: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: '600',
+    color: theme.primaryText,
+    marginBottom: 16,
   },
-  searchResults: {
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 12,
+  // Search section
+  searchSection: {
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
   },
-  searchResultsHeader: {
+  searchHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  searchResultsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+  closeSearchButton: {
+    padding: 4,
   },
-  clearSearchButton: {
-    backgroundColor: '#f0f0f0',
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.backgroundSecondary,
+    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
-  clearSearchButtonText: {
-    color: '#666',
-    fontSize: 12,
-    fontWeight: '600',
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: theme.primaryText,
   },
+  searchButton: {
+    backgroundColor: theme.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  searchButtonDisabled: {
+    backgroundColor: theme.borderSecondary,
+  },
+  searchResultsList: {
+    marginTop: 16,
+  },
+  // User items
   userItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    paddingHorizontal: 0,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 0,
   },
   userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#007AFF',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: theme.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   userAvatarText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: theme.primaryTextOnPrimary,
+    fontSize: 18,
+    fontWeight: '600',
   },
   userInfo: {
     flex: 1,
   },
   username: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 2,
-  },
-  userStatus: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
-  },
-  userJoined: {
-    fontSize: 10,
-    color: '#999',
-  },
-  inviteButton: {
-    backgroundColor: '#34C759',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  inviteButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  noResultsContainer: {
-    alignItems: 'center',
-    paddingVertical: 30,
-  },
-  noResultsIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  noResults: {
-    fontSize: 16,
-    color: '#666',
     fontWeight: '500',
+    color: theme.primaryText,
     marginBottom: 4,
   },
-  noResultsSubtext: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
+  userStatus: {
+    fontSize: 13,
+    color: theme.secondaryText,
   },
-  // Friends list styles
+  inviteButton: {
+    backgroundColor: theme.success,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  inviteButtonText: {
+    color: theme.primaryTextOnPrimary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // Empty states
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: theme.secondaryText,
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: theme.tertiaryText,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  // Loading
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -646,167 +665,78 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginLeft: 8,
-    color: '#666',
+    color: theme.secondaryText,
     fontSize: 14,
   },
-  friendsList: {
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 12,
-  },
-  friendItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  friendInfo: {
-    flex: 1,
-  },
-  friendUsername: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  friendStatus: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  friendActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  messageButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  messageButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  // Invitations styles
+  // Invitations
   invitationsList: {
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 12,
+    marginTop: 8,
   },
   invitationItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 0,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.border,
   },
   invitationInfo: {
     flex: 1,
   },
   invitationUsername: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '500',
+    color: theme.primaryText,
+    marginBottom: 4,
   },
   invitationStatus: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  invitationDate: {
-    fontSize: 10,
-    color: '#999',
-    marginTop: 2,
+    fontSize: 13,
+    color: theme.secondaryText,
   },
   invitationActions: {
     flexDirection: 'row',
     gap: 8,
   },
   acceptButton: {
-    backgroundColor: '#34C759',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    backgroundColor: theme.success,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
   acceptButtonText: {
-    color: 'white',
-    fontSize: 12,
+    color: theme.primaryTextOnPrimary,
+    fontSize: 14,
     fontWeight: '600',
   },
   rejectButton: {
-    backgroundColor: '#FF3B30',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    backgroundColor: theme.error,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
   rejectButtonText: {
-    color: 'white',
-    fontSize: 12,
+    color: theme.primaryTextOnPrimary,
+    fontSize: 14,
     fontWeight: '600',
   },
-  noInvitations: {
-    textAlign: 'center',
-    color: '#666',
-    fontStyle: 'italic',
-    paddingVertical: 20,
+  // Suggestions
+  suggestionsList: {
+    marginTop: 8,
   },
-  // Invitations header styles
-  invitationsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  clearInvitationsButton: {
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  clearInvitationsButtonText: {
-    color: '#666',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  // Friends actions styles
-  friendsActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-  },
-  secondaryButton: {
-    backgroundColor: '#f0f0f0',
-  },
-  secondaryButtonText: {
-    color: '#333',
-  },
-statusContainer: {
+  // Status indicators
+  statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   onlineIndicator: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#666',
+    backgroundColor: theme.secondaryText,
   },
   onlineIndicatorPulsing: {
-    backgroundColor: '#34C759',
+    backgroundColor: theme.success,
   },
-  offlineIndicator: {
-    backgroundColor: '#FF3B30',
-  },
-  offlineIndicatorPulsing: {
-    backgroundColor: '#FF3B30',
-  }
-
 });
