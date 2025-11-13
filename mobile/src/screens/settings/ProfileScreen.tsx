@@ -179,7 +179,8 @@ export default function ProfileScreen() {
     
     try {
       await Clipboard.setStringAsync(inviteCode);
-      // Success - no alert per cursor rules
+      // Navigate to invite screen after copying
+      navigation.navigate('InviteCode');
     } catch (error) {
       Alert.alert('Error', 'Failed to copy invite code');
       console.error('Copy error:', error);
