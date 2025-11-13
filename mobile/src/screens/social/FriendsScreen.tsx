@@ -274,7 +274,11 @@ export default function FriendsScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
     >
-      <ScreenHeader title="Find your friends" />
+      <ScreenHeader 
+        title="Find your friends" 
+        rightIcon="qr-code-outline"
+        onRightIconPress={() => navigation.navigate('QRCode')}
+      />
 
       <View style={styles.content}>
         {/* Action Buttons */}

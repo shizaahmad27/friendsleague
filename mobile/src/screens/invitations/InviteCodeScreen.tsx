@@ -106,11 +106,6 @@ export default function InviteCodeScreen() {
     }
   };
 
-  const handleScanQRCode = () => {
-    // TODO: Implement QR code scanning
-    Alert.alert('Coming Soon', 'QR code scanning will be available in a future update!');
-  };
-
   return (
     <ScrollView style={styles.container}>
       <ScreenHeader title="Use Invite Code" />
@@ -147,23 +142,6 @@ export default function InviteCodeScreen() {
               )}
             </TouchableOpacity>
           </View>
-        </View>
-
-        {/* Scan QR Code Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Scan QR Code</Text>
-          <Text style={styles.sectionDescription}>
-            Scan a QR code from your friend's device to automatically connect.
-          </Text>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={handleScanQRCode}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="qr-code-outline" size={24} color={theme.primary} />
-            <Text style={styles.actionButtonText}>Scan QR Code</Text>
-            <Ionicons name="chevron-forward" size={20} color={theme.secondaryText} />
-          </TouchableOpacity>
         </View>
 
         {/* Your Invite Code Section */}
@@ -264,23 +242,6 @@ const styles = StyleSheet.create({
     color: theme.primaryTextOnPrimary,
     fontSize: 14,
     fontWeight: '600',
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.background,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.border,
-  },
-  actionButtonText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
-    color: theme.primaryText,
-    marginLeft: 12,
   },
   yourCodeContainer: {
     flexDirection: 'row',
