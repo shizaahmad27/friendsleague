@@ -239,7 +239,7 @@ export default function FriendsScreen() {
 
   // Handle choose from contacts
   const handleChooseFromContacts = () => {
-    Alert.alert('Coming Soon', 'Contact integration will be available in a future update!');
+    navigation.navigate('Contacts');
   };
 
   // Handle use invite code

@@ -61,6 +61,7 @@ export type RootStackParamList = {
   Events: undefined;
   InviteCode: undefined;
   QRCode: undefined;
+  Contacts: undefined;
   Messages: undefined;
   Chat: { chatId: string };
   CreateGroupChat: undefined;

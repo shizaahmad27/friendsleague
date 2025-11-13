@@ -330,8 +330,9 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           
-          <Text style={styles.username}>{user?.username || 'User'}</Text>
-          <Text style={styles.userHandle}>@{user?.username?.toLowerCase().replace(/\s+/g, '_') || 'user'}</Text>
+          <Text style={styles.username}>
+            {user?.username || 'User'} <Text style={styles.userHandle}>(@{user?.username?.toLowerCase().replace(/\s+/g, '_') || 'user'})</Text>
+          </Text>
           
           {/* Invite Code */}
           {user && (
@@ -564,12 +565,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: theme.primaryText,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   userHandle: {
-    fontSize: 14,
+    fontSize: 16,
     color: theme.secondaryText,
-    marginBottom: 8,
+    fontWeight: 'normal',
   },
   inviteCodeContainer: {
     flexDirection: 'row',
