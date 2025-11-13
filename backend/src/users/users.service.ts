@@ -364,14 +364,20 @@ export class UsersService {
       take: limit * 2, // Get more to filter and sort
     });
 
+    // Map to include locationSharingEnabled (using type assertion since Prisma client may not be regenerated)
+    const allUsersWithLocation = allUsers.map(user => ({
+      ...user,
+      locationSharingEnabled: (user as any).locationSharingEnabled || false,
+    }));
+
     // Calculate mutual friends for each user
     const usersWithMutualFriends = await Promise.all(
-      allUsers.map(async (user) => {
+      allUsersWithLocation.map(async (user) => {
         const mutualFriendsCount = await this.getMutualFriendsCount(userId, user.id);
         return {
           ...user,
           mutualFriendsCount,
-        };
+        } as UserWithoutPassword & { mutualFriendsCount: number };
       })
     );
 
