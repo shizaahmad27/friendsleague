@@ -214,16 +214,6 @@ export default function InviteCodeScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>ℹ️ How It Works</Text>
-          <Text style={styles.cardDescription}>
-            1. Ask your friend to share their invite code or QR code{'\n'}
-            2. Enter the code above or scan the QR code{'\n'}
-            3. You'll be automatically connected as friends{'\n'}
-            4. Start competing in leagues together!
-          </Text>
-        </View>
-
         {user && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>👤 Your Invite Code</Text>

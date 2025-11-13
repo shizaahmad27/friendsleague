@@ -152,6 +152,20 @@ export default function HelpSupportScreen() {
           </View>
         ))}
 
+        {/* How Invite Codes Work */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="person-add-outline" size={24} color={theme.primary} />
+            <Text style={styles.sectionTitle}>How Invite Codes Work</Text>
+          </View>
+          <Text style={styles.sectionDescription}>
+            1. Ask your friend to share their invite code or QR code{'\n'}
+            2. Enter the code above or scan the QR code{'\n'}
+            3. You'll be automatically connected as friends{'\n'}
+            4. Start competing in leagues together!
+          </Text>
+        </View>
+
         {/* App Info */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
