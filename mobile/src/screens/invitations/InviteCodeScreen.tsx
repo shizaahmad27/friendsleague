@@ -11,12 +11,13 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import { invitationApi } from '../../services/invitationApi';
-import { eventsApi } from '../../services/eventsApi';
 import * as Clipboard from 'expo-clipboard';
 import ScreenHeader from '../../components/layout/ScreenHeader';
+import { theme } from '../../constants/colors';
 
 type InviteCodeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'InviteCode'>;
 
@@ -25,7 +26,6 @@ export default function InviteCodeScreen() {
   const { user } = useAuthStore();
   const [inviteCode, setInviteCode] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [eventCode, setEventCode] = useState('');
   const [myInviteCode, setMyInviteCode] = useState<string>('');
   const [isLoadingCode, setIsLoadingCode] = useState(false);
 
@@ -106,20 +106,6 @@ export default function InviteCodeScreen() {
     }
   };
 
-  const handleUseEventCode = async () => {
-    if (!eventCode.trim()) {
-      Alert.alert('Error', 'Please enter an event invite code');
-      return;
-    }
-    setIsProcessing(true);
-    try {
-      // We need an eventId to use the code. Ask user for eventId or deep-link later.
-      Alert.alert('Info', 'To accept an event code, open the event link from the invite.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   const handleScanQRCode = () => {
     // TODO: Implement QR code scanning
     Alert.alert('Coming Soon', 'QR code scanning will be available in a future update!');
@@ -130,9 +116,10 @@ export default function InviteCodeScreen() {
       <ScreenHeader title="Use Invite Code" />
 
       <View style={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>🔗 Enter Invite Code</Text>
-          <Text style={styles.cardDescription}>
+        {/* Enter Invite Code Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Enter Invite Code</Text>
+          <Text style={styles.sectionDescription}>
             Ask your friend for their invite code and enter it below to connect with them.
           </Text>
           
@@ -140,21 +127,21 @@ export default function InviteCodeScreen() {
             <TextInput
               style={styles.codeInput}
               placeholder="Enter invite code (e.g., A1B2C3D4)"
+              placeholderTextColor={theme.placeholderText}
               value={inviteCode}
               onChangeText={setInviteCode}
               autoCapitalize="characters"
               autoCorrect={false}
               maxLength={8}
               selectTextOnFocus={true}
-              clearButtonMode="while-editing"
             />
             <TouchableOpacity 
-              style={[styles.useButton, isProcessing && styles.useButtonDisabled]} 
+              style={[styles.useButton, (isProcessing || !inviteCode.trim()) && styles.useButtonDisabled]} 
               onPress={handleUseInviteCode}
-              disabled={isProcessing}
+              disabled={isProcessing || !inviteCode.trim()}
             >
               {isProcessing ? (
-                <ActivityIndicator size="small" color="white" />
+                <ActivityIndicator size="small" color={theme.primaryTextOnPrimary} />
               ) : (
                 <Text style={styles.useButtonText}>Use Code</Text>
               )}
@@ -162,60 +149,36 @@ export default function InviteCodeScreen() {
           </View>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>🎟️ Enter Event Invite Code</Text>
-          <Text style={styles.cardDescription}>
-            If you received an event invite code, paste it here from the shared link.
-          </Text>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.codeInput}
-              placeholder="Event code (e.g., A1B2C3D4)"
-              value={eventCode}
-              onChangeText={setEventCode}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              maxLength={8}
-              selectTextOnFocus={true}
-              clearButtonMode="while-editing"
-            />
-            <TouchableOpacity 
-              style={[styles.useButton, isProcessing && styles.useButtonDisabled]} 
-              onPress={handleUseEventCode}
-              disabled={isProcessing}
-            >
-              {isProcessing ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Text style={styles.useButtonText}>Use Code</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>📱 Scan QR Code</Text>
-          <Text style={styles.cardDescription}>
+        {/* Scan QR Code Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Scan QR Code</Text>
+          <Text style={styles.sectionDescription}>
             Scan a QR code from your friend's device to automatically connect.
           </Text>
           <TouchableOpacity 
-            style={styles.cardButton}
+            style={styles.actionButton}
             onPress={handleScanQRCode}
+            activeOpacity={0.7}
           >
-            <Text style={styles.cardButtonText}>Scan QR Code</Text>
+            <Ionicons name="qr-code-outline" size={24} color={theme.primary} />
+            <Text style={styles.actionButtonText}>Scan QR Code</Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.secondaryText} />
           </TouchableOpacity>
         </View>
 
+        {/* Your Invite Code Section */}
         {user && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>👤 Your Invite Code</Text>
-            <Text style={styles.cardDescription}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Your Invite Code</Text>
+            <Text style={styles.sectionDescription}>
               Share this code with friends so they can connect with you:
             </Text>
             <View style={styles.yourCodeContainer}>
-              <Text style={styles.yourCode}>
-                {isLoadingCode ? 'Loading...' : myInviteCode}
-              </Text>
+              <View style={styles.yourCodeDisplay}>
+                <Text style={styles.yourCode}>
+                  {isLoadingCode ? 'Loading...' : myInviteCode}
+                </Text>
+              </View>
               <TouchableOpacity 
                 style={[styles.copyButton, isLoadingCode && styles.copyButtonDisabled]}
                 onPress={async () => {
@@ -231,6 +194,7 @@ export default function InviteCodeScreen() {
                 }}
                 disabled={isLoadingCode}
               >
+                <Ionicons name="copy-outline" size={20} color={theme.primaryTextOnPrimary} />
                 <Text style={styles.copyButtonText}>Copy</Text>
               </TouchableOpacity>
             </View>
@@ -244,126 +208,116 @@ export default function InviteCodeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.background,
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: 16,
   },
-  card: {
-    backgroundColor: 'white',
-    padding: 24,
-    borderRadius: 16,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
+  section: {
+    marginBottom: 32,
   },
-  cardTitle: {
-    fontSize: 20,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: theme.primaryText,
     marginBottom: 8,
   },
-  cardDescription: {
+  sectionDescription: {
     fontSize: 14,
-    color: '#666',
+    color: theme.secondaryText,
     marginBottom: 16,
     lineHeight: 20,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    gap: 12,
   },
   codeInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: 'white',
+    borderColor: theme.border,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 18,
+    backgroundColor: theme.backgroundSecondary,
     textAlign: 'center',
     letterSpacing: 2,
     fontWeight: '600',
-    marginRight: 12,
+    color: theme.primaryText,
   },
   useButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.primary,
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
     minWidth: 100,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   useButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: theme.borderSecondary,
   },
   useButtonText: {
-    color: 'white',
+    color: theme.primaryTextOnPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
-  cardButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.background,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     borderRadius: 12,
-    alignSelf: 'flex-start',
-    shadowColor: '#007AFF',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
-  cardButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
+  actionButtonText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: theme.primaryText,
+    marginLeft: 12,
   },
   yourCodeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  yourCode: {
+  yourCodeDisplay: {
     flex: 1,
+    backgroundColor: theme.backgroundSecondary,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  yourCode: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#007AFF',
+    fontWeight: '700',
+    color: theme.primary,
     textAlign: 'center',
-    letterSpacing: 2,
-    backgroundColor: '#f0f8ff',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#007AFF',
+    letterSpacing: 3,
   },
   copyButton: {
-    backgroundColor: '#34C759',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.success,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 10,
+    gap: 8,
   },
   copyButtonText: {
-    color: 'white',
+    color: theme.primaryTextOnPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
   copyButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: theme.borderSecondary,
   },
 });

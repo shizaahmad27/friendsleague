@@ -8,12 +8,16 @@ interface ScreenHeaderProps {
   title: string;
   showMenu?: boolean;
   onMenuPress?: () => void;
+  rightIcon?: string;
+  onRightIconPress?: () => void;
 }
 
 export default function ScreenHeader({ 
   title, 
   showMenu = false, 
-  onMenuPress 
+  onMenuPress,
+  rightIcon,
+  onRightIconPress
 }: ScreenHeaderProps) {
   const navigation = useNavigation();
 
@@ -32,6 +36,13 @@ export default function ScreenHeader({
           onPress={onMenuPress}
         >
           <Ionicons name="ellipsis-vertical" size={24} color={theme.primaryText} />
+        </TouchableOpacity>
+      ) : rightIcon && onRightIconPress ? (
+        <TouchableOpacity 
+          style={styles.headerButton}
+          onPress={onRightIconPress}
+        >
+          <Ionicons name={rightIcon as any} size={24} color={theme.primaryText} />
         </TouchableOpacity>
       ) : (
         <View style={styles.headerButton} />

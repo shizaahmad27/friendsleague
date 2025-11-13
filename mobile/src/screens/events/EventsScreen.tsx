@@ -4,12 +4,14 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { RefreshControl, FlatList } from 'react-native';
 import { eventsApi, EventItem } from '../../services/eventsApi';
 import { useNavigation } from '@react-navigation/native';
 import { leaguesApi } from '../../services/leaguesApi';
 import ScreenHeader from '../../components/layout/ScreenHeader';
+import { theme } from '../../constants/colors';
 
 export default function EventsScreen() {
   const navigation = useNavigation();
@@ -50,11 +52,70 @@ export default function EventsScreen() {
     return events.filter(e => e.leagueId === selectedLeagueId);
   }, [events, selectedLeagueId]);
 
+  const handleUseEventCode = () => {
+    // Prompt for event code
+    Alert.prompt(
+      'Enter Event Invite Code',
+      'Enter the invite code you received for an event',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Next',
+          onPress: async (code: string | undefined) => {
+            if (!code || !code.trim()) {
+              Alert.alert('Error', 'Please enter an event invite code');
+              return;
+            }
+
+            // If we have events, show a picker to select which event
+            if (events.length > 0) {
+              const eventOptions = events.map(e => e.title);
+              Alert.alert(
+                'Select Event',
+                'Which event is this code for?',
+                [
+                  ...events.map((event, index) => ({
+                    text: event.title,
+                    onPress: async () => {
+                      try {
+                        await eventsApi.useInvitation(event.id, code.trim().toUpperCase());
+                        Alert.alert('Success!', `You've joined ${event.title}!`);
+                        load(); // Refresh events
+                      } catch (error: any) {
+                        Alert.alert(
+                          'Error',
+                          error.response?.data?.message || 'Failed to use event invite code'
+                        );
+                      }
+                    },
+                  })),
+                  { text: 'Cancel', style: 'cancel' },
+                ]
+              );
+            } else {
+              Alert.alert(
+                'Info',
+                'Please create or join an event first, then use the invite code from the event details screen.'
+              );
+            }
+          },
+        },
+      ],
+      'plain-text'
+    );
+  };
+
   return (
     <View style={styles.container}>
       <ScreenHeader title="Events" />
 
       <View style={styles.content}>
+        <TouchableOpacity style={styles.joinFloating} onPress={handleUseEventCode}>
+          <Text style={styles.joinFloatingText}>+ Join </Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.createFloating} onPress={() => (navigation as any).navigate('EventCreate')}>
           <Text style={styles.createFloatingText}>+ Create Event</Text>
         </TouchableOpacity>
@@ -117,6 +178,22 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  joinFloating: {
+    position: 'absolute',
+    right: 20,
+    bottom: 70,
+    zIndex: 10,
+    backgroundColor: theme.success,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    shadowColor: theme.success,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  joinFloatingText: { color: 'white', fontWeight: '700' },
   createFloating: {
     position: 'absolute',
     right: 20,
